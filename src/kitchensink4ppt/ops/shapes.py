@@ -781,6 +781,7 @@ def set_shape(
         new_cy = round(g.in_to_emu(h) / ay) if h is not None else cur_cy
         if new_cx < 0 or new_cy < 0:
             raise PptMcpError("w and h must be positive inches")
+        g.check_emu_box(new_x, new_y, new_cx, new_cy, what=f"shape {shape}")
         off = xfrm.find(qn("a:off"))
         ext = xfrm.find(qn("a:ext"))
         off.set("x", str(new_x))

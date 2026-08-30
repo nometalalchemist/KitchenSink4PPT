@@ -50,6 +50,10 @@ _SIZE_PRESETS = {
     "16:9": (12192000, 6858000, None),
     "4:3": (9144000, 6858000, "screen4x3"),
     "16:10": (9144000, 5715000, "screen16x10"),
+    # Paper presets, PowerPoint's own dimensions (M9: the tool docstring
+    # advertises these; the implementation must accept them).
+    "a4": (9906000, 6858000, "A4"),
+    "letter": (9144000, 6858000, "letter"),
 }
 
 
@@ -311,8 +315,8 @@ def set_slide_size(
     h: float | None = None,
     scale_content: bool = False,
 ) -> dict:
-    """Change the slide canvas size: preset "16:9" | "4:3" | "16:10", or
-    custom w x h in inches. Writes ONLY p:sldSz. Content is NOT rescaled
+    """Change the slide canvas size: preset "16:9" | "4:3" | "16:10" |
+    "a4" | "letter", or custom w x h in inches. Writes ONLY p:sldSz. Content is NOT rescaled
     (shapes keep their EMU geometry); scale_content=True is refused rather
     than faked, because matching PowerPoint's Maximize / Ensure Fit
     rescaling is an application behavior, not a file edit.
@@ -327,6 +331,8 @@ def set_slide_size(
     if preset is not None and (w is not None or h is not None):
         raise PptMcpError("pass a preset OR custom w/h inches, not both")
     if preset is not None:
+        if isinstance(preset, str):
+            preset = preset.strip().lower()
         if preset not in _SIZE_PRESETS:
             raise PptMcpError(
                 f"unknown preset {preset!r}; one of: "
@@ -336,7 +342,8 @@ def set_slide_size(
     else:
         if w is None or h is None:
             raise PptMcpError(
-                'set_slide_size needs a preset ("16:9", "4:3", "16:10") or '
+                "set_slide_size needs a preset "
+                f"({', '.join(repr(p) for p in _SIZE_PRESETS)}) or "
                 "both w and h in inches"
             )
         cx, cy, sz_type = g.in_to_emu(w), g.in_to_emu(h), None

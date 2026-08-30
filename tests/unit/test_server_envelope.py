@@ -73,15 +73,15 @@ def test_all_mapped_codes_are_closed_vocabulary():
 
 
 def test_pack_hint_names_enable_tools(make_deck):
-    """Discoverability rule 2: a refusal naming a disabled tool must carry
-    the exact enable_tools call."""
-    # all packs disabled in the default surface; craft a refusal message
-    # through the envelope path directly.
+    """Discoverability rule 2: a refusal that DECLARES it directs the caller
+    to a disabled tool (exc.hint_tools, set at the raise site) must carry
+    the exact enable_tools call. Message text is never scanned (M8)."""
     from kitchensink4ppt.core.errors import UnsupportedStructure
 
     exc = UnsupportedStructure(
         "table cell text goes through set_table_cells, not format_text"
     )
+    exc.hint_tools = ["set_table_cells"]
     out = server._refusal(exc)
     assert out["ok"] is False
     hint = out["error"]["hint"]
@@ -93,9 +93,11 @@ def test_pack_hint_absent_when_pack_enabled():
     packs.enable(["tables-charts"])
     from kitchensink4ppt.core.errors import UnsupportedStructure
 
-    out = server._refusal(
-        UnsupportedStructure("table cell text goes through set_table_cells")
+    exc = UnsupportedStructure(
+        "table cell text goes through set_table_cells"
     )
+    exc.hint_tools = ["set_table_cells"]
+    out = server._refusal(exc)
     assert "enable_tools" not in out["error"]["hint"]
 
 

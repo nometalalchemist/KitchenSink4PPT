@@ -47,6 +47,109 @@ _SVG_NS = "http://www.w3.org/2000/svg"
 #: Default SVG user unit density when the document gives no viewBox scale.
 _UNITS_PER_INCH = 96.0
 
+#: Element nesting cap: deeper documents are refused before any recursive
+#: walk (svgelements parse and convert_children both recurse per level).
+_MAX_SVG_DEPTH = 64
+
+
+def _localname(el) -> str | None:
+    """Tag localname, or None for comments/PIs (non-string tags)."""
+    if not isinstance(el.tag, str):
+        return None
+    return etree.QName(el).localname
+
+
+def _parse_svg_strict(svg_text: str) -> etree._Element:
+    """Parse and structurally vet the SVG BEFORE svgelements sees it, so
+    malformed XML, non-SVG documents, entity bombs, over-deep nesting, and
+    <use> reference cycles refuse with an envelope error instead of raising
+    raw parser/recursion errors (Phase 8 findings H1/H2/M1)."""
+    try:
+        root = etree.fromstring(svg_text.encode("utf-8"))
+    except etree.LxmlError as exc:
+        raise PptMcpError(f"svg is not valid XML/SVG: {exc}") from exc
+    name = _localname(root)
+    if name != "svg":
+        raise PptMcpError(
+            f"svg root element is <{name}>, not <svg>; svg_to_shapes needs "
+            "an SVG document"
+        )
+
+    # Nesting depth cap (iterative walk; never recurses).
+    stack = [(root, 1)]
+    while stack:
+        el, depth = stack.pop()
+        if depth > _MAX_SVG_DEPTH:
+            raise PptMcpError(
+                f"SVG elements nested deeper than {_MAX_SVG_DEPTH} levels; "
+                "flatten the document (deep nesting cannot be compiled)"
+            )
+        for child in el:
+            if isinstance(child.tag, str):
+                stack.append((child, depth + 1))
+
+    # <use> reference cycle guard: expanding a <use> instantiates its
+    # target's subtree, including any <use> elements inside it. A target
+    # that is the use's own ancestor, or a use chain that loops, would
+    # recurse forever in svgelements.
+    by_id = {el.get("id"): el for el in root.iter() if el.get("id")}
+    parent_of = {child: par for par in root.iter() for child in par}
+
+    def _href_target(el):
+        ref = el.get("href") or el.get(
+            "{http://www.w3.org/1999/xlink}href", ""
+        )
+        return by_id.get(ref.lstrip("#")) if ref else None
+
+    uses = [el for el in root.iter() if _localname(el) == "use"]
+    target_of = {}
+    for use in uses:
+        target = _href_target(use)
+        if target is None:
+            continue
+        node = use
+        while node is not None:
+            if node is target:
+                raise PptMcpError(
+                    "SVG <use> references its own ancestor (reference "
+                    "cycle); remove the self-reference"
+                )
+            node = parent_of.get(node)
+        target_of[use] = target
+
+    def _expands_to(use):
+        target = target_of.get(use)
+        if target is None:
+            return []
+        return [el for el in target.iter() if _localname(el) == "use"]
+
+    state: dict[int, int] = {}  # id(use) -> 1 visiting, 2 done
+    for start in uses:
+        if state.get(id(start)) == 2:
+            continue
+        dfs = [(start, iter(_expands_to(start)))]
+        state[id(start)] = 1
+        while dfs:
+            node, children = dfs[-1]
+            advanced = False
+            for child in children:
+                mark = state.get(id(child))
+                if mark == 1:
+                    raise PptMcpError(
+                        "SVG <use> reference cycle detected; break the loop "
+                        "of use/href references"
+                    )
+                if mark == 2:
+                    continue
+                state[id(child)] = 1
+                dfs.append((child, iter(_expands_to(child))))
+                advanced = True
+                break
+            if not advanced:
+                state[id(node)] = 2
+                dfs.pop()
+    return root
+
 
 # ------------------------------------------------------------ gradient defs
 
@@ -133,14 +236,25 @@ class _Compiler:
         w_in: float | None,
         h_in: float | None,
     ):
+        import xml.etree.ElementTree as _stdlib_et
+
         import svgelements as se
 
         self.se = se
         self.warnings: list[str] = []
         self.skipped: dict[str, int] = {}
+        root = _parse_svg_strict(svg_text)  # refuses before recursion can blow
         self.gradients = _parse_gradients(svg_text)
-        self._scan_unsupported(svg_text)
-        self.parsed = se.SVG.parse(io.StringIO(svg_text))
+        self._scan_unsupported(root)
+        try:
+            self.parsed = se.SVG.parse(io.StringIO(svg_text))
+        except RecursionError as exc:
+            raise PptMcpError(
+                "SVG is too deeply nested or self-referential to parse; "
+                f"flatten it below {_MAX_SVG_DEPTH} levels"
+            ) from exc
+        except _stdlib_et.ParseError as exc:
+            raise PptMcpError(f"svg is not valid XML/SVG: {exc}") from exc
 
         # Source bounds: viewBox, else union of drawable bboxes.
         vb = self.parsed.viewbox
@@ -185,6 +299,12 @@ class _Compiler:
         self.oy = g.in_to_emu(y_in)
         self.target_w = self.sx * src_w
         self.target_h = self.sy * src_h
+        # Refuse an oversize target box up front (C1): scaled coordinates
+        # past 2^31-1 EMU produce a deck PowerPoint cannot open.
+        g.check_emu_box(
+            self.ox, self.oy, round(self.target_w), round(self.target_h),
+            what="svg target box",
+        )
 
     # -- coordinate mapping
 
@@ -201,13 +321,15 @@ class _Compiler:
     def skip(self, feature: str) -> None:
         self.skipped[feature] = self.skipped.get(feature, 0) + 1
 
-    def _scan_unsupported(self, svg_text: str) -> None:
-        try:
-            root = etree.fromstring(svg_text.encode("utf-8"))
-        except etree.XMLSyntaxError:
-            return
+    def _scan_unsupported(self, root: etree._Element) -> None:
+        # Localname matching so non-namespaced SVG snippets are seen too.
+        counts: dict[str, int] = {}
+        for el in root.iter():
+            name = _localname(el)
+            if name is not None:
+                counts[name] = counts.get(name, 0) + 1
         for feature in ("filter", "mask", "clipPath", "pattern"):
-            n = len(list(root.iter(f"{{{_SVG_NS}}}{feature}")))
+            n = counts.get(feature, 0)
             if n:
                 self.skipped[feature] = n
                 self.warn(
@@ -215,7 +337,15 @@ class _Compiler:
                     f"{n} definition(s) skipped (affected elements render "
                     "without it)"
                 )
-        n = len(list(root.iter(f"{{{_SVG_NS}}}image")))
+        for feature in ("script", "foreignObject"):
+            n = counts.get(feature, 0)
+            if n:
+                self.skipped[feature] = n
+                self.warn(
+                    f"SVG <{feature}> has no PowerPoint equivalent; "
+                    f"{n} element(s) dropped (scripts never execute here)"
+                )
+        n = counts.get("image", 0)
         if n:
             # Counted here because svgelements silently drops images it
             # cannot decode; the parse tree is not a reliable witness.
@@ -549,13 +679,21 @@ class _Compiler:
         sp.append(g.txbody(text, style))
         return sp, (left, top, box_w, box_h)
 
-    def convert_children(self, container, alloc) -> list[tuple[etree._Element, tuple]]:
-        """Convert a Group's children; returns [(element, EMU box), ...]."""
+    def convert_children(
+        self, container, alloc, depth: int = 0
+    ) -> list[tuple[etree._Element, tuple]]:
+        """Convert a Group's children; returns [(element, EMU box), ...].
+        depth backs up the pre-parse nesting cap (defense in depth)."""
+        if depth > _MAX_SVG_DEPTH:
+            raise PptMcpError(
+                f"SVG group nesting deeper than {_MAX_SVG_DEPTH} levels; "
+                "flatten the document"
+            )
         se = self.se
         out: list[tuple[etree._Element, tuple]] = []
         for child in container:
             if isinstance(child, (se.SVG, se.Group)):
-                inner = self.convert_children(child, alloc)
+                inner = self.convert_children(child, alloc, depth + 1)
                 if not inner:
                     continue
                 if len(inner) == 1:

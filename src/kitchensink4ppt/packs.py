@@ -225,8 +225,15 @@ def apply_startup_mode() -> str:
     packs = (
         list(PACK_SUMMARIES)
         if mode in ("full", EVERYTHING)
-        else [p.strip() for p in mode.split(",") if p.strip()]
+        # "lite" in a comma list is tolerated (the lite core is always on
+        # anyway); refusing it bricked the server at startup (M5).
+        else [
+            p.strip() for p in mode.split(",")
+            if p.strip() and p.strip() != "lite"
+        ]
     )
+    if not packs:
+        return "lite"
     valid = _validate(packs)  # raises on typos so a bad env fails LOUDLY
     for pack in valid:
         for tool in _REGISTRY[pack].values():

@@ -545,6 +545,10 @@ def create_table(
     locks = etree.SubElement(cnvfr, qn("a:graphicFrameLocks"))
     locks.set("noGrp", "1")
     etree.SubElement(nv, qn("p:nvPr"))
+    g.check_emu_box(
+        g.in_to_emu(x), g.in_to_emu(y), g.in_to_emu(w), g.in_to_emu(h),
+        what="table",
+    )
     xfrm = etree.SubElement(frame, qn("p:xfrm"))
     off = etree.SubElement(xfrm, qn("a:off"))
     off.set("x", str(g.in_to_emu(x)))
@@ -703,11 +707,13 @@ def merge_cells(
         raise PptMcpError("merge range covers a single cell; nothing to merge")
     for reg in merge_regions(tbl):
         if reg["r1"] <= r2 and reg["r2"] >= r1 and reg["c1"] <= c2 and reg["c2"] >= c1:
-            raise UnsupportedStructure(
+            exc = UnsupportedStructure(
                 f"merge range overlaps the existing merged region "
                 f"{_region_str(reg)}; unmerge_cells(row={reg['r1']}, "
                 f"col={reg['c1']}) first"
             )
+            exc.hint_tools = ["unmerge_cells"]
+            raise exc
     w = c2 - c1 + 1
     h = r2 - r1 + 1
     origin = _cell_at(tbl, r1, c1)

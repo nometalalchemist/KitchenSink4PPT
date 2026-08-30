@@ -75,6 +75,11 @@ CT_SLIDE = (
 SLIDE_ID_MIN = 256
 SLIDE_ID_MAX = 2147483647
 
+#: PowerPoint's practical drawing coordinate ceiling (32-bit signed EMU).
+#: Payload validation refuses any xfrm/path coordinate past it: PowerPoint
+#: cannot open such a deck, so payload_valid must never bless one.
+MAX_DRAWING_EMU = 2147483647
+
 #: Schema-fixed order of p:presentation children. Inserting sldIdLst after
 #: sldSz corrupts the file, so new children go in by rank, never appended.
 _PRESENTATION_ORDER = (
@@ -150,6 +155,13 @@ class PptxPackage:
     def _load(self) -> None:
         if not self.path.exists():
             raise DocumentNotFound(f"No file at {self.path}")
+        if self.path.is_dir():
+            # Opening a directory raises PermissionError on Windows, which
+            # the lock check would misread as a PowerPoint lock (M7).
+            raise PptMcpError(
+                f"{self.path} is a directory, not a .pptx file; pass the "
+                "full path to the presentation file"
+            )
         self._check_lock()
         head = self.path.read_bytes()[:8] if self.path.stat().st_size >= 8 else b""
         if _is_ole_encrypted(head):
@@ -506,6 +518,35 @@ class PptxPackage:
                             raise ValidationFailed(
                                 f"output part {name} is not well-formed XML: {exc}"
                             ) from exc
+
+                # No drawing coordinate may exceed PowerPoint's 2^31-1 EMU
+                # ceiling: past it the deck fails to open (repair path), so
+                # a payload carrying one is invalid even though the XML is
+                # schema-clean (Phase 8 findings C1/C2/M3).
+                coord_tags = {
+                    qn("a:off"), qn("a:ext"), qn("a:chOff"), qn("a:chExt"),
+                    qn("a:pt"),
+                }
+                for name, root in roots.items():
+                    if not name.startswith("ppt/") or name.endswith(".rels"):
+                        continue
+                    for el in root.iter(*coord_tags):
+                        for attr in ("x", "y", "cx", "cy"):
+                            raw = el.get(attr)
+                            if raw is None:
+                                continue
+                            try:
+                                value = int(raw)
+                            except ValueError:
+                                continue
+                            if abs(value) > MAX_DRAWING_EMU:
+                                raise ValidationFailed(
+                                    f"out-of-range coordinate in {name}: "
+                                    f"{etree.QName(el).localname} {attr}="
+                                    f"{value} EMU exceeds PowerPoint's "
+                                    f"{MAX_DRAWING_EMU} EMU limit; the deck "
+                                    "would not open cleanly"
+                                )
 
                 # Every internal relationship target must exist in the package.
                 rel_tag = f"{{{NSMAP['rel']}}}Relationship"

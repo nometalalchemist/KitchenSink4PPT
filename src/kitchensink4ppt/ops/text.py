@@ -308,10 +308,13 @@ def _require_txbody(
             if kind == "table"
             else ""
         )
-        raise UnsupportedStructure(
+        exc = UnsupportedStructure(
             f"shape {_shape_id(elem)} on slide {rec['index']} is a {kind} "
             f"and has no directly editable text body.{extra}"
         )
+        if kind == "table":
+            exc.hint_tools = ["set_table_cells"]
+        raise exc
     body = elem.find(qn("p:txBody"))
     if body is None:
         if not create:
@@ -596,6 +599,9 @@ def insert_textbox(
         raise PptMcpError(
             f"textbox size must be positive; got w={w_emu} EMU, h={h_emu} EMU"
         )
+    from . import geometry as _g
+
+    _g.check_emu_box(x_emu, y_emu, w_emu, h_emu, what="textbox")
 
     shape_id = pkg.next_shape_id(part)
     box_name = name or f"TextBox {shape_id - 1}"

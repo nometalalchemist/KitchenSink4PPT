@@ -24,10 +24,14 @@ PptxPackage and never touch disk; _edit owns the lock + load + save cycle.
 from __future__ import annotations
 
 import functools
-import re
 from typing import Any
+from xml.etree.ElementTree import ParseError as _XmlParseError
 
 from fastmcp import FastMCP
+from fastmcp.exceptions import NotFoundError as _FmcpNotFound
+from fastmcp.exceptions import ToolError as _FmcpToolError
+from fastmcp.server.middleware import Middleware as _FmcpMiddleware
+from lxml import etree as _lxml_etree
 
 from . import packs as _packs
 from .core import errors as _err
@@ -90,6 +94,14 @@ _CODE_MAP: tuple[tuple[type[BaseException], str], ...] = (
     (FileNotFoundError, "NOT_FOUND"),
     (ValueError, "BAD_PARAMS"),
     (TypeError, "BAD_PARAMS"),
+    # Deliberate widening (Phase 8 H1/H2/M1): parser and recursion errors
+    # from hostile SVG/XML input must refuse in-envelope, never surface as
+    # raw FastMCP tool errors. Ops-level guards refuse first with better
+    # messages; these are the backstop.
+    (_XmlParseError, "BAD_PARAMS"),
+    (_lxml_etree.LxmlError, "BAD_PARAMS"),
+    (AttributeError, "BAD_PARAMS"),
+    (RecursionError, "UNSUPPORTED_CONTENT"),
 )
 _CATCHABLE = tuple(t for t, _ in _CODE_MAP)
 
@@ -131,18 +143,24 @@ def _classify(exc: BaseException) -> str:
     return "BAD_PARAMS"
 
 
-def _pack_hint(message: str) -> str | None:
-    """If a refusal names tools that exist but are disabled, say exactly how
-    to turn them on (discoverability rule 2: the refusal IS the signpost)."""
+def _pack_hint(exc: BaseException) -> str | None:
+    """If a refusal explicitly directs the caller to tools that exist but
+    are disabled, say exactly how to turn them on (discoverability rule 2:
+    the refusal IS the signpost). The raise site declares the tools via
+    exc.hint_tools; the message text is NEVER scanned, because a message
+    echoing user input that happens to match a tool name must not trigger
+    the hint (Phase 8 finding M8)."""
+    names = getattr(exc, "hint_tools", None)
+    if not names:
+        return None
     needed: dict[str, str] = {}
-    for pack, tools in _packs._REGISTRY.items():
-        if pack == "lite":
+    for name in names:
+        pack = _packs.pack_of(name)
+        if pack in (None, "lite"):
             continue
-        for name, tool in tools.items():
-            if not getattr(tool, "enabled", True) and re.search(
-                rf"\b{re.escape(name)}\b", message
-            ):
-                needed[name] = pack
+        tool = _packs._REGISTRY[pack][name]
+        if not getattr(tool, "enabled", True):
+            needed[name] = pack
     if not needed:
         return None
     pack_list = sorted(set(needed.values()))
@@ -157,7 +175,7 @@ def _refusal(exc: BaseException) -> dict:
     code = getattr(exc, "code", None) or _classify(exc)
     message = str(exc)
     hint = _HINTS.get(code, "")
-    ph = _pack_hint(message)
+    ph = _pack_hint(exc)
     if ph:
         hint = f"{hint} {ph}".strip()
     error: dict[str, Any] = {"code": code, "message": message, "hint": hint}
@@ -165,6 +183,32 @@ def _refusal(exc: BaseException) -> dict:
     if detail:
         error["detail"] = detail
     return {"ok": False, "error": error}
+
+
+class _DisabledToolSignpost(_FmcpMiddleware):
+    """M4 fix (discoverability rule 2): a tools/call to a registered but
+    currently disabled tool must name the owning pack and the exact
+    enable_tools call, not dead-end with a bare "Unknown tool"."""
+
+    async def on_call_tool(self, context, call_next):
+        try:
+            return await call_next(context)
+        except _FmcpNotFound as exc:
+            name = getattr(context.message, "name", "")
+            pack = _packs.pack_of(name)
+            if pack and pack != "lite":
+                tool = _packs._REGISTRY[pack].get(name)
+                if tool is not None and not getattr(tool, "enabled", True):
+                    raise _FmcpToolError(
+                        f"tool {name!r} exists but is currently disabled: it "
+                        f"belongs to the {pack!r} pack. Call "
+                        f"enable_tools(packs=['{pack}']) to turn it on, "
+                        "then retry this call."
+                    ) from exc
+            raise
+
+
+mcp.add_middleware(_DisabledToolSignpost())
 
 
 def _tool(pack: str | None = None):
@@ -249,7 +293,8 @@ def apply_edits(
     resolved BEFORE anything mutates; any stale anchor refuses the whole
     batch listing every failed index, and result.changed maps op index to
     outcome. Richer single-shot tools live in the packs (enable_tools).
-    Saves atomically with two-slot backup; backup=False skips rotation."""
+    atomic must stay True: v1 has no partial-apply mode. Saves atomically
+    with two-slot backup; backup=False skips rotation."""
     env = _edit(
         file_path,
         lambda pkg: _bt.apply_edits(pkg, edits, atomic=atomic),

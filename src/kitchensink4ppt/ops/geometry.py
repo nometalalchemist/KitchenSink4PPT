@@ -35,6 +35,31 @@ from ..core.package import NSMAP, qn
 EMU_PER_INCH = 914400
 EMU_PER_PT = 12700
 
+#: PowerPoint's practical coordinate ceiling: 32-bit signed EMU. ECMA-376's
+#: schema maximum is larger, but any offset or extent past 2^31-1 EMU lands
+#: the deck in a repair dialog (verified in the Phase 8 adversarial round),
+#: so every emitted xfrm/path coordinate is checked against this bound.
+MAX_EMU = 2_147_483_647
+MAX_COORD_IN = MAX_EMU // EMU_PER_INCH  # ~2348 in
+
+
+def check_emu_box(x, y, cx, cy, *, what: str = "shape") -> None:
+    """Refuse geometry outside PowerPoint's coordinate space. Checks each
+    offset, each extent, and the far edges (x+cx, y+cy); refusal names the
+    offending dimension and the limit (conservative refusal, never a silent
+    clamp)."""
+    for label, value in (
+        ("x", x), ("y", y), ("w", cx), ("h", cy),
+        ("x+w", x + cx), ("y+h", y + cy),
+    ):
+        if abs(int(value)) > MAX_EMU:
+            raise PptMcpError(
+                f"{what} {label} = {int(value)} EMU exceeds PowerPoint's "
+                f"coordinate limit of {MAX_EMU} EMU (~{MAX_COORD_IN} "
+                f"inches); a deck written past it cannot be opened. Reduce "
+                f"the position or size."
+            )
+
 #: Scheme color names accepted wherever a color is accepted.
 SCHEME_COLORS = frozenset(
     {
@@ -345,7 +370,12 @@ def xfrm_element(
     ch_ext: tuple[int, int] | None = None,
 ) -> etree._Element:
     """a:xfrm with off/ext (EMU ints), optional rot (degrees), flips, and
-    (for group transforms) chOff/chExt."""
+    (for group transforms) chOff/chExt. Refuses coordinates outside
+    PowerPoint's 2^31-1 EMU space (the single emission chokepoint)."""
+    check_emu_box(x, y, cx, cy)
+    if ch_off is not None and ch_ext is not None:
+        check_emu_box(ch_off[0], ch_off[1], ch_ext[0], ch_ext[1],
+                      what="group child space")
     el = etree.Element(qn(tag))
     if rot:
         el.set("rot", str(deg_to_60000(rot % 360)))
@@ -408,9 +438,16 @@ _PATH_CMDS = {"move": 2, "line": 2, "quad": 4, "cubic": 6, "close": 0}
 
 
 def _pt(parent: etree._Element, x, y) -> None:
+    xi, yi = int(round(x)), int(round(y))
+    for label, value in (("x", xi), ("y", yi)):
+        if abs(value) > MAX_EMU:
+            raise PptMcpError(
+                f"path coordinate {label} = {value} EMU exceeds PowerPoint's "
+                f"coordinate limit of {MAX_EMU} EMU (~{MAX_COORD_IN} inches)"
+            )
     pt = etree.SubElement(parent, qn("a:pt"))
-    pt.set("x", str(int(round(x))))
-    pt.set("y", str(int(round(y))))
+    pt.set("x", str(xi))
+    pt.set("y", str(yi))
 
 
 def cust_geom(paths: list[dict], ext_cx: int, ext_cy: int) -> etree._Element:

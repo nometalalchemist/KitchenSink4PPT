@@ -141,10 +141,12 @@ def _resolve_one(pkg: PptxPackage, edit: dict) -> dict:
         )
 
     if target["kind"] == "cell" and op != "set_text":
-        raise PptMcpError(
+        exc = PptMcpError(
             f"op {op!r} cannot target a table CELL anchor; cell anchors "
             "work with set_text (or use set_table_cells on the table)"
         )
+        exc.hint_tools = ["set_table_cells"]
+        raise exc
     if op == "set_table_cells" and target.get("shape_type") not in (
         "table", None
     ):
@@ -209,11 +211,19 @@ def apply_edits(pkg: PptxPackage, edits: list[dict], atomic: bool = True) -> dic
     targets: list[dict] = []
     failures: list[dict] = []
     stale = False
+    not_found = False
     for i, edit in enumerate(edits):
         try:
             targets.append(_resolve_one(pkg, edit))
         except TargetNotFound as exc:
-            stale = True
+            # STALE_ANCHOR only when a view anchor was actually in play; an
+            # explicit slide+shape miss is a plain wrong address, and the
+            # stale-anchor hint would send the caller on a futile re-view
+            # loop (M6).
+            if isinstance(edit, dict) and "anchor" in edit:
+                stale = True
+            else:
+                not_found = True
             failures.append(
                 {"index": i,
                  "op": edit.get("op") if isinstance(edit, dict) else None,
@@ -234,7 +244,12 @@ def apply_edits(pkg: PptxPackage, edits: list[dict], atomic: bool = True) -> dic
             "Fix or drop the failed edits (re-run get_presentation_view if "
             "anchors went stale) and resend the batch."
         )
-        err.code = "STALE_ANCHOR" if stale else "BAD_PARAMS"
+        if stale:
+            err.code = "STALE_ANCHOR"
+        elif not_found:
+            err.code = "NOT_FOUND"
+        else:
+            err.code = "BAD_PARAMS"
         err.detail = {"failures": failures}
         raise err
 

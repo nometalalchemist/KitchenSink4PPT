@@ -619,6 +619,10 @@ def create_chart(
     locks = etree.SubElement(cnvfr, qn("a:graphicFrameLocks"))
     locks.set("noGrp", "1")
     etree.SubElement(nv, qn("p:nvPr"))
+    g.check_emu_box(
+        g.in_to_emu(x), g.in_to_emu(y), g.in_to_emu(w), g.in_to_emu(h),
+        what="chart",
+    )
     xfrm = etree.SubElement(frame, qn("p:xfrm"))
     off = etree.SubElement(xfrm, qn("a:off"))
     off.set("x", str(g.in_to_emu(x)))
