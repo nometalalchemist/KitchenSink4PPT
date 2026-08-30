@@ -1450,3 +1450,132 @@ def manage_section(
     if section is None or slide is None:
         raise PptMcpError("move_slide_into needs both `slide` and `section`")
     return _move_slide_into_section(pkg, slide, section)
+
+
+# =====================================================================
+# TIER-1B APPEND-ONLY BLOCK: per-slide background (functionality audit
+# item 8). Master/layout backgrounds belong to ops/masters.py (wave 8a);
+# this is the PER-SLIDE p:bg override and its reset-to-inherit, the half
+# agents used to fake with a full-bleed rectangle (breaking placeholder
+# z-order and the reset story).
+# =====================================================================
+
+
+def _resolve_slide_rec(pkg: PptxPackage, slide) -> dict:
+    """Local selector resolution (index or {"slide_id": N}) mirroring
+    ops/read.py, kept self-contained inside the append-only band."""
+    from .read import resolve_slide
+
+    return resolve_slide(pkg, slide)
+
+
+def set_slide_background(pkg: PptxPackage, slide, fill) -> dict:
+    """Set or clear ONE slide's background (the p:bg override).
+
+    fill:
+    - "inherit" or None: remove the slide's own p:bg so the layout/master
+      background shows through again (PowerPoint's Reset Background).
+    - "RRGGBB" / "#RGB" / scheme name ("accent1") or
+      {"type": "solid", "color": ..., "alpha": 0..1}: solid fill.
+    - {"type": "gradient", "stops": [{"pos", "color", "alpha"?}...],
+      "angle": deg, "radial": bool}: gradient fill.
+    - {"type": "image", "image": path-or-base64, "tile": bool}: picture
+      background through the shared media pipeline (dedup by content hash,
+      extension Default registered); stretch to fill by default, tiled
+      when tile=True.
+
+    The p:bg element lands as the FIRST child of p:cSld (schema position;
+    anywhere else is a repair dialog). "none" (a transparent background) is
+    refused: PowerPoint has no transparent slide background, use "inherit"
+    to fall back to the layout/master. Text contrast against the new
+    background is the caller's to verify (check_layout's contrast check
+    resolves slide backgrounds)."""
+    from . import geometry as _g
+    from .read import resolve_slide as _resolve
+
+    rec = _resolve(pkg, slide)
+    part = rec["part"]
+    csld = pkg.root(part).find(qn("p:cSld"))
+    if csld is None:
+        raise UnsupportedStructure(f"{part} has no p:cSld")
+    existing = csld.find(qn("p:bg"))
+    had_override = existing is not None
+
+    if fill is None or fill == "inherit":
+        if existing is not None:
+            csld.remove(existing)
+            pkg.mark_dirty(part)
+        return {
+            "slide_index": rec["index"],
+            "slide_id": rec["slide_id"],
+            "background": "inherited",
+            "changed": had_override,
+            "previous_override_removed": had_override,
+        }
+    if fill == "none" or (isinstance(fill, dict) and fill.get("type") == "none"):
+        raise PptMcpError(
+            'a slide background cannot be "none" (PowerPoint has no '
+            'transparent slide background); use "inherit" to fall back to '
+            "the layout/master background"
+        )
+
+    media_part = None
+    kind: str
+    if isinstance(fill, dict) and fill.get("type") == "image":
+        image = fill.get("image")
+        if not image:
+            raise PptMcpError(
+                'image background spec needs an "image" key (file path or '
+                "base64)"
+            )
+        from .media import _add_media, _image_rel, _load_image
+
+        data, fmt = _load_image(image)
+        media_part, _reused = _add_media(pkg, data, fmt)
+        rid = _image_rel(pkg, part, media_part)
+        fill_el = etree.Element(qn("a:blipFill"))
+        blip = etree.SubElement(fill_el, qn("a:blip"))
+        blip.set(qn("r:embed"), rid)
+        if fill.get("tile"):
+            tile = etree.SubElement(fill_el, qn("a:tile"))
+            tile.set("tx", "0")
+            tile.set("ty", "0")
+            tile.set("sx", "100000")
+            tile.set("sy", "100000")
+            tile.set("flip", "none")
+            tile.set("algn", "tl")
+        else:
+            stretch = etree.SubElement(fill_el, qn("a:stretch"))
+            etree.SubElement(stretch, qn("a:fillRect"))
+        kind = "image"
+    else:
+        fill_el = _g.fill_element(fill)
+        if fill_el is None:
+            raise PptMcpError(f"invalid background fill spec {fill!r}")
+        if fill_el.tag == qn("a:noFill"):
+            raise PptMcpError(
+                'a slide background cannot be "none"; use "inherit" to '
+                "fall back to the layout/master background"
+            )
+        kind = (
+            "gradient" if fill_el.tag == qn("a:gradFill") else "solid"
+        )
+
+    bg = etree.Element(qn("p:bg"))
+    bgpr = etree.SubElement(bg, qn("p:bgPr"))
+    bgpr.append(fill_el)
+    etree.SubElement(bgpr, qn("a:effectLst"))
+    if existing is not None:
+        csld.remove(existing)
+    csld.insert(0, bg)  # p:bg is the first child of p:cSld by schema
+    pkg.mark_dirty(part)
+    result = {
+        "slide_index": rec["index"],
+        "slide_id": rec["slide_id"],
+        "background": kind,
+        "changed": True,
+        "replaced_previous_override": had_override,
+    }
+    if media_part is not None:
+        result["media_part"] = media_part
+    return result

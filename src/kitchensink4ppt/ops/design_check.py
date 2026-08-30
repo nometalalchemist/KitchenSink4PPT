@@ -165,6 +165,10 @@ def _normalize_checks(checks) -> list[tuple[str, dict]]:
         return [(name, dict(defaults)) for name, (defaults, _c) in CHECKS.items()]
     if isinstance(checks, str):
         checks = [checks]
+    # A bare option dict is a single-entry battery; the docstring's own
+    # example uses this shape (insane round 2 L3).
+    if isinstance(checks, dict):
+        checks = [checks]
     if not isinstance(checks, list) or not checks:
         raise PptMcpError(
             f"checks must be a non-empty list from {list(CHECKS)} (or None "

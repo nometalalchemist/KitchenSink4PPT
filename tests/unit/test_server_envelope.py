@@ -127,7 +127,7 @@ def test_docstring_budget_and_no_em_dashes():
     multiplex = {
         "list_elements", "manage_backups", "enable_tools", "apply_edits",
         "get_workflows", "diagnose", "validate", "manage_section",
-        "generate_diagram",
+        "generate_diagram", "manage_custom_show",
     }
     for name, tool in server.mcp._tool_manager._tools.items():
         desc = tool.description or ""

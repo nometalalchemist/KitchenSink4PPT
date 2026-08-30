@@ -12,21 +12,33 @@ Design rules carried over verbatim:
 - The literal caches (numCache/strCache) are what render; the embedded xlsx
   exists only for right-click Edit Data. The two are ALWAYS written together
   (an externalData r:id without its target part is a repair-prompt trigger).
-- NO per-series spPr: series follow the deck theme's accent cycle. This
-  absence is deliberate; recolor in PowerPoint or via a future style tool.
+- NO per-series spPr BY DEFAULT: series follow the deck theme's accent
+  cycle. This absence is deliberate; a series dict may OPT IN with a
+  "color" key (hex or theme token) at create time, which writes the one
+  explicit solidFill asked for (bar/pie: shape fill; line: line stroke;
+  scatter: marker fill) and nothing else.
 - update_chart_data is in-place cache surgery (c14/c16 extLst preserved)
   plus whole-workbook regeneration.
 
-Types: bar, bar_stacked, column, column_stacked, line, pie, and combo
-(per-series type bar/column/line, each series on the primary or secondary
-value axis). Secondary-axis wiring is ground-truthed against PowerPoint 365
-output (scratchpad gt_combo run, 2026-08-30): each secondary chart group
-references its OWN axis pair, a hidden catAx (delete=1, axPos b) plus a
-visible valAx (axPos r, crosses max), with each axis's crossAx pointing at
-the other; group c:axId order is category axis first, value axis second.
-Scatter and the 2016+ chartex family (waterfall, treemap, sunburst, ...)
-remain out of scope; chartex frames are detected and refused by name, never
-guessed at.
+Types: bar, bar_stacked, column, column_stacked, line, pie, scatter, and
+combo (per-series type bar/column/line, each series on the primary or
+secondary value axis). Secondary-axis wiring is ground-truthed against
+PowerPoint 365 output (scratchpad gt_combo run, 2026-08-30): each secondary
+chart group references its OWN axis pair, a hidden catAx (delete=1, axPos b)
+plus a visible valAx (axPos r, crosses max), with each axis's crossAx
+pointing at the other; group c:axId order is category axis first, value axis
+second.
+
+Scatter (c:scatterChart) has its own data model: no categories; each series
+is {"name", "x": [...], "y": [...]} with per-series X (series may differ in
+length). Emission: scatterStyle lineMarker with the connecting line
+suppressed per-series (a:ln noFill — markers only, PowerPoint's default
+"Scatter" look), xVal/yVal numRefs with literal caches, smooth=0, and an
+embedded workbook laying each series out as an X column and a Y column pair.
+Scatter series are primary-axis only and do not join combos.
+
+The 2016+ chartex family (waterfall, treemap, sunburst, ...) remains out of
+scope; chartex frames are detected and refused by name, never guessed at.
 
 format_chart covers the basic formatting long-tail (title, legend, axis
 titles, number format, gridlines, data labels) via schema-ordered insertion
@@ -104,7 +116,7 @@ _CHARTEX_NAMES = {
     "boxwhisker", "box_whisker", "regionmap", "region_map",
 }
 
-_SUPPORTED_PLOT_GROUPS = {"barChart", "lineChart", "pieChart"}
+_SUPPORTED_PLOT_GROUPS = {"barChart", "lineChart", "pieChart", "scatterChart"}
 _ALL_PLOT_GROUPS = {
     "areaChart", "area3DChart", "lineChart", "line3DChart", "stockChart",
     "radarChart", "scatterChart", "pieChart", "pie3DChart", "doughnutChart",
@@ -207,7 +219,7 @@ def _parse_data(chart_type: str, categories, series) -> dict:
     if chart_type not in _CHART_TYPES and chart_type != "combo":
         raise PptMcpError(
             f"unsupported chart_type {chart_type!r}; one of: "
-            f"{', '.join(sorted(_CHART_TYPES))}, combo (scatter and chartex "
+            f"{', '.join(sorted(_CHART_TYPES))}, combo, scatter (chartex "
             "types are not supported)"
         )
     parsed = _parse_cats_series(categories, series)
@@ -257,6 +269,74 @@ def _parse_data(chart_type: str, categories, series) -> dict:
     return parsed
 
 
+def _parse_scatter_data(categories, series) -> dict:
+    """Scatter data: no categories; series carry x/y lists (per-series X,
+    lengths may differ between series). Every refusal fires here, before any
+    package mutation."""
+    if categories not in (None, []):
+        raise PptMcpError(
+            "scatter charts take no categories; pass categories=None and "
+            'series=[{"name", "x": [...], "y": [...]}]'
+        )
+    if not isinstance(series, list) or not series:
+        raise PptMcpError(
+            'series must be a non-empty list of {"name", "x", "y"} dicts'
+        )
+    parsed = []
+    for i, s in enumerate(series):
+        if not isinstance(s, dict) or "x" not in s or "y" not in s:
+            raise PptMcpError(
+                f'series[{i}] must be {{"name", "x", "y"}}: scatter series '
+                'carry paired x/y value lists, not "values"'
+            )
+        if s.get("axis", "primary") != "primary":
+            raise PptMcpError(
+                "scatter series are primary-axis only; a secondary axis is "
+                "not supported for scatter charts"
+            )
+        if "type" in s:
+            raise PptMcpError(
+                f"series[{i}] carries a per-series type; scatter series do "
+                "not join combo charts"
+            )
+        xs = [_num(v, f"in series {i} x[{j}]") for j, v in enumerate(s["x"])]
+        ys = [_num(v, f"in series {i} y[{j}]") for j, v in enumerate(s["y"])]
+        if len(xs) != len(ys):
+            raise PptMcpError(
+                f"series {i} has {len(xs)} x values but {len(ys)} y values; "
+                "scatter points are (x, y) pairs"
+            )
+        if not xs:
+            raise PptMcpError(f"series {i} has no data points")
+        if len(xs) > _MAX_POINTS:
+            raise PptMcpError(
+                f"{len(xs)} data points exceeds the {_MAX_POINTS} cap"
+            )
+        name = str(s.get("name") or "").strip() or f"Series {i + 1}"
+        parsed.append({"name": name, "x": xs, "y": ys})
+    return {"series": parsed, "scatter": True}
+
+
+def _attach_series_colors(parsed: dict, series_specs: list) -> None:
+    """Copy validated per-series "color" opt-ins from the caller's series
+    dicts onto the parsed series (create path only; update_chart_data
+    preserves existing formatting and ignores extra keys as documented).
+    Validation happens here, before any package mutation."""
+    from .text import _fill_element  # hex / theme-token validation
+
+    for spec, out in zip(series_specs, parsed["series"]):
+        color = spec.get("color") if isinstance(spec, dict) else None
+        if color is not None:
+            _fill_element(color)  # raises PptMcpError on anything invalid
+            out["color"] = color
+
+
+def _series_fill(color: str) -> etree._Element:
+    from .text import _fill_element
+
+    return _fill_element(color)
+
+
 # ------------------------------------------------- embedded workbook builder
 
 _XLSX_CONTENT_TYPES = (
@@ -302,7 +382,10 @@ _SML_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 
 
 def _build_worksheet_xml(parsed: dict) -> bytes:
-    """A1 blank, categories in column A from A2, one series per column."""
+    """Category charts: A1 blank, categories in column A from A2, one series
+    per column. Scatter: one X column + one Y column PAIR per series (columns
+    2i / 2i+1), headers "<name> X" and "<name>", rows from 2 — series may
+    have different lengths, so each pair fills to its own depth."""
     ws = etree.Element(f"{{{_SML_NS}}}worksheet", nsmap={None: _SML_NS})
     sheet_data = etree.SubElement(ws, f"{{{_SML_NS}}}sheetData")
     rows: dict[int, list[tuple[str, object]]] = {}
@@ -310,12 +393,20 @@ def _build_worksheet_xml(parsed: dict) -> bytes:
     def put(row: int, col0: int, value) -> None:
         rows.setdefault(row, []).append((f"{_col_letter(col0)}{row}", value))
 
-    for i, s in enumerate(parsed["series"]):
-        put(1, i + 1, s["name"])
-    for j, cat in enumerate(parsed["categories"]):
-        put(j + 2, 0, cat)
+    if parsed.get("scatter"):
         for i, s in enumerate(parsed["series"]):
-            put(j + 2, i + 1, s["values"][j])
+            put(1, 2 * i, s["name"] + " X")
+            put(1, 2 * i + 1, s["name"])
+            for j, (xv, yv) in enumerate(zip(s["x"], s["y"])):
+                put(j + 2, 2 * i, xv)
+                put(j + 2, 2 * i + 1, yv)
+    else:
+        for i, s in enumerate(parsed["series"]):
+            put(1, i + 1, s["name"])
+        for j, cat in enumerate(parsed["categories"]):
+            put(j + 2, 0, cat)
+            for i, s in enumerate(parsed["series"]):
+                put(j + 2, i + 1, s["values"][j])
     for row_num in sorted(rows):
         row_el = etree.SubElement(sheet_data, f"{{{_SML_NS}}}row")
         row_el.set("r", str(row_num))
@@ -384,15 +475,49 @@ def _write_num_ref(parent, wrap_name: str, f: str, values: list[float]) -> None:
 def _emit_ser(group, i: int, s: dict, n: int, *, line: bool) -> None:
     """One c:ser block in CT_*Ser child order; i is the GLOBAL series index
     (idx/order and the workbook column), unique across every plot group in
-    the part. No spPr: theme accents apply."""
+    the part. No spPr unless the series opted into a "color": theme accents
+    apply by default (bar/pie color = shape solidFill; line color = a:ln
+    stroke solidFill; spPr sits between tx and cat in every CT_*Ser)."""
     ser = _c(group, "ser")
     _c(ser, "idx", i)
     _c(ser, "order", i)
     _write_str_ref(ser, "tx", _range_f(i + 1, 1, 1), [s["name"]])
+    if s.get("color"):
+        sppr = _c(ser, "spPr")
+        if line:
+            ln = etree.SubElement(sppr, f"{{{_A}}}ln")
+            ln.set("w", "28575")
+            ln.append(_series_fill(s["color"]))
+        else:
+            sppr.append(_series_fill(s["color"]))
     _write_str_ref(ser, "cat", _range_f(0, 2, n + 1), s["_cats"])
     _write_num_ref(ser, "val", _range_f(i + 1, 2, n + 1), s["values"])
     if line:
         _c(ser, "smooth", 0)
+
+
+def _emit_scatter_ser(group, i: int, s: dict) -> None:
+    """One c:scatterSer: idx, order, tx, spPr (line suppressed: markers
+    only), marker (circle; opt-in color fills it), xVal, yVal, smooth=0.
+    Workbook columns: X at 2i, Y at 2i+1."""
+    ser = _c(group, "ser")
+    _c(ser, "idx", i)
+    _c(ser, "order", i)
+    _write_str_ref(ser, "tx", _range_f(2 * i + 1, 1, 1), [s["name"]])
+    sppr = _c(ser, "spPr")
+    ln = etree.SubElement(sppr, f"{{{_A}}}ln")
+    ln.set("w", "28575")
+    etree.SubElement(ln, f"{{{_A}}}noFill")
+    marker = _c(ser, "marker")
+    _c(marker, "symbol", "circle")
+    _c(marker, "size", 5)
+    if s.get("color"):
+        msppr = _c(marker, "spPr")
+        msppr.append(_series_fill(s["color"]))
+    npts = len(s["x"])
+    _write_num_ref(ser, "xVal", _range_f(2 * i, 2, npts + 1), s["x"])
+    _write_num_ref(ser, "yVal", _range_f(2 * i + 1, 2, npts + 1), s["y"])
+    _c(ser, "smooth", 0)
 
 
 def _write_axis(
@@ -448,9 +573,9 @@ def _grouped_plots(parsed: dict) -> list[tuple[tuple, list[tuple[int, dict]]]]:
 def _build_chart_xml(
     chart_type: str, parsed: dict, *, title: str | None, legend: bool
 ) -> bytes:
-    n = len(parsed["categories"])
+    n = len(parsed["categories"]) if not parsed.get("scatter") else 0
     for s in parsed["series"]:
-        s["_cats"] = parsed["categories"]
+        s["_cats"] = parsed.get("categories")
     root = etree.Element(_qc("chartSpace"), nsmap={"c": _C, "a": _A, "r": _R_NS})
     chart = _c(root, "chart")
     if title is not None:
@@ -459,7 +584,18 @@ def _build_chart_xml(
     plot_area = _c(chart, "plotArea")
     _c(plot_area, "layout")
 
-    if chart_type == "pie":
+    if chart_type == "scatter":
+        group = _c(plot_area, "scatterChart")
+        _c(group, "scatterStyle", "lineMarker")
+        _c(group, "varyColors", 0)
+        for i, s in enumerate(parsed["series"]):
+            _emit_scatter_ser(group, i, s)
+        _c(group, "axId", _CAT_AX_ID)  # x value axis (bottom)
+        _c(group, "axId", _VAL_AX_ID)  # y value axis (left)
+        # Scatter has NO category axis: two value axes crossing each other.
+        _write_axis(plot_area, "valAx", _CAT_AX_ID, _VAL_AX_ID, "b")
+        _write_axis(plot_area, "valAx", _VAL_AX_ID, _CAT_AX_ID, "l")
+    elif chart_type == "pie":
         group = _c(plot_area, "pieChart")
         _c(group, "varyColors", 1)
         _emit_ser(group, 0, parsed["series"][0], n, line=False)
@@ -707,22 +843,31 @@ def create_chart(
     """Insert a native chart at x, y sized w x h (inches).
 
     chart_type: bar | bar_stacked | column | column_stacked | line | pie |
-    combo. categories: list of labels. series: [{"name", "values"}] with one
-    value per category (pie takes exactly one series). Every non-pie series
-    may carry "axis": "primary" (default) | "secondary" (right-hand value
-    axis); combo series additionally carry "type": "bar" | "column" | "line"
+    scatter | combo. categories: list of labels (scatter: None — scatter has
+    no categories). series: [{"name", "values"}] with one value per category
+    (pie takes exactly one series); scatter series are {"name", "x": [...],
+    "y": [...]} with per-series X. Every non-pie/non-scatter series may
+    carry "axis": "primary" (default) | "secondary" (right-hand value axis);
+    combo series additionally carry "type": "bar" | "column" | "line"
     (default column). Emits the c:chart part with full literal caches AND a
     matching embedded workbook covering all series across all plot groups,
     so the chart both renders and supports right-click Edit Data. Series
-    carry no explicit colors on purpose: the deck theme's accent cycle
-    applies.
+    carry no explicit colors by default (the deck theme's accent cycle
+    applies); a series may opt in with "color": hex ("1F4E79") or theme
+    token ("accent2") — bar/column and pie color the shape fill (a pie's
+    single series colors every slice), line colors the stroke, scatter
+    colors the markers.
     """
     rec = resolve_slide(pkg, slide)
     part = rec["part"]
     for value, label in ((w, "w"), (h, "h")):
         if float(value) <= 0:
             raise PptMcpError(f"{label} must be positive inches, got {value}")
-    parsed = _parse_data(chart_type, categories, series)
+    if chart_type == "scatter":
+        parsed = _parse_scatter_data(categories, series)
+    else:
+        parsed = _parse_data(chart_type, categories, series)
+    _attach_series_colors(parsed, series)
 
     # Integrity-safe build order: workbook part, chart part, chart rels,
     # content types, then the slide-side hook.
@@ -782,7 +927,11 @@ def create_chart(
         "embedded_workbook": workbook_part,
         "type": chart_type,
         "series": len(parsed["series"]),
-        "points": len(parsed["categories"]),
+        "points": (
+            sum(len(s["x"]) for s in parsed["series"])
+            if parsed.get("scatter")
+            else len(parsed["categories"])
+        ),
         "slide_index": rec["index"],
         "slide_id": rec["slide_id"],
         "name": display,
@@ -881,8 +1030,10 @@ def update_chart_data(
     renders. Series count must match the chart (changing it is delete +
     re-create); series names update from the given "name" keys. Combo charts
     (multiple bar/line plot groups, secondary axes) update fine: series
-    match up by their c:order across all groups. Chartex and non
-    bar/line/pie charts refuse by name.
+    match up by their c:order across all groups. Scatter charts take the
+    scatter data model (categories=None, series with "x"/"y" lists; xVal
+    and yVal caches are updated in place). Chartex and non
+    bar/line/pie/scatter charts refuse by name.
     """
     rec = _resolve_chart(pkg, slide, chart)
     if rec["kind"] == "chartex":
@@ -913,6 +1064,11 @@ def update_chart_data(
             "chart mixes a pieChart with other plot groups; refusing to "
             "guess how its series map to data"
         )
+    if len(groups) > 1 and "scatterChart" in group_names:
+        raise UnsupportedStructure(
+            "chart mixes a scatterChart with other plot groups; refusing to "
+            "guess how its series map to data"
+        )
     # Series across every plot group, in workbook-column order (c:order,
     # falling back to document position for foreign charts without it).
     ordered: list[tuple[int, int, etree._Element]] = []
@@ -937,10 +1093,14 @@ def update_chart_data(
     if len(groups) == 1:
         base_type = {
             "barChart": "bar", "lineChart": "line", "pieChart": "pie",
+            "scatterChart": "scatter",
         }[group_names[0]]
     else:
         base_type = "combo"
-    parsed = _parse_cats_series(categories, series)
+    if base_type == "scatter":
+        parsed = _parse_scatter_data(categories, series)
+    else:
+        parsed = _parse_cats_series(categories, series)
     if base_type == "pie" and len(parsed["series"]) > 1:
         raise PptMcpError(
             f"pie charts show exactly one series; got {len(parsed['series'])}"
@@ -951,20 +1111,37 @@ def update_chart_data(
             f"{len(parsed['series'])}; changing series count on an existing "
             "chart is not supported; delete and re-create the chart instead"
         )
-    n = len(parsed["categories"])
-    for i, (ser, new) in enumerate(zip(sers, parsed["series"])):
-        _update_data_node(
-            ser, "tx", [new["name"]], _range_f(i + 1, 1, 1),
-            numeric=False, label=f"series {i} name",
-        )
-        _update_data_node(
-            ser, "cat", parsed["categories"], _range_f(0, 2, n + 1),
-            numeric=False, label="categories",
-        )
-        _update_data_node(
-            ser, "val", new["values"], _range_f(i + 1, 2, n + 1),
-            numeric=True, label=f"series {i} values",
-        )
+    if base_type == "scatter":
+        n = sum(len(s["x"]) for s in parsed["series"])
+        for i, (ser, new) in enumerate(zip(sers, parsed["series"])):
+            npts = len(new["x"])
+            _update_data_node(
+                ser, "tx", [new["name"]], _range_f(2 * i + 1, 1, 1),
+                numeric=False, label=f"series {i} name",
+            )
+            _update_data_node(
+                ser, "xVal", new["x"], _range_f(2 * i, 2, npts + 1),
+                numeric=True, label=f"series {i} x values",
+            )
+            _update_data_node(
+                ser, "yVal", new["y"], _range_f(2 * i + 1, 2, npts + 1),
+                numeric=True, label=f"series {i} y values",
+            )
+    else:
+        n = len(parsed["categories"])
+        for i, (ser, new) in enumerate(zip(sers, parsed["series"])):
+            _update_data_node(
+                ser, "tx", [new["name"]], _range_f(i + 1, 1, 1),
+                numeric=False, label=f"series {i} name",
+            )
+            _update_data_node(
+                ser, "cat", parsed["categories"], _range_f(0, 2, n + 1),
+                numeric=False, label="categories",
+            )
+            _update_data_node(
+                ser, "val", new["values"], _range_f(i + 1, 2, n + 1),
+                numeric=True, label=f"series {i} values",
+            )
     pkg.mark_dirty(part)
 
     # Regenerate the embedded workbook whole (never patch an existing xlsx).

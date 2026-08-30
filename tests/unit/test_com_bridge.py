@@ -131,6 +131,50 @@ if mode == "exports":
     out["source_bytes_unchanged"] = src.read_bytes() == before_bytes
     out["source_mtime_unchanged"] = src.stat().st_mtime_ns == before_mtime
 
+elif mode == "handout":
+    import math, re
+    src = Path(sys.argv[2])
+    tmp = Path(sys.argv[3])
+    from kitchensink4ppt.core.package import PptxPackage
+    from kitchensink4ppt.ops.read import slide_table
+
+    n = len(slide_table(PptxPackage(src)))
+    out["n_slides"] = n
+
+    def pdf_pages(p):
+        # PowerPoint's PDF writer keeps the /Pages tree node uncompressed;
+        # per-page objects live in object streams, so /Type /Page counting
+        # does NOT work (verified 2026-08-31).
+        data = p.read_bytes()
+        counts = [
+            int(m) for m in re.findall(
+                rb"/Type\s*/Pages\b[^>]*?/Count\s+(\d+)", data, re.DOTALL
+            )
+        ] or [int(m) for m in re.findall(rb"/Count\s+(\d+)", data)]
+        return max(counts) if counts else None
+
+    results = {}
+    for label, kwargs in (
+        ("3up", {"slides_per_page": 3}),
+        ("9up", {"slides_per_page": 9}),
+        ("notes", {"include_notes": True}),
+    ):
+        dest = tmp / ("handout_" + label + ".pdf")
+        r = bridge.com_export_handout(str(src), str(dest), **kwargs)
+        results[label] = {
+            "bytes": r["bytes"],
+            "layout": r["layout"],
+            "pages": pdf_pages(dest),
+            "magic": dest.read_bytes()[:5] == b"%PDF-",
+        }
+    out["handout"] = results
+    out["expected"] = {
+        "3up": math.ceil(n / 3), "9up": math.ceil(n / 9), "notes": n,
+    }
+    out["ops_engine"] = export_ops.export_handout(
+        str(src), str(tmp / "ops_handout.pdf")
+    )["engine"]
+
 elif mode == "validate":
     good = Path(sys.argv[2])
     tmp = Path(sys.argv[3])
@@ -238,6 +282,58 @@ def test_com_export_round(tmp_path):
 
 
 @pytest.mark.timeout(600)
+def test_com_export_handout_round(tmp_path):
+    """Handout PDF export (3-up, 9-up, notes pages) via ExportAsFixedFormat:
+    non-empty PDFs, page counts matching the layout math, ops-layer routing
+    through COM, zombie-free exit. The standalone twin (for contended
+    sessions) is tests/com_gates/handout_gate.py."""
+    _com_gate()
+    assert DELTA.exists(), "Phase 4 artifact delta_triangle.pptx is missing"
+    out = _run_scenario(tmp_path, "handout", str(DELTA), str(tmp_path))
+
+    assert out["n_slides"] >= 1
+    for label in ("3up", "9up", "notes"):
+        rec = out["handout"][label]
+        assert rec["magic"] is True
+        assert rec["bytes"] > 0
+        if rec["pages"] is not None:  # /Pages Count readable (it is, on PP365)
+            assert rec["pages"] == out["expected"][label], label
+    assert out["handout"]["3up"]["layout"] == "3_per_page"
+    assert out["handout"]["9up"]["layout"] == "9_per_page"
+    assert out["handout"]["notes"]["layout"] == "notes_pages"
+    assert out["ops_engine"] == "powerpoint-com"
+    assert out["new_zombies"] == []
+
+
+def test_export_handout_validation_fires_before_launch(make_deck):
+    """Parameter refusals precede any COM dispatch: wrong slides_per_page,
+    and the notes/slides_per_page conflict (silent ignore would be
+    dishonest)."""
+    if bridge is None:
+        pytest.skip("COM bridge needs Windows + pywin32")
+    deck = make_deck("handout_val.pptx")
+    with pytest.raises(PptMcpError, match="slides_per_page must be one of"):
+        bridge.com_export_handout(str(deck), slides_per_page=5)
+    with pytest.raises(PptMcpError, match="slides_per_page does not apply"):
+        bridge.com_export_handout(
+            str(deck), slides_per_page=9, include_notes=True
+        )
+
+
+def test_export_handout_com_only_refusal_names_alternative(
+    monkeypatch, make_deck
+):
+    """Without PowerPoint the ops router refuses honestly and names the
+    plain export_pdf alternative instead of faking a handout."""
+    deck = make_deck("handout_nocom.pptx")
+    monkeypatch.setattr(export_ops, "_com_available", lambda: False)
+    with pytest.raises(PptMcpError) as exc:
+        export_ops.export_handout(str(deck))
+    msg = str(exc.value)
+    assert "PowerPoint" in msg and "export_pdf" in msg
+
+
+@pytest.mark.timeout(600)
 def test_com_validate_round(tmp_path):
     """validate_opens_clean: clean verdict with full-load counts on a real
     corpus deck; typed non-clean verdict (no hang) on a truncated file;
@@ -279,7 +375,19 @@ def test_powerpoint_status_and_zombie_check_inline():
     z = bridge.zombie_check()
     assert isinstance(z["powerpnt_processes"], int)
     assert z["powerpnt_processes"] >= 0
-    assert status["powerpoint_running"] == (z["powerpnt_processes"] > 0)
+    # Cross-check the two independent samples only when the process table is
+    # QUIET: a concurrent automation round launching/quitting PowerPoint
+    # between the two tasklist calls makes them legitimately disagree
+    # (observed live 2026-08-31 during a parallel stress round).
+    z2 = bridge.zombie_check()
+    if z["powerpnt_processes"] == z2["powerpnt_processes"] == (
+        bridge.powerpnt_count()
+    ):
+        status2 = bridge.powerpoint_status()
+        if status2["powerpoint_running"] == status["powerpoint_running"]:
+            assert status["powerpoint_running"] == (
+                z["powerpnt_processes"] > 0
+            )
 
 
 # ------------------------------------------------------- export layer (file)

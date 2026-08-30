@@ -32,22 +32,26 @@ PACK_SUMMARIES: dict[str, str] = {
     "graphics": (
         "shapes, connectors, groups, align/distribute, z-order, SVG-to-"
         "native-shapes compiler, image insert/replace/crop, text boxes, "
-        "run formatting, bullets"
+        "run formatting, bullets, format painter (copy format/position), "
+        "native LaTeX equations"
     ),
     "tables-charts": (
         "structural table surgery (create, cells, merge, rows/cols, "
         "borders, styles, CSV/JSON round-trip) and native bar/line/pie/"
-        "combo charts with formatting"
+        "scatter/combo charts with formatting and data readback"
     ),
     "design": (
-        "create-from-template, apply layouts, theme colors/fonts read, "
-        "slide size, hide slides, move slides, autofit overflow reporting, "
-        "layout guardrail review (check_layout), theme color/font editing, "
-        "brand extract/apply"
+        "create-from-template, apply layouts, slide size, hide/move "
+        "slides, autofit overflow reporting, layout guardrails "
+        "(check_layout), theme color/font editing, brand extract/apply, "
+        "slide/master backgrounds, master and layout editing (placeholders, "
+        "decoration shapes, create_layout), accessibility audit/repair"
     ),
     "assembly-export": (
-        "speaker notes, sections, footers, PDF and per-slide PNG export, "
-        "opens-clean validation, full text extraction, cross-deck slide copy"
+        "speaker notes, sections, footers, PDF/PNG/handout export, "
+        "opens-clean validation, text extraction, cross-deck slide copy, "
+        "deck merge/split, agenda slides, deck statistics, document "
+        "properties, anonymize, slide-show setup and custom shows"
     ),
     "transitions-animations": (
         "slide transitions (fade/push/wipe/split/cut/random, ms duration, "
@@ -57,7 +61,13 @@ PACK_SUMMARIES: dict[str, str] = {
     "review": (
         "modern threaded comments: add, threaded replies, resolve, cascade "
         "delete, dual-system listing (modern + classic), whole-deck review "
-        "report"
+        "report, structural deck-to-deck diff (compare_decks)"
+    ),
+    "sweeps": (
+        "deck-wide sweeps: font inventory/replace (incl. charts and "
+        "phantom declarations), color remap and literal-to-theme "
+        "unification, proofing language, whole-deck logo replace, "
+        "compress/purge"
     ),
     "com": (
         "PowerPoint application diagnostics: install/running status and "
@@ -241,19 +251,20 @@ def apply_startup_mode() -> str:
     mode = os.environ.get("KS4P_MODE", "lite").strip().lower()
     if not mode or mode == "lite":
         return "lite"
-    packs = (
-        list(PACK_SUMMARIES)
-        if mode in ("full", EVERYTHING)
-        # "lite" in a comma list is tolerated (the lite core is always on
-        # anyway); refusing it bricked the server at startup (M5).
-        else [
-            p.strip() for p in mode.split(",")
-            if p.strip() and p.strip() != "lite"
-        ]
-    )
+    # "lite" and "full"/"everything" are mode tokens, tolerated inside
+    # comma lists alike: lite is always on anyway, full means every pack.
+    # Refusing lite bricked the server at startup (round 1 M5); refusing
+    # full did the same the other way (round 2 L4). Typos still fail
+    # LOUDLY via _validate below.
+    tokens = [p.strip() for p in mode.split(",") if p.strip()]
+    wants_full = any(t in ("full", EVERYTHING) for t in tokens)
+    named = [t for t in tokens if t not in ("lite", "full", EVERYTHING)]
+    if named:
+        _validate(named)  # raises on typos so a bad env fails LOUDLY
+    packs = list(PACK_SUMMARIES) if wants_full else named
     if not packs:
         return "lite"
-    valid = _validate(packs)  # raises on typos so a bad env fails LOUDLY
+    valid = _validate(packs)
     for pack in valid:
         for tool in _REGISTRY[pack].values():
             if not getattr(tool, "enabled", True):

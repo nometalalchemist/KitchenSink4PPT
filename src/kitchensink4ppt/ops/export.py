@@ -230,6 +230,50 @@ def export_pdf(pkg_path: str, output: str | None = None, engine: str = "auto") -
     return {"pdf": str(out), "bytes": out.stat().st_size, "engine": "libreoffice"}
 
 
+# ------------------------------------------------------------- handout PDF
+
+
+def export_handout(
+    pkg_path: str,
+    output: str | None = None,
+    slides_per_page: int = 3,
+    include_notes: bool = False,
+) -> dict:
+    """Export a handout-layout PDF (N slides per page, or notes pages).
+
+    COM-ONLY: handout and notes-page layouts are a PowerPoint print-pipeline
+    feature (ExportAsFixedFormat ppPrintOutputType); LibreOffice's headless
+    converter has no equivalent, so without PowerPoint this refuses honestly
+    rather than emitting a plain one-slide-per-page PDF that is not a
+    handout. The plain alternative is export_pdf (which does route through
+    LibreOffice). slides_per_page: 1 | 2 | 3 | 4 | 6 | 9. include_notes=True
+    exports notes pages (one slide + speaker notes per page) instead.
+    """
+    p = _require_file(pkg_path, "handout export source")
+    if output:
+        output = check_path(output, "handout export output")
+    if not _com_available():
+        raise PptMcpError(
+            "handout export needs PowerPoint COM (Windows + PowerPoint + "
+            "pywin32): handout page layouts are a PowerPoint print feature "
+            "with no LibreOffice equivalent. For a plain one-slide-per-page "
+            "PDF use export_pdf"
+            + (
+                ", which IS available here via LibreOffice."
+                if _find_soffice()
+                else " once an engine is installed."
+            )
+        )
+    from ..com.bridge import com_export_handout
+
+    return com_export_handout(
+        str(p),
+        str(output) if output else None,
+        slides_per_page=slides_per_page,
+        include_notes=include_notes,
+    )
+
+
 # ------------------------------------------------------------- slide images
 
 

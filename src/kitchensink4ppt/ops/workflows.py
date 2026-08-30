@@ -318,6 +318,173 @@ WORKFLOWS: dict[str, dict] = {
             "that case.",
         ],
     },
+    "rebrand-pipeline": {
+        "summary": (
+            "Move a deck onto a new brand COMPLETELY: theme first, then "
+            "the literal colors and fonts the theme cannot reach."
+        ),
+        "packs": ["design", "sweeps"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['design','sweeps'] turns on brand transfer and "
+                    "the deck-wide sweeps"},
+            {"tool": "extract_brand",
+             "why": "read the SOURCE deck's palette: theme slots, fonts, "
+                    "and the most-used literal hex fills"},
+            {"tool": "apply_brand",
+             "why": "write the palette onto the target's theme(s); "
+                    "theme-linked content re-resolves, literals do not"},
+            {"tool": "font_inventory",
+             "why": "census what actually remains: literal typefaces, "
+                    "chart fonts, phantom declarations"},
+            {"tool": "replace_colors",
+             "why": "to_theme=True converts leftover literal hex to theme "
+                    "references so they follow future edits; plain "
+                    "hex-to-hex remaps work too"},
+            {"tool": "replace_fonts",
+             "why": "swap stray typefaces everywhere, charts and phantom "
+                    "declarations included"},
+            {"tool": "check_layout", "optional": True,
+             "why": "contrast check after recoloring; new brand colors can "
+                    "sink text into backgrounds"},
+        ],
+        "notes": [
+            "apply_brand's result says honestly which slots and fonts it "
+            "set; the sweeps close the literal-value gap it reports.",
+        ],
+    },
+    "master-restyle": {
+        "summary": (
+            "Restyle a deck at the ROOT: edit the master and layout "
+            "placeholders, decorations, and backgrounds every slide "
+            "inherits."
+        ),
+        "packs": ["design"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['design'] turns on the master/layout editors"},
+            {"tool": "list_master_elements",
+             "why": "the orientation read: placeholders, layouts, slide "
+                    "usage, txStyles defaults, background ownership"},
+            {"tool": "set_master_placeholder",
+             "why": "deck-wide text defaults ('all titles 28pt') and "
+                    "geometry on the master placeholder"},
+            {"tool": "set_layout_placeholder", "optional": True,
+             "why": "per-layout overrides sitting between master and "
+                    "slides"},
+            {"tool": "insert_master_shape", "optional": True,
+             "why": "logo box, footer bar, or rule line rendered by every "
+                    "derived slide"},
+            {"tool": "set_master_background", "optional": True,
+             "why": "master- or layout-level background; slides with their "
+                    "OWN background are flagged, not overwritten"},
+            {"tool": "check_layout",
+             "why": "verify the inherited result on real slides before "
+                    "calling the restyle done"},
+        ],
+        "notes": [
+            "Slides carrying explicit run formatting keep it; every edit "
+            "reports affected_slides so surprises are visible.",
+            "create_layout clones or builds new layouts when the deck "
+            "needs a variant instead of an edit.",
+        ],
+    },
+    "deck-merge": {
+        "summary": (
+            "Combine whole presentations into one deck with sections, an "
+            "agenda, and a validation gate."
+        ),
+        "packs": ["assembly-export"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['assembly-export'] turns on merge, agenda, "
+                    "stats, and validation"},
+            {"tool": "get_presentation_info",
+             "why": "inventory the destination first: slide count, size, "
+                    "existing sections"},
+            {"tool": "merge_decks",
+             "why": "append each source deck in order; design='link' "
+                    "restyles onto the destination, 'import' keeps source "
+                    "designs; sections wrap each source"},
+            {"tool": "generate_agenda_slide", "optional": True,
+             "why": "a jump-linked agenda built from the sections the "
+                    "merge just created"},
+            {"tool": "deck_statistics", "optional": True,
+             "why": "size and speaking-time estimate of the combined deck"},
+            {"tool": "validate",
+             "why": "cross-package surgery earns a real opens-clean check"},
+        ],
+        "notes": [
+            "split_deck is the inverse: one file per section or range, "
+            "dependencies kept per piece.",
+            "For single slides use copy_slide_between (cross-deck-assembly "
+            "recipe) instead of merging a whole deck.",
+        ],
+    },
+    "accessibility-pass": {
+        "summary": (
+            "Audit a deck for screen-reader readiness and repair what the "
+            "audit finds, with named fixes."
+        ),
+        "packs": ["design", "assembly-export"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['design','assembly-export'] turns on the audit, "
+                    "the repair tools, and rendering"},
+            {"tool": "audit_accessibility",
+             "why": "one read: missing alt text, headerless tables, "
+                    "reading-order mismatches, missing titles, contrast; "
+                    "each finding names its repairing call"},
+            {"tool": "export_slide_image", "optional": True,
+             "why": "LOOK at flagged slides before describing images; alt "
+                    "text written blind is worse than none"},
+            {"tool": "set_alt_text",
+             "why": "describe each flagged shape (empty string clears a "
+                    "stale description)"},
+            {"tool": "set_reading_order", "optional": True,
+             "why": "rewrite a slide's shape order for screen readers; "
+                    "z-order changes are reported for review"},
+            {"tool": "audit_accessibility",
+             "why": "re-run to confirm the findings list is empty or "
+                    "consciously accepted"},
+        ],
+        "notes": [
+            "Table header semantics come from create_table/apply_table_"
+            "style first_row flags (tables-charts pack).",
+            "Reading order IS z-order in PowerPoint; reordering can change "
+            "overlaps, which the result reports.",
+        ],
+    },
+    "equation-authoring": {
+        "summary": (
+            "Put real, editable math on slides from LaTeX, then verify it "
+            "reads back and renders."
+        ),
+        "packs": ["graphics", "assembly-export"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['graphics','assembly-export'] turns on the "
+                    "equation tools and the render loop"},
+            {"tool": "insert_equation",
+             "why": "LaTeX in, native PowerPoint math out (editable in the "
+                    "equation editor, not an image), in a new box"},
+            {"tool": "add_equation_to_shape", "optional": True,
+             "why": "append a math paragraph inside an existing text "
+                    "shape at a chosen position"},
+            {"tool": "list_equations",
+             "why": "THE read path for math: equations never appear in "
+                    "get_text/find_text output"},
+            {"tool": "export_slide_image",
+             "why": "render and LOOK; spacing and symbol fidelity are "
+                    "visual judgments"},
+        ],
+        "notes": [
+            "Conversion failures refuse with the converter's message and "
+            "leave the file untouched.",
+            "Equations survive duplicate_slide and cross-deck copies as "
+            "opaque math XML.",
+        ],
+    },
 }
 
 

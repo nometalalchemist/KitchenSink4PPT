@@ -295,7 +295,9 @@ def apply_brand(pkg: PptxPackage, brand: dict) -> dict:
     latin/ea/cs typefaces, applied to EVERY master's theme so the whole
     deck re-resolves (shared theme parts are edited once). Accepts colors
     as extract_brand emits them ({slot: {"hex": ...}}) or as plain
-    {slot: "RRGGBB"}. Explicit srgbClr fills in this deck are NOT touched;
+    {slot: "RRGGBB"}; fonts.major/minor take a dict of latin/ea/cs or a
+    plain typeface string (coerced to the latin slot, like
+    set_theme_fonts). Explicit srgbClr fills in this deck are NOT touched;
     the brand's explicit_fills list is informational."""
     if not isinstance(brand, dict) or not (
         brand.get("colors") or brand.get("fonts")
@@ -306,6 +308,12 @@ def apply_brand(pkg: PptxPackage, brand: dict) -> dict:
         )
 
     colors_in = brand.get("colors") or {}
+    if not isinstance(colors_in, dict):
+        raise PptMcpError(
+            "brand colors must be a dict of slot -> RRGGBB hex (or "
+            "extract_brand's {slot: {'hex': ...}} entries), got "
+            f"{type(colors_in).__name__}"
+        )
     normalized: dict[str, str] = {}
     unknown = sorted(set(colors_in) - set(COLOR_SLOTS))
     if unknown:
@@ -320,11 +328,27 @@ def apply_brand(pkg: PptxPackage, brand: dict) -> dict:
         normalized[slot] = _norm_hex(raw, slot)
 
     fonts_in = brand.get("fonts") or {}
+    if not isinstance(fonts_in, dict):
+        raise PptMcpError(
+            "brand fonts must be a dict with major/minor entries, got "
+            f"{type(fonts_in).__name__}"
+        )
     font_specs: dict[str, dict[str, str]] = {}
     for label in ("major", "minor"):
         spec = fonts_in.get(label) or {}
+        if isinstance(spec, str):
+            # Parity with set_theme_fonts: a hand-written brand naturally
+            # says {"fonts": {"major": "Arial"}} (insane round 2 M2).
+            if not spec.strip():
+                raise PptMcpError(
+                    f"brand fonts.{label} typeface must be a non-empty string"
+                )
+            spec = {"latin": spec}
         if not isinstance(spec, dict):
-            raise PptMcpError(f"brand fonts.{label} must be a dict")
+            raise PptMcpError(
+                f"brand fonts.{label} must be a typeface string or a dict "
+                "of latin/ea/cs"
+            )
         cleaned = {
             k: v.strip()
             for k, v in spec.items()

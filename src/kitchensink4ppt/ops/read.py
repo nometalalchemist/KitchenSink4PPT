@@ -376,7 +376,11 @@ def _slide_texts(pkg: PptxPackage, part: str) -> list[tuple[etree._Element, str,
     for elem, kind, _z, _parent in iter_shapes(sp_tree):
         if kind == "table":
             out.append((elem, kind, _table_text(elem)))
-        elif kind in ("group", "picture", "chart", "diagram", "ole", "graphicFrame"):
+        elif kind == "diagram":
+            # SmartArt text lives in the diagram DATA part (Tier-1B
+            # wire-in); '' when the frame has no data part.
+            out.append((elem, kind, _diagram_frame_text(pkg, part, elem)))
+        elif kind in ("group", "picture", "chart", "ole", "graphicFrame"):
             continue  # groups contribute via their children; the rest hold no text
         else:
             out.append((elem, kind, shape_text(elem)))
@@ -831,7 +835,16 @@ def find_text(
                                         "paragraph": pi,
                                     },
                                 )
-                elif kind not in ("group", "picture", "chart", "diagram", "ole", "graphicFrame"):
+                elif kind == "diagram":
+                    # SmartArt text from the diagram DATA part (Tier-1B
+                    # wire-in); no paragraph semantics there.
+                    text = _diagram_frame_text(pkg, part, elem)
+                    if text:
+                        _scan(
+                            text,
+                            {**base, "shape_id": sid, "where": "diagram"},
+                        )
+                elif kind not in ("group", "picture", "chart", "ole", "graphicFrame"):
                     for pi, p in enumerate(txbody_paragraphs(elem)):
                         _scan(
                             paragraph_text(p),
@@ -853,3 +866,134 @@ def find_text(
                         )
 
     return {"query": query, "regex": regex, "count": len(matches), "matches": matches}
+
+
+# =====================================================================
+# TIER-1B APPEND-ONLY BLOCK: SmartArt/diagram text visibility
+# (functionality audit item 9 - the correctness hole).
+#
+# Legacy SmartArt is a graphicFrame whose graphicData uri is the dgm
+# namespace; its TEXT lives not on the slide but in the diagram DATA part
+# (dgm:dataModel/dgm:ptLst/dgm:pt/dgm:t), which none of the text tools
+# above could see, so "find all mentions of X" silently lied on decks
+# with SmartArt. This block makes that text REACHABLE read-only.
+#
+# WIRED IN (final integration): _slide_texts() and find_text() both
+# carry the diagram branch now, so get_text/find_text see SmartArt text
+# (find_text matches carry where="diagram", no paragraph semantics).
+# diagram_text() below stays as the STRUCTURED read (per-node model ids
+# and types); a separate flat diagram_text tool is unnecessary surface.
+# =====================================================================
+
+_DGM = "http://schemas.openxmlformats.org/drawingml/2006/diagram"
+_RT_DIAGRAM_DATA = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    "/diagramData"
+)
+
+
+def _dgm(name: str) -> str:
+    return f"{{{_DGM}}}{name}"
+
+
+def _diagram_data_part(pkg: PptxPackage, slide_part: str, frame) -> str | None:
+    """The diagram DATA part of a SmartArt graphicFrame, resolved through
+    dgm:relIds/@r:dm, or None when the frame carries no data reference."""
+    data = frame.find(f"{qn('a:graphic')}/{qn('a:graphicData')}")
+    if data is None:
+        return None
+    rel_ids = data.find(_dgm("relIds"))
+    if rel_ids is None:
+        return None
+    rid = rel_ids.get(qn("r:dm"))
+    if not rid:
+        return None
+    try:
+        return pkg.relationship_target(slide_part, rid)
+    except (KeyError, PptMcpError):
+        return None
+
+
+def _diagram_points(pkg: PptxPackage, data_part: str) -> list[dict]:
+    """Text-bearing dgm:pt nodes of one diagram data part, in document
+    order: [{"model_id", "type", "text"}]. Presentation points (parTrans/
+    sibTrans and empty nodes) are omitted."""
+    if not pkg.has_part(data_part):
+        return []
+    root = pkg.root(data_part)
+    out: list[dict] = []
+    for pt in root.iter(_dgm("pt")):
+        t = pt.find(_dgm("t"))
+        if t is None:
+            continue
+        text = "\n".join(paragraph_text(p) for p in t.findall(qn("a:p")))
+        if not text.strip():
+            continue
+        out.append(
+            {
+                "model_id": pt.get("modelId"),
+                "type": pt.get("type", "node"),
+                "text": text,
+            }
+        )
+    return out
+
+
+def _diagram_frame_text(pkg: PptxPackage, slide_part: str, frame) -> str:
+    """Joined plain text of one SmartArt frame ('' when it has no data part
+    or no text). _slide_texts and find_text call this for kind ==
+    'diagram' (the Tier-1B wire-in, landed)."""
+    data_part = _diagram_data_part(pkg, slide_part, frame)
+    if data_part is None:
+        return ""
+    return "\n".join(p["text"] for p in _diagram_points(pkg, data_part))
+
+
+def diagram_text(pkg: PptxPackage, scope=None) -> dict:
+    """SmartArt (legacy diagram) text, made visible: every diagram
+    graphicFrame in `scope` (None = whole deck) with its node texts in
+    data-model order.
+
+    Read-only. Each item: slide_index, slide_id, shape_id, name, data_part,
+    nodes ([{model_id, type, text}]), and text (nodes joined with
+    newlines). Node order is the dgm:ptLst document order, which is the
+    model's logical order, not necessarily the rendered visual order.
+    Diagrams whose data part is missing are reported with an empty node
+    list and a note rather than skipped silently."""
+    items: list[dict] = []
+    for rec in slides_in_scope(pkg, scope):
+        part = rec["part"]
+        sp_tree = pkg.root(part).find(f"{qn('p:cSld')}/{qn('p:spTree')}")
+        if sp_tree is None:
+            continue
+        for elem, kind, _z, _parent in iter_shapes(sp_tree):
+            if kind != "diagram":
+                continue
+            cnvpr = _cnvpr(elem)
+            data_part = _diagram_data_part(pkg, part, elem)
+            nodes = _diagram_points(pkg, data_part) if data_part else []
+            item = {
+                "slide_index": rec["index"],
+                "slide_id": rec["slide_id"],
+                "shape_id": int(cnvpr.get("id")) if cnvpr is not None else None,
+                "name": cnvpr.get("name", "") if cnvpr is not None else "",
+                "data_part": data_part,
+                "nodes": nodes,
+                "text": "\n".join(n["text"] for n in nodes),
+            }
+            if data_part is None:
+                item["note"] = (
+                    "diagram frame has no resolvable dgm data part; its "
+                    "text (if any) is unreachable"
+                )
+            items.append(item)
+    return {
+        "count": len(items),
+        "items": items,
+        "note": (
+            "SmartArt text lives in the diagram DATA part; get_text/"
+            "find_text include it flat, this op adds the per-node "
+            "structure (read-only; editing SmartArt data without "
+            "PowerPoint relayout is unsafe and deliberately not offered)"
+        ),
+    }

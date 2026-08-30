@@ -40,26 +40,36 @@ from .core.safesave import MutationLockTimeout
 from .core.sandbox import SandboxViolation, check_path
 from .com import live_ops as _lo
 from .ops import (
+    access as _acc,
     animations as _an,
+    assembly as _asm,
     av as _av,
     backups as _bk,
     batch as _bt,
+    chartread as _crd,
     charts as _ct,
     comments as _cm,
     design as _dsn,
     design_check as _dck,
     diagnostics as _dg,
+    diff as _dif,
+    equations as _eqn,
     export as _ex,
     furniture as _fu,
     generators as _gn,
     interdeck as _idk,
     links as _lk,
+    masters as _mst,
     media as _md,
     notes as _nt,
+    optimize as _opz,
+    painter as _pnt,
     read as _rd,
     shapes as _sh,
+    show as _shw,
     slides as _sl,
     svg as _svg,
+    sweeps as _swp,
     tables as _tb,
     text as _tx,
     themes as _thm,
@@ -77,7 +87,7 @@ mcp = FastMCP(
         "every mutation; dual-mode tools with live='auto' edit decks open in "
         "the user's PowerPoint. Starts in lite mode; enable_tools switches "
         "on the graphics, tables-charts, design, assembly-export, "
-        "transitions-animations, review, com, and com-live packs "
+        "transitions-animations, review, sweeps, com, and com-live packs "
         "mid-session. get_workflows has recipes; get_presentation_view + "
         "apply_edits is the cheap batch-editing loop."
     ),
@@ -115,6 +125,11 @@ _CODE_MAP: tuple[tuple[type[BaseException], str], ...] = (
     (_lxml_etree.LxmlError, "BAD_PARAMS"),
     (AttributeError, "BAD_PARAMS"),
     (RecursionError, "UNSUPPORTED_CONTENT"),
+    # Insane round 2 H1 backstop: a float multiply overflowing to inf and
+    # hitting int() must refuse in-envelope. The conversion chokepoints
+    # (ops/geometry.py, ops/text.py _to_emu) refuse first with named
+    # values; this catches any stragglers.
+    (OverflowError, "BAD_PARAMS"),
 )
 _CATCHABLE = tuple(t for t, _ in _CODE_MAP)
 
@@ -796,39 +811,41 @@ def diagnose(file_path: str | None = None) -> dict:
 @_tool()
 def get_workflows(task: str | None = None) -> dict:
     """Step-by-step recipes for the common jobs, each naming the packs it
-    needs and the exact tool order: build-a-diagram (SVG to native shapes,
-    graphics), one-call-diagram (graphics), build-a-table-report
-    (tables-charts), template-deck-setup (design), render-and-review
-    (assembly-export), batch-edit-from-view (lite, the cheap loop),
-    animate-a-build (transitions-animations), review-cycle (review),
-    live-session (com-live), cross-deck-assembly (assembly-export). Call
-    with no task for the index, with a task name for full steps. Read the
-    matching recipe before your first deck edit of a session; it prevents
-    most wrong-tool detours."""
+    needs and the exact tool order: build-a-diagram, one-call-diagram,
+    equation-authoring (graphics), build-a-table-report (tables-charts),
+    template-deck-setup, master-restyle, accessibility-pass (design),
+    render-and-review, cross-deck-assembly, deck-merge (assembly-export),
+    batch-edit-from-view (lite, the cheap loop), animate-a-build
+    (transitions-animations), review-cycle (review), rebrand-pipeline
+    (sweeps + design), live-session (com-live). Call with no task for the
+    index, with a task name for full steps. Read the matching recipe
+    before your first deck edit of a session; it prevents most wrong-tool
+    detours."""
     return _wf.get_workflows(task)
 
 
 @_tool()
 def enable_tools(packs: list[str]) -> dict:
     """Switch on optional tool packs mid-session; the tool list grows and
-    your client is notified to re-fetch it. Packs: 'graphics' (insert/edit
-    shapes and connectors, groups, align, z-order, SVG to native editable
-    PowerPoint shapes, one-call diagram generators, images, video/audio,
-    text boxes, run formatting, bullets); 'tables-charts' (create tables,
-    bulk cells, merge, row/column surgery, borders, styles, CSV/JSON
-    import/export, bar/line/pie/combo charts, chart formatting); 'design'
-    (create deck FROM template, apply layouts, theme colors/fonts read AND
-    write, brand extract/apply, layout guardrail checks, slide size,
-    hide/move slides, autofit report); 'assembly-export' (speaker notes,
-    sections, footers, PDF and per-slide PNG export, opens-clean
-    validation, text extraction, cross-deck slide copy);
-    'transitions-animations' (slide transitions, entrance animations,
-    click builds); 'review' (modern threaded comments: add, reply,
-    resolve, delete, whole-deck report); 'com' (PowerPoint app status and
-    zombie check); 'com-live' (edit the deck OPEN in the user's
-    PowerPoint: live save, scroll, session status); 'everything' (all).
-    Idempotent; reports approx token cost added and the total active
-    surface. disable_tools reverses it."""
+    your client is notified to re-fetch it. Packs: 'graphics' (shapes,
+    connectors, groups, align, z-order, SVG to native editable shapes,
+    diagram generators, images, video/audio, text boxes, run formatting,
+    bullets, format painter, LaTeX equations); 'tables-charts' (tables:
+    create, bulk cells, merge, row/column surgery, borders, styles,
+    CSV/JSON; bar/line/pie/scatter/combo charts, formatting, data
+    readback); 'design' (create FROM template, apply layouts, theme
+    colors/fonts read AND write, brand extract/apply, layout guardrails,
+    slide size, hide/move, autofit report, slide/master backgrounds,
+    master and layout editing, accessibility audit/repair);
+    'assembly-export' (notes, sections, footers, PDF/PNG/handout export,
+    validation, text extraction, cross-deck copy, deck merge/split,
+    agenda slides, statistics, document properties, anonymize, custom
+    shows); 'transitions-animations' (transitions, entrance animations,
+    click builds); 'review' (threaded comments plus compare_decks);
+    'sweeps' (deck-wide font/color/language/logo sweeps, compress);
+    'com' (PowerPoint status, zombie check); 'com-live' (edit the deck
+    OPEN in PowerPoint); 'everything' (all). Idempotent; reports approx
+    token cost added and the active surface. disable_tools reverses."""
     return _packs.enable(packs)
 
 
@@ -1158,25 +1175,25 @@ def insert_textbox(
     color: str | None = None,
     align: str | None = None,
     wrap: bool = True,
+    name: str | None = None,
     backup: bool = True,
     live: str = "auto",
 ) -> dict:
     """Add a free-floating text box at an inch position: labels and
     callouts. Paragraphs split on newline; one style for the box
     (underline and wrap are file-mode only); refine ranges with
-    format_text. Prefer set_placeholder_text for layout placeholders.
-    Returns the new shape id. Saves atomically with two-slot
-    backup; backup=False skips rotation. live='auto' edits the open
-    PowerPoint copy when the file is locked by it (edits stay UNSAVED
-    until live_save); 'force' targets the open session; 'off' refuses
-    locked files."""
+    format_text. name sets the shape name, as in insert_shape. Prefer
+    set_placeholder_text for layout placeholders. Returns the new shape
+    id. Saves atomically with two-slot backup; backup=False skips
+    rotation. live='auto' edits the open PowerPoint copy of a locked
+    file (UNSAVED until live_save); 'off' refuses locked files."""
 
     def _live() -> dict:
         _live_refuse(underline=underline, no_wrap=(not wrap) or None)
         return _live_envelope(
             file_path,
             _lo.live_insert_textbox(
-                file_path, slide, text, x, y, w, h, font=font,
+                file_path, slide, text, x, y, w, h, name=name, font=font,
                 size_pt=size_pt, bold=bold, italic=italic, color=color,
                 align=align,
             ),
@@ -1187,9 +1204,9 @@ def insert_textbox(
         lambda: _edit(
             file_path,
             lambda pkg: _tx.insert_textbox(
-                pkg, slide, text, x, y, w, h, font=font, size_pt=size_pt,
-                bold=bold, italic=italic, underline=underline, color=color,
-                align=align, wrap=wrap,
+                pkg, slide, text, x, y, w, h, name=name, font=font,
+                size_pt=size_pt, bold=bold, italic=italic,
+                underline=underline, color=color, align=align, wrap=wrap,
             ),
             backup=backup,
         ),
@@ -1472,6 +1489,114 @@ def insert_audio(
         ),
         backup=backup,
     )
+
+
+@_tool("graphics")
+def copy_format(
+    file_path: str,
+    slide: Any,
+    from_shape: int,
+    to_shapes: Any,
+    aspects: list[str] | None = None,
+    backup: bool = True,
+) -> dict:
+    """The format painter: clone one shape's formatting onto many. aspects
+    (default all): fill, line, effects, text (first-run style plus
+    paragraph props; target text kept), geometry_size (size only, never
+    position). Theme-native sources stay theme-native (the style reference
+    is copied, not a baked color). to_shapes: list of ids on the slide, or
+    {"slide": N, "all_type": kind}. Reports applied/skipped per target.
+    Saves atomically with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _pnt.copy_format(
+            pkg, slide, from_shape, to_shapes, aspects
+        ),
+        backup=backup,
+    )
+
+
+@_tool("graphics")
+def copy_position(
+    file_path: str,
+    from_slide: Any,
+    shape: Any,
+    to_slides: Any = None,
+    backup: bool = True,
+) -> dict:
+    """Stamp one shape's exact position, size, rotation, and flips onto the
+    same-named shape on other slides: the cross-slide aligner ('this logo
+    at the same spot everywhere'). shape: a name (string) or id (int) on
+    from_slide; targets match by NAME first, source id as fallback.
+    to_slides: None for every other slide, or a list of selectors. Only
+    top-level shapes participate; grouped or ambiguous matches report as
+    misses, never guesses. Saves atomically with two-slot backup;
+    backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _pnt.copy_position(pkg, from_slide, to_slides, shape),
+        backup=backup,
+    )
+
+
+@_tool("graphics")
+def insert_equation(
+    file_path: str,
+    slide: Any,
+    latex: str,
+    x: float,
+    y: float,
+    w: float | None = None,
+    h: float | None = None,
+    backup: bool = True,
+) -> dict:
+    """Insert a LaTeX equation as NATIVE PowerPoint math (editable in
+    PowerPoint's equation editor, not an image) in a new text box at x, y
+    inches (w/h default 3.0 x 0.8). Conversion failures refuse with the
+    converter's message and the file untouched. Math never appears in
+    get_text/find_text; list_equations is the read path. Saves atomically
+    with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _eqn.insert_equation(pkg, slide, latex, x, y, w, h),
+        backup=backup,
+    )
+
+
+@_tool("graphics")
+def add_equation_to_shape(
+    file_path: str,
+    slide: Any,
+    shape: Any,
+    latex: str,
+    position: int | None = None,
+    backup: bool = True,
+) -> dict:
+    """Append a LaTeX equation as a new math paragraph inside an existing
+    shape's text body; existing paragraphs stay untouched. shape: id (int)
+    or name (str). position: 0-based paragraph index to insert BEFORE
+    (None appends). Shapes without an editable text body (tables,
+    pictures, charts, groups) refuse honestly; conversion failures refuse
+    before the shape is touched. Saves atomically with two-slot backup;
+    backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _eqn.add_equation_to_shape(
+            pkg, slide, shape, latex, position
+        ),
+        backup=backup,
+    )
+
+
+@_tool("graphics")
+def list_equations(file_path: str, scope: Any = None) -> dict:
+    """Every native math equation on the selected slides (scope: None for
+    all, a slide selector, or a list). THIS is the read path for math:
+    equations never appear in get_text or find_text output (math runs live
+    outside the text index by design). Each entry carries slide index/id,
+    shape id, the equation's paragraph position, and a linearized text
+    approximation. Read-only; nothing is modified."""
+    return _eqn.list_equations(_load(file_path), scope)
 
 
 # ============================================================ TABLES-CHARTS
@@ -1815,24 +1940,25 @@ def create_chart(
     file_path: str,
     slide: Any,
     chart_type: str,
-    categories: list,
     series: list,
     x: float,
     y: float,
     w: float,
     h: float,
+    categories: list | None = None,
     title: str | None = None,
     legend: bool = True,
     name: str | None = None,
     backup: bool = True,
 ) -> dict:
-    """Insert a native, right-click-editable chart: chart_type bar,
-    bar_stacked, column, column_stacked, line, pie, or "combo". categories
-    label the axis; series: [{"name", "values"}], one value per category;
-    combo builds take per-series {"type": "line"|"bar"|"column"} and
-    {"axis": "secondary"}. Colors follow the deck theme's accent cycle.
-    Update numbers later with update_chart_data, never by re-creating.
-    Saves atomically with two-slot backup; backup=False skips rotation."""
+    """Insert a native, editable chart: chart_type bar, bar_stacked,
+    column, column_stacked, line, pie, scatter, or combo. categories
+    label the axis (scatter: omit); series: [{"name", "values"}], one
+    value per category; scatter series carry "x"/"y" lists; combo adds
+    per-series "type" and "axis": "secondary". Colors follow the theme
+    accents unless a series opts in with "color": hex or theme token.
+    Update numbers with update_chart_data, not re-creation. Saves
+    atomically with two-slot backup; backup=False skips rotation."""
     return _edit(
         file_path,
         lambda pkg: _ct.create_chart(
@@ -1847,17 +1973,18 @@ def create_chart(
 def update_chart_data(
     file_path: str,
     slide: Any,
-    categories: list,
     series: list,
+    categories: list | None = None,
     chart: Any = None,
     backup: bool = True,
 ) -> dict:
     """Replace an existing chart's data in place: new categories and
-    series (same shapes as create_chart, combo charts included) rewrite
-    the plotted caches AND the embedded workbook together, keeping type,
-    title, position, and theme styling untouched. chart: None for the
-    slide's only chart, a 0-based index, or {"shape_id": N}. Modern
-    chartex charts (waterfall, treemap) are refused by name. Saves
+    series (same shapes as create_chart, combo included; scatter omits
+    categories, series carry "x"/"y" lists) rewrite the plotted caches
+    AND the embedded workbook together, keeping type, title, position,
+    and styling. Series count must match the chart (changing it is
+    delete + re-create). chart: None for the slide's only chart, an
+    index, or {"shape_id": N}. Chartex charts refuse by name. Saves
     atomically with two-slot backup; backup=False skips rotation."""
     return _edit(
         file_path,
@@ -1884,14 +2011,14 @@ def format_chart(
     data_labels: bool | None = None,
     backup: bool = True,
 ) -> dict:
-    """Format an existing chart in place; only the parameters given
-    change. title and the three axis titles take text ('' removes);
-    legend shows/hides and legend_pos places it (b/l/r/t/tr);
-    number_format is an Excel code for the value axis labels ('' reverts
-    to General); gridlines and data_labels toggle. chart: None for the
-    slide's only chart, an index, or {"shape_id": N}. Chartex charts and
-    axis requests on pies refuse honestly. Saves atomically with two-slot
-    backup; backup=False skips rotation."""
+    """Format an existing chart in place; only given parameters change.
+    title and axis titles take text ('' removes); legend_pos: b/l/r/t/tr;
+    number_format: an Excel code for value axis labels; gridlines and
+    data_labels toggle. chart: None for the slide's only chart, an
+    index, or {"shape_id": N}. Chartex and axis requests on pies refuse.
+    Scatter caveat: both its axes are value axes, so cat_axis_title
+    refuses and val_axis_title addresses the bottom X axis. Saves
+    atomically with two-slot backup; backup=False skips rotation."""
     return _edit(
         file_path,
         lambda pkg: _ct.format_chart(
@@ -1904,6 +2031,20 @@ def format_chart(
         ),
         backup=backup,
     )
+
+
+@_tool("tables-charts")
+def get_chart_data(file_path: str, slide: Any, chart: Any = None) -> dict:
+    """Read back what a chart currently holds: title, plot groups with
+    type and grouping, per-series name/categories/values (x/y for
+    scatter, sizes for bubble), value formulas, and axis titles and
+    positions. chart: a chart shape id, or None when the slide has
+    exactly one. Values come from the chart XML's caches (what
+    PowerPoint renders); the embedded workbook is never opened, and a
+    cache-less series says so instead of guessing. Works on charts from
+    any producer; chartex kinds report as unsupported by name.
+    Read-only."""
+    return _crd.get_chart_data(_load(file_path), slide, chart)
 
 
 # =================================================================== DESIGN
@@ -2107,6 +2248,313 @@ def apply_brand(file_path: str, brand: dict, backup: bool = True) -> dict:
     return _edit(
         file_path,
         lambda pkg: _thm.apply_brand(pkg, brand),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def set_slide_background(
+    file_path: str, slide: Any, fill: Any = None, backup: bool = True
+) -> dict:
+    """Set or clear ONE slide's background override. fill: "inherit" (or
+    None) removes the override so the layout/master shows through;
+    "RRGGBB"/scheme name or {"type": "solid", ...}; {"type": "gradient",
+    "stops": [...]}; {"type": "image", "image": path-or-base64, "tile":
+    bool} for a picture background (deduped media). Master and layout
+    backgrounds: set_master_background. Verify text contrast after
+    (check_layout). Saves atomically with two-slot backup; backup=False
+    skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _sl.set_slide_background(pkg, slide, fill),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def list_master_elements(file_path: str, master: Any = None) -> dict:
+    """Full inventory of one slide master (0-based index or name) or every
+    master (None): layouts with placeholder signatures and per-layout
+    slide usage, master placeholders with inherited-format summaries,
+    decoration shapes, txStyles level-1 defaults, header/footer
+    availability, and background ownership. The orientation read before
+    any master or layout edit (set_master_placeholder and friends).
+    Read-only; nothing is modified."""
+    return _mst.list_master_elements(_load(file_path), master)
+
+
+@_tool("design")
+def set_master_placeholder(
+    file_path: str,
+    ph: Any,
+    master: Any = None,
+    x: float | None = None,
+    y: float | None = None,
+    w: float | None = None,
+    h: float | None = None,
+    size: float | None = None,
+    font: str | None = None,
+    color: str | None = None,
+    bold: bool | None = None,
+    italic: bool | None = None,
+    level: int = 1,
+    backup: bool = True,
+) -> dict:
+    """Edit a MASTER placeholder: geometry (inches) and/or text defaults
+    (size pt, font, color, bold, italic) at the given outline level, which
+    every derived slide inherits. Title/body defaults land in the
+    master's txStyles (the deck-wide 'make all titles 28pt' move); other
+    types write the placeholder's own list style. Slides carrying
+    explicit run formatting keep it; the result reports affected slides.
+    Saves atomically with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _mst.set_master_placeholder(
+            pkg, ph, master=master, x=x, y=y, w=w, h=h, size=size,
+            font=font, color=color, bold=bold, italic=italic, level=level,
+        ),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def set_layout_placeholder(
+    file_path: str,
+    layout: Any,
+    ph: Any,
+    x: float | None = None,
+    y: float | None = None,
+    w: float | None = None,
+    h: float | None = None,
+    size: float | None = None,
+    font: str | None = None,
+    color: str | None = None,
+    bold: bool | None = None,
+    italic: bool | None = None,
+    level: int = 1,
+    backup: bool = True,
+) -> dict:
+    """Edit a LAYOUT placeholder: geometry (inches) and/or text-default
+    overrides written into the layout's own list style, the layer between
+    the master defaults and the slide. Only slides using this layout are
+    affected (the result names them); slides with explicit run formatting
+    keep it. layout: name or global index; ph: type, index, or name from
+    list_master_elements. Saves atomically with two-slot backup;
+    backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _mst.set_layout_placeholder(
+            pkg, ph, layout=layout, x=x, y=y, w=w, h=h, size=size,
+            font=font, color=color, bold=bold, italic=italic, level=level,
+        ),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def add_layout_placeholder(
+    file_path: str,
+    layout: Any,
+    ph_type: str,
+    idx: int | None = None,
+    x: float | None = None,
+    y: float | None = None,
+    w: float | None = None,
+    h: float | None = None,
+    backup: bool = True,
+) -> dict:
+    """Add a placeholder to a LAYOUT, cloned from the master's definition
+    of the same family (title from title, content-like from body,
+    dt/ftr/sldNum from their exact twins) with a fresh id and idx; falls
+    back to a minimal build when the master has no match (then x/y/w/h in
+    inches are required). Existing slides do NOT gain the placeholder
+    automatically; slides created from the layout afterward do. Saves
+    atomically with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _mst.add_layout_placeholder(
+            pkg, layout, ph_type, idx=idx, x=x, y=y, w=w, h=h
+        ),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def remove_layout_placeholder(
+    file_path: str,
+    layout: Any,
+    ph: Any,
+    force: bool = False,
+    backup: bool = True,
+) -> dict:
+    """Remove a placeholder from a LAYOUT. Refuses when slides using the
+    layout carry a matching placeholder (their shapes would lose layout
+    inheritance and fall back to master defaults or hardcoded geometry);
+    force=True proceeds and flags those slides. Slide shapes themselves
+    are never touched. Master placeholders are never removable (they are
+    the inheritance roots). Saves atomically with two-slot backup;
+    backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _mst.remove_layout_placeholder(
+            pkg, layout, ph, force=force
+        ),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def insert_master_shape(
+    file_path: str,
+    shape_type: str,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    master: Any = None,
+    layout: Any = None,
+    fill: Any = None,
+    line: Any = None,
+    effect: Any = None,
+    text: str | None = None,
+    text_style: dict | None = None,
+    name: str | None = None,
+    rotation: float = 0.0,
+    backup: bool = True,
+) -> dict:
+    """Put a decoration shape (logo box, footer bar, rule line) on a
+    master (every derived slide renders it) or one layout (layout=name or
+    index; only its slides). Same preset/fill/line/effect specs as
+    insert_shape; coordinates are inches on the slide canvas. Freeform
+    paths stay slide-scoped. Layouts hiding master decorations
+    (showMasterSp=0) are flagged in the result. Saves atomically with
+    two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _mst.insert_master_shape(
+            pkg, shape_type, x, y, w, h, master=master, layout=layout,
+            fill=fill, line=line, effect=effect, text=text,
+            text_style=text_style, name=name, rotation=rotation,
+        ),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def delete_master_shape(
+    file_path: str,
+    shape_id: int,
+    master: Any = None,
+    layout: Any = None,
+    backup: bool = True,
+) -> dict:
+    """Delete a decoration shape from a master or one layout by shape id
+    (ids from list_master_elements). Placeholders refuse: layouts go
+    through remove_layout_placeholder, and master placeholders are the
+    inheritance roots, never deleted. Relationship entries used only by
+    the deleted shape are dropped; shared media parts stay. The result
+    reports the slides that rendered the decoration. Saves atomically
+    with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _mst.delete_master_shape(
+            pkg, shape_id, master=master, layout=layout
+        ),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def create_layout(
+    file_path: str,
+    name: str,
+    master: Any = None,
+    based_on: Any = None,
+    backup: bool = True,
+) -> dict:
+    """Create a new slide layout under one master: cloned from an existing
+    layout (based_on: name or global index; creation ids regenerated, it
+    registers as a custom layout) or a minimal blank when based_on is
+    None. Registered atomically: part, content type, both relationship
+    directions, and a fresh layout id in the shared id space. Layout
+    names must stay unique so insert_slide can address them. Saves
+    atomically with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _mst.create_layout(pkg, master, name, based_on),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def set_master_background(
+    file_path: str,
+    fill: Any = None,
+    master: Any = None,
+    layout: Any = None,
+    backup: bool = True,
+) -> dict:
+    """Set the background of a master (all derived slides) or one layout
+    (layout=name or index): solid ("RRGGBB" or a scheme name, staying
+    theme-native) or {"type": "gradient", ...}. fill="inherit" clears a
+    LAYOUT's background so it inherits the master again; masters refuse
+    clearing (nothing sits above them). Slides and layouts carrying
+    their OWN background shadow this edit and are flagged. Per-slide:
+    set_slide_background. Saves atomically with two-slot backup;
+    backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _mst.set_master_background(
+            pkg, fill, master=master, layout=layout
+        ),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def audit_accessibility(file_path: str, scope: Any = None) -> dict:
+    """One-stop accessibility audit over scope (None = whole deck, a slide
+    selector, or a list): alt_text (graphical shapes without descriptions),
+    table_headers (tables without header-row semantics), reading_order
+    (spTree vs visual order, gross mismatches only, labeled heuristic),
+    plus missing_title and contrast delegated to check_layout. Findings
+    carry severity, shape ids, and a fix naming the exact repairing tool
+    call (set_alt_text, set_reading_order, ...). Read-only."""
+    return _acc.audit_accessibility(_load(file_path), scope)
+
+
+@_tool("design")
+def set_alt_text(
+    file_path: str, slide: Any, shape: int, text: str, backup: bool = True
+) -> dict:
+    """Set (or clear, with an empty string) the alt text of ANY shape by
+    id: autoshapes, text boxes, pictures, tables, charts, diagrams,
+    groups, connectors. Writes the description attribute every screen
+    reader and the PowerPoint accessibility checker read.
+    audit_accessibility finds the shapes that need one; export a slide
+    image if you need to see what the shape shows before describing it.
+    Saves atomically with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _acc.set_alt_text(pkg, slide, shape, text),
+        backup=backup,
+    )
+
+
+@_tool("design")
+def set_reading_order(
+    file_path: str, slide: Any, order: list[int], backup: bool = True
+) -> dict:
+    """Rewrite one slide's TOP-LEVEL shape order to `order` (a COMPLETE
+    permutation of the slide's top-level shape ids; first read = first in
+    the list). Shape tree order is BOTH the screen-reader reading order
+    and the z-order, so overlaps can change; the result reports every
+    shape whose relative depth moved so you can verify (check_layout or
+    an exported image). Partial lists refuse rather than guessing. Saves
+    atomically with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _acc.set_reading_order(pkg, slide, order),
         backup=backup,
     )
 
@@ -2355,6 +2803,230 @@ def copy_slide_between(
     )
 
 
+@_tool("assembly-export")
+def merge_decks(
+    file_path: str,
+    sources: list,
+    design: str = "link",
+    section_per_source: bool = True,
+    section_names: list[str] | None = None,
+    backup: bool = True,
+) -> dict:
+    """Append entire decks onto file_path (the destination), in order.
+    sources: list of .pptx paths, each opened read-only. design='link'
+    adopts destination layouts with appearance carried inline; 'import'
+    brings each source's design family in. section_per_source wraps each
+    source's slides in a named section (section_names or the filename).
+    Jump links inside a source are retargeted to the copied slides. The
+    chapter-merge for decks; split_deck inverts it. Saves atomically
+    with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _asm.merge_decks(
+            pkg, sources, design=design,
+            section_per_source=section_per_source,
+            section_names=section_names,
+        ),
+        backup=backup,
+    )
+
+
+@_tool("assembly-export")
+def split_deck(
+    file_path: str,
+    output_dir: str,
+    by: str = "section",
+    ranges: list | None = None,
+) -> dict:
+    """Split a deck into several .pptx files, one per section
+    (by='section') or per explicit range (by='ranges', ranges=[{"start",
+    "end", "name"?}] with 0-based INCLUSIVE indexes). The source file is
+    NEVER modified; outputs land in output_dir as <stem>_<NN>_<name>.pptx.
+    Each piece keeps the full design chain plus exactly the dependencies
+    its slides need (notes, charts, reference-counted media) and passes
+    validation on save. The inverse of merge_decks."""
+    return _asm.split_deck(file_path, output_dir, by=by, ranges=ranges)
+
+
+@_tool("assembly-export")
+def generate_agenda_slide(
+    file_path: str,
+    position: int = 1,
+    title: str = "Agenda",
+    link: bool = True,
+    backup: bool = True,
+) -> dict:
+    """Insert an agenda slide listing the deck's sections (or slide titles
+    when unsectioned, capped with a warning), each entry jump-linked to
+    its section's first slide. position: the agenda's 0-based final index
+    (default 1, after the title slide). Shapes are tagged by name so
+    refresh_agenda_slide can rebuild the same slide after reorders; slide
+    deletion neuters its links cleanly. Saves atomically with two-slot
+    backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _asm.generate_agenda_slide(
+            pkg, position=position, title=title, link=link
+        ),
+        backup=backup,
+    )
+
+
+@_tool("assembly-export")
+def refresh_agenda_slide(file_path: str, backup: bool = True) -> dict:
+    """Rebuild the tagged agenda slide in place after reorders or section
+    changes: entries recomputed, stale jump links and their orphaned
+    relationships dropped, fresh links written. Finds the slide by the
+    tag name generate_agenda_slide left on it and refuses when no tagged
+    agenda exists (generate one first). Position and title are kept as
+    they are; move_slide relocates it. Saves atomically with two-slot
+    backup; backup=False skips rotation."""
+    return _edit(
+        file_path, lambda pkg: _asm.refresh_agenda_slide(pkg), backup=backup
+    )
+
+
+@_tool("assembly-export")
+def deck_statistics(file_path: str, wpm: int = 130) -> dict:
+    """Deck metrics in one read: slide and hidden counts, word counts
+    split body vs speaker notes, shapes by type, images/tables/charts,
+    sections, and an ESTIMATED speaking time (per slide: notes words when
+    notes exist, else body words, at wpm words per minute). The time is a
+    labeled estimate, not a measurement; the deep content read stays
+    get_presentation_view. Read-only; nothing is modified."""
+    return _asm.deck_statistics(_load(file_path), wpm=wpm)
+
+
+@_tool("assembly-export")
+def set_document_properties(
+    file_path: str, properties: dict, backup: bool = True
+) -> dict:
+    """Set docProps metadata. Core fields: title, author, subject,
+    keywords, comments, category, last_modified_by, revision, created,
+    modified (W3CDTF strings; never touched unless passed, and PowerPoint
+    rewrites 'modified' on its own saves). App fields: company, manager.
+    properties: {field: value}; an empty string clears a field, omitted
+    fields stay. Missing docProps parts are created. Saves atomically
+    with two-slot backup; backup=False skips rotation."""
+    if not isinstance(properties, dict) or not properties:
+        raise _err.PptMcpError(
+            "properties must be a non-empty dict of {field: value}"
+        )
+    return _edit(
+        file_path,
+        lambda pkg: _asm.set_document_properties(pkg, **properties),
+        backup=backup,
+    )
+
+
+@_tool("assembly-export")
+def get_document_properties(file_path: str) -> dict:
+    """Read docProps metadata: core fields (title, author, subject,
+    keywords, comments, category, last_modified_by, revision, created,
+    modified) and app fields (company, manager, application, version,
+    plus PowerPoint's cached counters). The app counters (Slides, Words,
+    ...) go stale after package edits; PowerPoint refreshes them on its
+    own saves and this server does not fabricate them. Read-only;
+    set_document_properties writes."""
+    return _asm.get_document_properties(_load(file_path))
+
+
+@_tool("assembly-export")
+def anonymize_deck(
+    file_path: str, replacement: str = "Reviewer", backup: bool = True
+) -> dict:
+    """IRREVERSIBLE: take a create_snapshot FIRST. Strips author identity
+    deck-wide: core creator/lastModifiedBy become `replacement`; company,
+    manager, and hyperlink base are cleared; comment authors in BOTH
+    systems map consistently to Reviewer-1/Reviewer-2/... with initials
+    replaced. Comment TEXT is NOT scrubbed: bodies mentioning names by
+    hand stay as written. Everything changed is reported with its old
+    value for audit. Saves atomically with two-slot backup; backup=False
+    skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _asm.anonymize_deck(pkg, replacement=replacement),
+        backup=backup,
+    )
+
+
+@_tool("assembly-export")
+def set_show_properties(
+    file_path: str,
+    show_type: str | None = None,
+    loop: bool | None = None,
+    use_timings: bool | None = None,
+    range: Any = None,
+    backup: bool = True,
+) -> dict:
+    """Configure how the slide show runs. show_type: 'present' (speaker,
+    full screen), 'browse' (window), or 'kiosk' (unattended; PowerPoint
+    loops kiosk shows regardless of loop). loop: repeat until Esc.
+    use_timings=False advances manually, ignoring recorded timings.
+    range: 'all', {"start", "end"} (1-based inclusive slide positions),
+    or {"custom_show": name-or-id}. Only passed settings change; the
+    result reports the full effective state. Saves atomically with
+    two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _shw.set_show_properties(
+            pkg, show_type=show_type, loop=loop, use_timings=use_timings,
+            range=range,
+        ),
+        backup=backup,
+    )
+
+
+@_tool("assembly-export")
+def manage_custom_show(
+    file_path: str,
+    action: str,
+    name: str | None = None,
+    slides: list | None = None,
+    new_name: str | None = None,
+    backup: bool = True,
+) -> dict:
+    """Custom show lifecycle (named slide sequences PowerPoint can present
+    instead of the whole deck). action='create': name (unique) + slides
+    (0-based indexes or {"slide_id": N}; repeats allowed, matching
+    PowerPoint). 'rename': name (or id int) + new_name. 'delete': name
+    (or id); a show-range pointing at the deleted show resets to all
+    slides and is reported. 'list': every show with its slides, dangling
+    entries flagged (read-only, no lock or save). Slide deletion prunes
+    show entries automatically. Run a custom show: set_show_properties
+    range={"custom_show": name}. Saves atomically with two-slot backup;
+    backup=False skips rotation."""
+    if str(action).strip().lower() == "list":
+        return _shw.manage_custom_show(_load(file_path), "list")
+    return _edit(
+        file_path,
+        lambda pkg: _shw.manage_custom_show(
+            pkg, action, name=name, slides=slides, new_name=new_name
+        ),
+        backup=backup,
+    )
+
+
+@_tool("assembly-export")
+def export_handout(
+    file_path: str,
+    output: str | None = None,
+    slides_per_page: int = 3,
+    include_notes: bool = False,
+) -> dict:
+    """Export a handout-layout PDF: slides_per_page (1/2/3/4/6/9) slides
+    per printed page, or notes pages (include_notes=True: one slide plus
+    its speaker notes per page). COM-ONLY: handout layouts are a
+    PowerPoint print-pipeline feature with no LibreOffice equivalent, so
+    without PowerPoint this refuses honestly instead of faking a
+    one-slide-per-page PDF. The plain per-slide alternative is
+    export_pdf. output defaults next to the source file."""
+    return _ex.export_handout(
+        file_path, output, slides_per_page=slides_per_page,
+        include_notes=include_notes,
+    )
+
+
 # ================================================== TRANSITIONS-ANIMATIONS
 
 
@@ -2576,6 +3248,167 @@ def comment_report(file_path: str) -> dict:
     a review pass; list_comments scopes to slides instead. Read-only; the
     file is never modified."""
     return _cm.comment_report(_load(file_path))
+
+
+@_tool("review")
+def compare_decks(file_path_a: str, file_path_b: str) -> dict:
+    """Structural diff of two presentations, built for DTG-versioned
+    copies of one deck: slides aligned by durable slide id, then exact
+    title, then position with a text-similarity floor (each pair states
+    which rule matched). Per pair: moved flag, title/layout changes, text
+    diff snippets, shape and geometry deltas, table dimension and notes
+    changes; plus added/removed slides and a markdown rendering.
+    Read-only; neither file is modified or backed up."""
+    return _dif.compare_decks(
+        check_path(file_path_a, "read presentation"),
+        check_path(file_path_b, "read presentation"),
+    )
+
+
+# =================================================================== SWEEPS
+
+
+@_tool("sweeps")
+def font_inventory(file_path: str, scope: str = "all") -> dict:
+    """READ-ONLY deck-wide typeface census: every font in use with counts
+    and per-bucket placement (slides, layouts, masters, notes, charts),
+    theme font slots and theme-reference usage, and PHANTOM fonts:
+    typefaces declared where no visible text uses them (empty runs,
+    paragraph ends, unused list-style levels), invisible to native
+    Replace Fonts. Phantom entries carry locations for you to judge;
+    master/layout declarations can still govern inherited text, so none
+    are labeled safe to purge. Run before replace_fonts."""
+    return _swp.font_inventory(_load(file_path), scope)
+
+
+@_tool("sweeps")
+def replace_fonts(
+    file_path: str,
+    mapping: dict,
+    scope: str = "all",
+    include_theme: bool = False,
+    backup: bool = True,
+) -> dict:
+    """Replace typefaces deck-wide: every latin/ea/cs/symbol slot and
+    bullet font across slides, layouts, masters, notes, chart text, table
+    cells, groups, AND the phantom declarations native Replace Fonts
+    misses. mapping: {old_typeface: new_typeface}, exact and
+    case-sensitive. include_theme=True also rewrites matches inside the
+    theme font scheme, moving every theme-referenced run in one step
+    (font_inventory shows what is where first). Saves atomically with
+    two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _swp.replace_fonts(
+            pkg, mapping, scope, include_theme=include_theme
+        ),
+        backup=backup,
+    )
+
+
+@_tool("sweeps")
+def replace_colors(
+    file_path: str,
+    mapping: dict,
+    to_theme: bool = False,
+    scope: str = "all",
+    backup: bool = True,
+) -> dict:
+    """Remap literal hex colors deck-wide: fills, lines, text and bullet
+    colors, gradient stops, effects, backgrounds, chart series and text.
+    mapping: {old_hex: new_hex}; with to_theme=True a value may be a
+    theme slot name (accent1, tx1, ...) instead, REPLACING the literal
+    with a theme reference that follows future theme edits: the rebrand
+    completion apply_brand cannot do. Alpha and tint/shade survive; the
+    theme part is never touched. Saves atomically with two-slot backup;
+    backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _swp.replace_colors(
+            pkg, mapping, to_theme=to_theme, scope=scope
+        ),
+        backup=backup,
+    )
+
+
+@_tool("sweeps")
+def set_language(
+    file_path: str,
+    lang: str,
+    scope: str = "all",
+    alt_lang: str | None = None,
+    backup: bool = True,
+) -> dict:
+    """Set the proofing language on EVERY run property the deck-wide walk
+    reaches (runs, breaks, fields, paragraph ends, and style defaults;
+    created where a run has none) across slides, layouts, masters, notes,
+    and chart text: the presentation-wide pass PowerPoint's UI genuinely
+    cannot do. lang: a BCP-47 tag (en-US, ko-KR; format validated).
+    alt_lang additionally sets the East Asian language for mixed
+    CJK+Latin runs, PowerPoint's own pairing convention. Saves atomically
+    with two-slot backup; backup=False skips rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _swp.set_language(pkg, lang, scope, alt_lang=alt_lang),
+        backup=backup,
+    )
+
+
+@_tool("sweeps")
+def replace_image_everywhere(
+    file_path: str,
+    old_image: str,
+    new_image: str,
+    scope: Any = ("slides", "layouts", "masters"),
+    backup: bool = True,
+) -> dict:
+    """The deck-wide logo swap: every picture (slides, layouts, masters by
+    default; scope='all' adds notes parts) whose bytes hash-equal
+    old_image (file path or base64) is retargeted to new_image, keeping
+    each instance's geometry, crop, rotation, and effects. The new media
+    lands once (deduped); orphaned old media is garbage-collected. Images
+    used only as shape/background FILLS are counted and reported, not
+    retargeted. Saves atomically with two-slot backup; backup=False skips
+    rotation."""
+    return _edit(
+        file_path,
+        lambda pkg: _swp.replace_image_everywhere(
+            pkg, old_image, new_image, scope
+        ),
+        backup=backup,
+    )
+
+
+@_tool("sweeps")
+def compress_deck(
+    file_path: str,
+    max_dpi: int = 150,
+    jpeg_quality: int = 85,
+    purge_unused: bool = True,
+    dry_run: bool = False,
+    backup: bool = True,
+) -> dict:
+    """Shrink a deck, offender report first: downsample raster images to
+    max_dpi at their largest displayed size (crop-aware; png/jpeg, needs
+    Pillow), re-encode jpegs at jpeg_quality, and with purge_unused drop
+    unused layouts, orphaned notes, and unreferenced media/embeddings.
+    dry_run=True computes the identical report (purge simulated on a
+    scratch copy) and changes NOTHING on disk: run it first. Every
+    destructive path lists what went and the bytes freed. Saves
+    atomically with two-slot backup; backup=False skips rotation."""
+    if dry_run:
+        return _opz.compress_deck(
+            _load(file_path), max_dpi=max_dpi, jpeg_quality=jpeg_quality,
+            purge_unused=purge_unused, dry_run=True,
+        )
+    return _edit(
+        file_path,
+        lambda pkg: _opz.compress_deck(
+            pkg, max_dpi=max_dpi, jpeg_quality=jpeg_quality,
+            purge_unused=purge_unused, dry_run=False,
+        ),
+        backup=backup,
+    )
 
 
 # ====================================================================== COM

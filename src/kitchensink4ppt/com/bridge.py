@@ -302,6 +302,98 @@ def com_export_pdf(path: str, output: str | None = None) -> dict:
     return {"pdf": str(out), "bytes": out.stat().st_size, "engine": "powerpoint-com"}
 
 
+#: ExportAsFixedFormat OutputType constants (ppPrintOutputType) by handout
+#: slides-per-page. Non-contiguous on purpose: 4-up and 9-up were added later
+#: than 2/3/6-up, so the enum order is historical, not numeric.
+PP_HANDOUT_OUTPUT = {
+    1: 10,  # ppPrintOutputOneSlideHandouts
+    2: 2,   # ppPrintOutputTwoSlideHandouts
+    3: 3,   # ppPrintOutputThreeSlideHandouts
+    4: 8,   # ppPrintOutputFourSlideHandouts
+    6: 4,   # ppPrintOutputSixSlideHandouts
+    9: 9,   # ppPrintOutputNineSlideHandouts
+}
+PP_PRINT_OUTPUT_NOTES_PAGES = 5  # ppPrintOutputNotesPages
+PP_FIXED_FORMAT_INTENT_PRINT = 2  # ppFixedFormatIntentPrint
+PP_PRINT_HANDOUT_HORIZONTAL_FIRST = 2  # ppPrintHandoutHorizontalFirst
+
+
+def com_export_handout(
+    path: str,
+    output: str | None = None,
+    slides_per_page: int = 3,
+    include_notes: bool = False,
+) -> dict:
+    """Export a .pptx to a handout-layout PDF via PowerPoint COM.
+
+    Route (researched + verified empirically on PowerPoint 365, 2026-08-31):
+    Presentation.ExportAsFixedFormat with ppFixedFormatTypePDF and the
+    handout ppPrintOutputType constant. This is the parameter route that
+    works headless (WithWindow=False); the PrintOptions route drives the
+    PRINTER pipeline (ActivePrinter/Print-to-PDF) and needs print-driver
+    dialogs, so it is not used. HandoutOrder applies left-to-right reading
+    order (horizontal first, PowerPoint's dialog default for grids).
+
+    slides_per_page: 1 | 2 | 3 | 4 | 6 | 9 (3-up is the classic
+    lines-beside-slides handout). include_notes=True exports notes pages
+    instead (one slide + its speaker notes per page); slides_per_page does
+    not apply there and a non-default value refuses rather than being
+    silently ignored. The source file is never modified (opened ReadOnly).
+    """
+    p = _require_file(path, "handout export source")
+    if include_notes:
+        if slides_per_page != 3:
+            raise PptMcpError(
+                "include_notes=True exports notes pages (one slide per "
+                "page); slides_per_page does not apply — drop it or use "
+                "include_notes=False"
+            )
+        output_type = PP_PRINT_OUTPUT_NOTES_PAGES
+    else:
+        if slides_per_page not in PP_HANDOUT_OUTPUT:
+            raise PptMcpError(
+                f"slides_per_page must be one of "
+                f"{sorted(PP_HANDOUT_OUTPUT)}, got {slides_per_page!r}"
+            )
+        output_type = PP_HANDOUT_OUTPUT[slides_per_page]
+    if output:
+        output = check_path(output, "handout export output")
+    out = (
+        Path(output)
+        if output
+        else p.with_name(p.stem + ("_notes.pdf" if include_notes else "_handout.pdf"))
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with _powerpoint() as session:
+        pres = open_presentation(session, p, read_only=True)
+        try:
+            try:
+                # PrintRange=None must be passed EXPLICITLY: the parameter is
+                # a VT_DISPATCH pointer and pywin32 marshals its omitted-value
+                # placeholder into "The Python instance can not be converted
+                # to a COM object" (verified empirically 2026-08-31).
+                pres.ExportAsFixedFormat(
+                    str(out.resolve()),
+                    PP_FIXED_FORMAT_TYPE_PDF,
+                    Intent=PP_FIXED_FORMAT_INTENT_PRINT,
+                    FrameSlides=-1 if not include_notes else 0,  # msoTriState
+                    HandoutOrder=PP_PRINT_HANDOUT_HORIZONTAL_FIRST,
+                    OutputType=output_type,
+                    PrintRange=None,
+                )
+            except Exception as exc:
+                _raise_classified(exc, "handout PDF export failed")
+        finally:
+            del pres  # release the proxy so the launched instance can exit
+    _verify_output(out, "handout PDF")
+    return {
+        "pdf": str(out),
+        "bytes": out.stat().st_size,
+        "engine": "powerpoint-com",
+        "layout": "notes_pages" if include_notes else f"{slides_per_page}_per_page",
+    }
+
+
 def com_export_slide_images(
     path: str,
     output_dir: str | None = None,

@@ -167,7 +167,8 @@ def test_stdio_roundtrip(make_deck, tmp_path):
 
         graphics_size = len(_packs.tool_names()["graphics"])
         assert len(grown) == len(lite) + graphics_size
-        assert graphics_size >= 16  # 13 v1 tools + the 3 image tools
+        # floor: 19 wave-6 tools + painter (2) + equations (3)
+        assert graphics_size >= 24
 
         srv.drain_notifications(timeout=2.0)
         assert any(
@@ -212,7 +213,10 @@ def test_stdio_ks4p_mode_full():
 
         expected = sum(len(v) for v in _packs.tool_names().values())
         assert len(names) == expected
-        assert expected >= 100  # wave 6 floor: 73 + 27 integration tools
+        # final-integration floor: 100 wave-6 tools + ~37 wave 7/8/T1
+        # additions (masters, access, painter, equations, chartread,
+        # assembly, show, compare_decks, sweeps pack, backgrounds).
+        assert expected >= 137
     finally:
         srv.close()
 

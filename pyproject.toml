@@ -16,6 +16,8 @@ dependencies = [
     "lxml",
     "regex",
     "svgelements>=1.9",
+    "latex2mathml>=3.81",   # LaTeX -> MathML (equations pipeline, same as word-mcp)
+    "mathml2omml>=0.0.2",   # MathML -> OMML (equations pipeline, same as word-mcp)
     "pywin32; sys_platform == 'win32'",
 ]
 
@@ -24,6 +26,9 @@ dev = [
     "pytest",
     "pytest-timeout",
     "python-pptx",  # test oracle and synthetic corpus generation only, never a runtime dependency
+]
+optimize = [
+    "Pillow",  # compress_deck image downsampling only; without it the purge half still works and recompression is refused honestly
 ]
 
 [project.scripts]

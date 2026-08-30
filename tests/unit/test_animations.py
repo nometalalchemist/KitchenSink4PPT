@@ -633,20 +633,44 @@ def _com_gate():
 
 
 _COM_SCENARIO = r"""
-import json, sys
+import json, subprocess, sys, time
 from pathlib import Path
 from kitchensink4ppt.com import bridge
 
+
+def powerpnt_pids():
+    text = subprocess.run(
+        ["tasklist", "/FI", "IMAGENAME eq POWERPNT.EXE", "/FO", "CSV"],
+        capture_output=True, text=True, timeout=30,
+    ).stdout or ""
+    pids = set()
+    for row in text.splitlines():
+        if row.startswith('"POWERPNT'):
+            try:
+                pids.add(int(row.split('","')[1]))
+            except (IndexError, ValueError):
+                pass
+    return pids
+
+
 out = {}
-pre = bridge.powerpnt_count()
-out["pre_powerpnt"] = pre
-if pre > 0:
+pre_pids = powerpnt_pids()
+out["pre_powerpnt"] = len(pre_pids)
+if pre_pids:
     out["skipped"] = "user PowerPoint opened mid-round; refusing to attach"
     print("RESULT " + json.dumps(out))
     sys.exit(0)
 out["verdict"] = bridge.com_validate_opens_clean(sys.argv[1])
-out["post_powerpnt"] = bridge.powerpnt_count()
-out["zombie"] = bridge.zombie_check()
+# PID-precise zombie accounting (insane round 2 M4): only pids that
+# APPEARED during our validate window count; a user or concurrent-session
+# PowerPoint that predates the run never can. Poll for our set to drain.
+for _ in range(60):
+    if not (powerpnt_pids() - pre_pids):
+        break
+    time.sleep(0.5)
+out["our_leaked_pids"] = sorted(powerpnt_pids() - pre_pids)
+out["post_powerpnt"] = bridge.powerpnt_count()  # diagnostic only
+out["zombie"] = bridge.zombie_check()  # diagnostic only
 print("RESULT " + json.dumps(out))
 """
 
@@ -698,5 +722,6 @@ def test_com_validates_animated_deck(tmp_path, make_deck):
         pytest.skip(f"COM round self-skipped: {out['skipped']}")
     assert out["verdict"]["opens_clean"] is True, out["verdict"]
     assert out["verdict"]["slides"] == len(slide_table(pkg))
-    assert out["post_powerpnt"] == 0
-    assert out["zombie"]["powerpnt_processes"] == 0
+    # PID-precise (M4): assert only on instances OUR window spawned;
+    # post_powerpnt / zombie stay recorded as diagnostics.
+    assert out["our_leaked_pids"] == [], out

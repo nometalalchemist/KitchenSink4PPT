@@ -207,14 +207,28 @@ def _to_emu(value, unit: str | None, what: str) -> int:
             f"{what} must be a number (float/int inches, or int EMU); got "
             f"{value!r}"
         )
+    # Overflow guard (insane round 2 H1): a non-finite value, or a float
+    # multiply that overflows to inf (values near 1e308), must refuse as
+    # BAD_PARAMS, never escape as a raw OverflowError from int().
+    if isinstance(value, float) and not math.isfinite(value):
+        raise PptMcpError(f"{what} = {value!r} is not a finite number")
+
+    def _scaled(v) -> int:
+        emu = v * EMU_PER_INCH
+        if isinstance(emu, float) and not math.isfinite(emu):
+            raise PptMcpError(
+                f"{what} = {v!r} inches is not a representable coordinate"
+            )
+        return int(round(emu))
+
     if unit is not None:
         if unit == "emu":
             return int(round(value))
         if unit == "in":
-            return int(round(value * EMU_PER_INCH))
+            return _scaled(value)
         raise PptMcpError(f"unit must be 'in' or 'emu', got {unit!r}")
     if isinstance(value, float):
-        return int(round(value * EMU_PER_INCH))
+        return _scaled(value)
     if value >= 10000:
         return value
     return value * EMU_PER_INCH

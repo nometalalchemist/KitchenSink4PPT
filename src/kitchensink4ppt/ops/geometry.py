@@ -27,6 +27,8 @@ equivalent for txBody/pPr children. Consolidate into one shared helper.
 
 from __future__ import annotations
 
+import math
+
 from lxml import etree
 
 from ..core.errors import PptMcpError
@@ -52,6 +54,12 @@ def check_emu_box(x, y, cx, cy, *, what: str = "shape") -> None:
         ("x", x), ("y", y), ("w", cx), ("h", cy),
         ("x+w", x + cx), ("y+h", y + cy),
     ):
+        if isinstance(value, float) and not math.isfinite(value):
+            raise PptMcpError(
+                f"{what} {label} = {value!r} is not a finite number; "
+                f"coordinates must be finite and within {MAX_EMU} EMU "
+                f"(~{MAX_COORD_IN} inches)"
+            )
         if abs(int(value)) > MAX_EMU:
             raise PptMcpError(
                 f"{what} {label} = {int(value)} EMU exceeds PowerPoint's "
@@ -87,9 +95,25 @@ _ANCHOR = {"top": "t", "middle": "ctr", "bottom": "b"}
 # ------------------------------------------------------------------- units
 
 
+def _finite_scaled(value, factor: int, what: str) -> int:
+    """Multiply-then-round with the overflow guard every unit conversion
+    needs: a non-finite input (inf/nan) or a float multiply that overflows
+    to inf (values near 1e308) must refuse as BAD_PARAMS naming the value,
+    never surface as a raw OverflowError past the envelope (insane round 2
+    finding H1)."""
+    scaled = float(value) * factor
+    if not math.isfinite(scaled):
+        raise PptMcpError(
+            f"invalid {what} {value!r}: not a finite representable number "
+            f"(the practical coordinate limit is {MAX_EMU} EMU, "
+            f"~{MAX_COORD_IN} inches)"
+        )
+    return round(scaled)
+
+
 def in_to_emu(value: float) -> int:
     """Inches (float) to EMU (int). 1 in = 914400 EMU."""
-    return round(float(value) * EMU_PER_INCH)
+    return _finite_scaled(value, EMU_PER_INCH, "length in inches")
 
 
 def emu_to_in(value: int) -> float:
@@ -98,12 +122,12 @@ def emu_to_in(value: int) -> float:
 
 def pt_to_emu(value: float) -> int:
     """Points to EMU. 1 pt = 12700 EMU."""
-    return round(float(value) * EMU_PER_PT)
+    return _finite_scaled(value, EMU_PER_PT, "length in points")
 
 
 def deg_to_60000(value: float) -> int:
     """Degrees to 60000ths of a degree (DrawingML angle unit, clockwise)."""
-    return round(float(value) * 60000)
+    return _finite_scaled(value, 60000, "angle in degrees")
 
 
 def alpha_to_pct(value: float) -> int:
@@ -438,6 +462,11 @@ _PATH_CMDS = {"move": 2, "line": 2, "quad": 4, "cubic": 6, "close": 0}
 
 
 def _pt(parent: etree._Element, x, y) -> None:
+    for label, raw in (("x", x), ("y", y)):
+        if isinstance(raw, float) and not math.isfinite(raw):
+            raise PptMcpError(
+                f"path coordinate {label} = {raw!r} is not a finite number"
+            )
     xi, yi = int(round(x)), int(round(y))
     for label, value in (("x", xi), ("y", yi)):
         if abs(value) > MAX_EMU:

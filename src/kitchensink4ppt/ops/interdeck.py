@@ -90,6 +90,7 @@ from .media import _ensure_media_default, _find_media_by_bytes
 from .slides import (
     CT_NOTES_SLIDE,
     RT_CHART,
+    RT_MODERN_COMMENTS,
     RT_NOTES_MASTER,
     RT_NOTES_SLIDE,
     _DEEP_COPY_SIMPLE,
@@ -293,6 +294,82 @@ def _import_chart(
         lambda _rt, target: _import_leaf(src, dst, target, ctx),
     )
     return new_chart
+
+
+def _merge_comment_authors(
+    src: PptxPackage, dst: PptxPackage, comment_part: str, warnings: list[str]
+) -> None:
+    """A copied modern comment part references author GUIDs that live in
+    the SOURCE deck's ppt/authors.xml; without merging them the destination
+    renders the comment with a blank author (insane round 2 finding M1).
+    Merge every referenced source author into the destination authors part
+    (dedupe by exact name, fresh GUID when the author is new there) and
+    remap each authorId attribute in the copied part."""
+    from .comments import (
+        _ensure_modern_authors_part,
+        _guid_or_none,
+        _modern_authors_part,
+        _new_guid,
+        _q188,
+    )
+
+    root = dst.root(comment_part)
+    referenced: dict[str, list] = {}
+    for el in root.iter():
+        guid = _guid_or_none(el.get("authorId"))
+        if guid:
+            referenced.setdefault(guid, []).append(el)
+    if not referenced:
+        return
+
+    src_authors: dict[str, etree._Element] = {}
+    src_part = _modern_authors_part(src)
+    if src_part and src.has_part(src_part):
+        for author in src.root(src_part).findall(_q188("author")):
+            guid = _guid_or_none(author.get("id"))
+            if guid:
+                src_authors[guid] = author
+
+    dst_part = _ensure_modern_authors_part(dst)
+    dst_root = dst.root(dst_part)
+    dst_ids: set[str] = set()
+    by_name: dict[str, str] = {}
+    for author in dst_root.findall(_q188("author")):
+        guid = _guid_or_none(author.get("id"))
+        if guid:
+            dst_ids.add(guid)
+            by_name.setdefault(author.get("name") or "", guid)
+
+    remapped = False
+    for src_guid, els in referenced.items():
+        entry = src_authors.get(src_guid)
+        if entry is None:
+            if src_guid not in dst_ids:
+                warnings.append(
+                    f"copied comment references author id {src_guid} that "
+                    "neither deck's authors.xml defines; that comment will "
+                    "show a blank author"
+                )
+            continue
+        name = entry.get("name") or ""
+        dst_guid = by_name.get(name)
+        if dst_guid is None:
+            dst_guid = _new_guid()  # fresh id in the destination's space
+            new = etree.SubElement(dst_root, _q188("author"))
+            new.set("id", dst_guid)
+            for attr in ("name", "initials", "userId", "providerId"):
+                val = entry.get(attr)
+                if val is not None:
+                    new.set(attr, val)
+            dst_ids.add(dst_guid)
+            by_name[name] = dst_guid
+            dst.mark_dirty(dst_part)
+        if dst_guid != src_guid:
+            for el in els:
+                el.set("authorId", dst_guid)
+            remapped = True
+    if remapped:
+        dst.mark_dirty(comment_part)
 
 
 # --------------------------------------------------------- notes machinery
@@ -1067,6 +1144,11 @@ def copy_slide_between(
                 )
             elif rel_type == RT_CHART:
                 new_target = _import_chart(src, pkg, target, ctx)
+            elif rel_type == RT_MODERN_COMMENTS:
+                # The comment part travels; its authors live in the SOURCE
+                # authors.xml and must be merged or the author reads blank.
+                new_target = _import_leaf(src, pkg, target, ctx)
+                _merge_comment_authors(src, pkg, new_target, warnings)
             elif rel_type in _DEEP_COPY_SIMPLE:
                 new_target = _import_leaf(src, pkg, target, ctx)
             else:  # media, customXml, anything else internal

@@ -429,6 +429,17 @@ def generate_timeline(
 # ---------------------------------------------------------------- org chart
 
 
+#: Org chart total-node ceiling: each node is a shape build plus a glued
+#: connector, so unbounded trees block the server for tens of seconds
+#: (~29s at 585 nodes, insane round 2 M3) and render as illegible slivers
+#: long before that. Refuse up front like matrix does for cells.
+MAX_ORGCHART_NODES = 200
+
+
+def _count_nodes(node: dict) -> int:
+    return 1 + sum(_count_nodes(k) for k in node.get("children") or [])
+
+
 def _tree_metrics(node: dict, depth: int = 1) -> tuple[int, int]:
     """(leaf count, max depth) of a normalized tree."""
     kids = node.get("children") or []
@@ -478,6 +489,14 @@ def generate_orgchart(
     """
     _check_box(w, h, "org chart")
     root = _normalize_tree(tree)
+    total_nodes = _count_nodes(root)
+    if total_nodes > MAX_ORGCHART_NODES:
+        raise PptMcpError(
+            f"org chart tree has {total_nodes} nodes; the ceiling is "
+            f"{MAX_ORGCHART_NODES} (each node is a shape plus a glued "
+            "connector, and larger trees both stall the build and render "
+            "illegibly small). Prune the tree or split it across slides."
+        )
     leaves, depth = _tree_metrics(root)
     s = _scale(w, h)
     ids: list[int] = []
