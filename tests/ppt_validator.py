@@ -131,11 +131,17 @@ def main() -> None:
 
     failures = validate_files(targets)
 
+    # POWERPNT takes a few seconds to exit after Quit(); poll instead of
+    # sampling once, or a clean shutdown reads as a zombie.
+    deadline = time.monotonic() + 15.0
     post = powerpnt_count()
+    while post != pre and time.monotonic() < deadline:
+        time.sleep(1.0)
+        post = powerpnt_count()
     if post != pre:
         print(
             f"ZOMBIE CHECK FAILED: POWERPNT count was {pre} before the run "
-            f"and is {post} after."
+            f"and is still {post} after a 15s grace period."
         )
         sys.exit(1)
     print(f"\n{len(targets) - failures}/{len(targets)} passed; zombie check clean")

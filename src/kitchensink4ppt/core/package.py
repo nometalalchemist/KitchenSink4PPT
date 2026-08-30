@@ -52,6 +52,7 @@ NSMAP = {
     "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
     "p14": "http://schemas.microsoft.com/office/powerpoint/2010/main",
     "p15": "http://schemas.microsoft.com/office/powerpoint/2012/main",
+    "a16": "http://schemas.microsoft.com/office/drawing/2014/main",
 }
 
 PRESENTATION_PART = "ppt/presentation.xml"
@@ -545,3 +546,92 @@ class PptxPackage:
                             )
         except zipfile.BadZipFile as exc:  # pragma: no cover
             raise ValidationFailed(f"output is not a valid ZIP: {exc}") from exc
+
+    # ---------- Phase 2 additions (package-level primitives for slide CRUD) ----------
+
+    def part_bytes(self, name: str) -> bytes:
+        """Current effective bytes of a part: the serialized tree when the
+        part is dirty, the original raw bytes otherwise. Use this instead of
+        raw_part() when copying parts that may have in-memory edits."""
+        if name in self._dirty:
+            return self._serialize(name)
+        return self._raw[name]
+
+    def next_partname(self, template: str) -> str:
+        """Collision-safe partname allocation. `template` carries one '{}'
+        (e.g. 'ppt/slides/slide{}.xml'); scans the ACTUAL partnames in the
+        package and returns template.format(max numeric suffix + 1). Never
+        computed from a count: a deck that ever had deletions has holes, and
+        len()+1 reuses an existing name (python-pptx's _next_slide_partname
+        bug, corrupt package via duplicate ZIP entry names)."""
+        prefix, _, suffix = template.partition("{}")
+        pattern = re.compile(re.escape(prefix) + r"(\d+)" + re.escape(suffix) + r"\Z")
+        highest = 0
+        for name in self._raw:
+            m = pattern.match(name)
+            if m:
+                highest = max(highest, int(m.group(1)))
+        return template.format(highest + 1)
+
+    def remove_part(self, name: str) -> None:
+        """Drop a part from the in-memory package (raw bytes, cached tree,
+        dirty flag, entry order). Content-type overrides and relationships
+        pointing at the part are the caller's responsibility; the pre-save
+        payload validation catches anything left dangling."""
+        if name not in self._raw:
+            raise KeyError(f"part not in package: {name}")
+        del self._raw[name]
+        self._order.remove(name)
+        self._trees.pop(name, None)
+        self._dirty.discard(name)
+
+    def remove_content_type_override(self, part: str) -> bool:
+        """Remove the [Content_Types].xml Override for `part` if present.
+        Returns True when an Override was removed. Defaults are never touched
+        (they cover other parts by extension)."""
+        ct_root = self.root("[Content_Types].xml")
+        part_name = "/" + part
+        for node in ct_root.findall(qn("ct:Override")):
+            if node.get("PartName") == part_name:
+                ct_root.remove(node)
+                self.mark_dirty("[Content_Types].xml")
+                return True
+        return False
+
+    def register_slide_entry(
+        self, slide_part: str, *, position: int | None = None
+    ) -> dict:
+        """Register an EXISTING slide part in the presentation spine: adds
+        the presentation relationship and the p:sldId entry, at `position`
+        (0-based index in deck order) or at the end. The slide part, its
+        rels, and its content-type override must already be in the package;
+        add_slide_part covers the build-from-XML path, this covers the
+        clone-a-part path where the rels file is installed separately."""
+        if slide_part not in self._raw:
+            raise PptMcpError(f"slide part not in package: {slide_part}")
+        pres = self.presentation()
+        sld_id_lst = pres.find(qn("p:sldIdLst"))
+        slide_id = self._next_slide_id(sld_id_lst)
+        target = posixpath.relpath(slide_part, posixpath.dirname(PRESENTATION_PART))
+        target = target.replace(os.sep, "/")
+        rid = self.add_relationship(PRESENTATION_PART, RT_SLIDE, target)
+        if sld_id_lst is None:
+            sld_id_lst = etree.SubElement(pres, qn("p:sldIdLst"))
+            pres.remove(sld_id_lst)
+            self._insert_presentation_child(sld_id_lst)
+        sld = etree.SubElement(sld_id_lst, qn("p:sldId"))
+        sld.set("id", str(slide_id))
+        sld.set(qn("r:id"), rid)
+        entries = sld_id_lst.findall(qn("p:sldId"))
+        index = len(entries) - 1
+        if position is not None:
+            if not 0 <= position < len(entries):
+                raise PptMcpError(
+                    f"position {position} out of range; the deck now has "
+                    f"{len(entries)} slides (valid: 0..{len(entries) - 1})"
+                )
+            sld_id_lst.remove(sld)
+            sld_id_lst.insert(position, sld)
+            index = position
+        self.mark_dirty(PRESENTATION_PART)
+        return {"part": slide_part, "slide_id": slide_id, "rid": rid, "index": index}
