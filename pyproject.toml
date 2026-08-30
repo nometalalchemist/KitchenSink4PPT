@@ -12,6 +12,7 @@ keywords = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "fastmcp>=2.14,<3",  # Tool.enable()/disable() queue tools/list_changed (tiered loading relies on it; verified on 2.14.7)
     "lxml",
     "regex",
     "svgelements>=1.9",

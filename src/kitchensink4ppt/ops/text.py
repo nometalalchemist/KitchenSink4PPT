@@ -304,7 +304,7 @@ def _require_txbody(
     if etree.QName(elem).localname != "sp":
         extra = (
             " Table cell text is reachable through search_and_replace; "
-            "per-cell formatting arrives with the tables pack."
+            "per-cell text and formatting go through set_table_cells."
             if kind == "table"
             else ""
         )
