@@ -69,9 +69,58 @@ _A14_M = f"{{{A14_NS}}}m"
 
 EMU_PER_INCH = 914400
 
+#: Input-size ceiling for one equation (targeted-round M2). The LaTeX ->
+#: MathML -> OMML pipeline is single-threaded and superlinear; a 100KB input
+#: blocks the stdio server for a minute. 20KB is far past any real equation
+#: (the largest textbook display equations are hundreds of bytes).
+MAX_LATEX_LEN = 20_000
+
+#: Refusal messages echo at most this much of the input (targeted-round M2:
+#: a 12KB bomb must not come back as a 12KB error message).
+_ECHO_LIMIT = 200
+
 
 class EquationConversionError(PptMcpError):
     """LaTeX did not convert to valid OMML; the presentation was not modified."""
+
+
+def _echo(latex: str) -> str:
+    """The input, truncated for safe echoing in refusal messages."""
+    if len(latex) <= _ECHO_LIMIT:
+        return repr(latex)
+    return (
+        f"{latex[:_ECHO_LIMIT]!r}... [truncated, {len(latex)} chars total]"
+    )
+
+
+def _check_braces_balanced(latex: str) -> None:
+    """Refuse unbalanced {} groups up front: the converters are lenient and
+    would swallow the imbalance into a nonsense equation (targeted-round
+    L3). Escaped \\{ \\} and control words are skipped."""
+    depth = 0
+    i = 0
+    while i < len(latex):
+        c = latex[i]
+        if c == "\\":
+            i += 2  # skip the escaped char / first letter of a control word
+            continue
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth < 0:
+                raise EquationConversionError(
+                    f"unbalanced braces in LaTeX: a '}}' at offset {i} has "
+                    f"no matching '{{' (input was: {_echo(latex)}); the "
+                    "presentation was not changed"
+                )
+        i += 1
+    if depth != 0:
+        raise EquationConversionError(
+            f"unbalanced braces in LaTeX: {depth} '{{' group(s) never "
+            f"closed (input was: {_echo(latex)}); the presentation was "
+            "not changed"
+        )
 
 
 def _rewrite_aligned(latex: str) -> str:
@@ -92,6 +141,13 @@ def _latex_to_omath(latex: str) -> etree._Element:
     """
     if not latex or not latex.strip():
         raise PptMcpError("latex must be non-empty")
+    if len(latex) > MAX_LATEX_LEN:
+        raise PptMcpError(
+            f"latex is {len(latex)} chars; the ceiling is {MAX_LATEX_LEN} "
+            "chars per equation (conversion time grows superlinearly and "
+            "blocks the server). Split the material into several equations."
+        )
+    _check_braces_balanced(latex)
     # File/system macros are meaningless inside an equation and would pass
     # through as literal text (word-mcp v1.5 adversarial F6) — refuse by name.
     _banned = re.search(
@@ -116,16 +172,40 @@ def _latex_to_omath(latex: str) -> etree._Element:
     except Exception as exc:  # converters raise assorted types; all mean "bad input"
         raise EquationConversionError(
             f"could not convert LaTeX to PowerPoint math: {exc} "
-            f"(input was: {latex!r}); the presentation was not changed"
+            f"(input was: {_echo(latex)}); the presentation was not changed"
         ) from exc
     children = list(wrapper)
     if len(children) != 1 or children[0].tag != _OMATH:
         raise EquationConversionError(
-            f"converter produced unexpected OMML root for {latex!r}; "
+            f"converter produced unexpected OMML root for {_echo(latex)}; "
             "the presentation was not changed"
         )
     omath = children[0]
     wrapper.remove(omath)
+    # Lenient-converter backstop (targeted-round L3): latex2mathml passes
+    # unknown control sequences through as literal text instead of failing,
+    # so a garbage macro would silently become a nonsense equation. A
+    # backslash followed by letters in the CONVERTED text means a control
+    # word survived unconverted — refuse, matching the docstring's promise.
+    linear = _approx_text(omath)
+    survivors = sorted(set(re.findall(r"\\[A-Za-z]+", linear)))
+    if survivors:
+        shown = ", ".join(
+            s if len(s) <= 40 else f"{s[:40]}..." for s in survivors[:5]
+        )
+        if len(survivors) > 5:
+            shown += f", ... ({len(survivors)} total)"
+        raise EquationConversionError(
+            "LaTeX did not fully convert: unknown control sequence(s) "
+            f"{shown} passed through as literal text "
+            f"(input was: {_echo(latex)}); check the macro names — the "
+            "presentation was not changed"
+        )
+    if not linear.strip() and latex.strip():
+        raise EquationConversionError(
+            f"LaTeX converted to an EMPTY equation (input was: "
+            f"{_echo(latex)}); the presentation was not changed"
+        )
     return omath
 
 

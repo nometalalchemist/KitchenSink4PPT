@@ -144,8 +144,10 @@ CHECKS: dict[str, tuple[dict, str]] = {
         "gradient) fill; only runs with an explicit color in the shape's "
         "own XML (rPr, paragraph defRPr, or lstStyle) are judged - colors "
         "inherited from the layout/master text styles are skipped, "
-        "picture/pattern fills are skipped, and lumMod/lumOff/tint/shade "
-        "are approximated, so treat borderline ratios as render-and-look",
+        "picture/pattern fills are skipped, translucent solid fills are "
+        "composited over the resolved backdrop (skipped when the backdrop "
+        "is unresolvable), and lumMod/lumOff/tint/shade are approximated, "
+        "so treat borderline ratios as render-and-look",
     ),
     "diagram_glue": (
         {"touch_tolerance_in": 0.05},
@@ -310,11 +312,16 @@ class _SlideCtx:
         return self._resolver
 
     def finding(self, check: str, severity: str, message: str, fix: str, **extra) -> dict:
+        # Contract (production-test finding): every finding carries the
+        # structured location fields, never prose alone. shape_ids is
+        # always present (possibly empty) so clients can address shapes
+        # without parsing the message.
         out = {
             "check": check,
             "severity": severity,
             "slide_index": self.rec["index"],
             "slide_id": self.rec["slide_id"],
+            "shape_ids": [],
             "message": message,
             "fix": fix,
         }
@@ -557,6 +564,42 @@ def _own_fill_hex(
                 return None, "fillRef color unresolvable (phClr)"
             return _TRANSPARENT, None
     return _TRANSPARENT, None
+
+
+def _own_fill_alpha(sppr_owner: etree._Element) -> float | None:
+    """Opacity (0..1) of the shape's OWN explicit solid fill, or None when
+    fully opaque / no explicit solid fill. Reads the a:alpha child of the
+    solidFill's color element (both '10000' thousandths and '10%' forms).
+    Production-test finding: tinted fills (accent1 at 10% alpha, the
+    matrix-cell default) used to be judged at full strength, flagging dark
+    text on a pale wash as a contrast error."""
+    sppr = sppr_owner.find(qn("p:spPr"))
+    if sppr is None:
+        return None
+    solid = sppr.find(qn("a:solidFill"))
+    if solid is None:
+        return None
+    color_el = _first_color_child(solid)
+    if color_el is None:
+        return None
+    alpha_el = color_el.find(qn("a:alpha"))
+    if alpha_el is None:
+        return None
+    try:
+        pct = _pct_value(alpha_el.get("val"), 100.0)
+    except ValueError:
+        return None
+    return min(1.0, max(0.0, pct / 100.0))
+
+
+def _blend_hex(top_hex: str, under_hex: str, alpha: float) -> str:
+    """Composite a translucent top color over an opaque backdrop."""
+    out = []
+    for i in (0, 2, 4):
+        t = int(top_hex[i:i + 2], 16)
+        u = int(under_hex[i:i + 2], 16)
+        out.append(f"{round(t * alpha + u * (1.0 - alpha)):02X}")
+    return "".join(out)
 
 
 def _backdrop_hex(srec: dict, ctx: "_SlideCtx", resolver: _ColorResolver) -> tuple[str | None, str | None]:
@@ -1007,6 +1050,19 @@ def _check_contrast(ctx: _SlideCtx, opts: dict) -> list[dict]:
         bg_hex, skip_reason = _own_fill_hex(s["elem"], resolver)
         if bg_hex == _TRANSPARENT:
             bg_hex, skip_reason = _backdrop_hex(s, ctx, resolver)
+        elif bg_hex is not None:
+            # Alpha-aware: a translucent solid fill renders as a wash over
+            # whatever is behind it, so judge the COMPOSITED color, not the
+            # full-strength one (tinted-fill false positive).
+            alpha = _own_fill_alpha(s["elem"])
+            if alpha is not None and alpha < 0.995:
+                behind, behind_skip = _backdrop_hex(s, ctx, resolver)
+                if behind is None:
+                    skip_reason = behind_skip or (
+                        "translucent fill over an unresolvable backdrop"
+                    )
+                else:
+                    bg_hex = _blend_hex(bg_hex, behind, alpha)
         if skip_reason or bg_hex is None:
             continue  # image/pattern fill or unresolvable: honestly skipped
         body = s["elem"].find(qn("p:txBody"))

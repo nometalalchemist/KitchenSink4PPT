@@ -227,7 +227,8 @@ def replace_fonts(
     cells, grouped shapes, and phantom declarations (empty runs,
     endParaRPr, lstStyle levels) that native Replace Fonts cannot touch.
     mapping is {old_typeface: new_typeface}, exact match, case-sensitive
-    (PowerPoint treats typeface names literally). include_theme=True also
+    (PowerPoint treats typeface names literally). Identity pairs (old ==
+    new) are ignored and reported, never swept. include_theme=True also
     rewrites matching typefaces inside the theme font scheme(s) (major/
     minor latin/ea/cs and per-script a:font entries), which moves every
     +mj/+mn theme reference in one step."""
@@ -250,6 +251,26 @@ def replace_fonts(
                 "theme slot with set_theme_fonts (or replace the literal "
                 "typeface the theme resolves to with include_theme=True)"
             )
+
+    # Identity pairs (old == new) are no-ops: sweeping them would rewrite
+    # 30+ parts and burn a backup slot for zero visible change
+    # (targeted-round L2). They are dropped and reported, matching
+    # replace_image_everywhere's byte-identical refusal.
+    identity = [old for old, new in mapping.items() if old == new.strip()]
+    mapping = {o: n for o, n in mapping.items() if o not in identity}
+    if not mapping:
+        return {
+            "replaced_total": 0,
+            "replaced": {},
+            "replaced_by_font": {},
+            "theme_replaced": 0,
+            "parts_touched": [],
+            "identity_mappings_ignored": identity,
+            "note": (
+                "every mapping pair maps a typeface to itself; nothing to "
+                "replace, the file was not touched"
+            ),
+        }
 
     tags = tuple(qn(t) for t in _FONT_ITER_TAGS)
     per_bucket: Counter[str] = Counter()
@@ -293,6 +314,8 @@ def replace_fonts(
         "theme_replaced": theme_count,
         "parts_touched": parts_touched,
     }
+    if identity:
+        result["identity_mappings_ignored"] = identity
     if total == 0:
         result["note"] = (
             "no occurrence of the given typeface(s) found; font_inventory "

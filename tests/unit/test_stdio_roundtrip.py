@@ -121,9 +121,16 @@ def _tool_names(srv: _Server) -> list[str]:
     return [t["name"] for t in result["tools"]]
 
 
-def _call(srv: _Server, name: str, arguments: dict) -> dict:
+def _call(
+    srv: _Server, name: str, arguments: dict, *, expect_error: bool = False
+) -> dict:
     result = srv.request("tools/call", {"name": name, "arguments": arguments})
-    assert not result.get("isError"), f"{name} errored: {result}"
+    # Production-test fix wave B: structured refusals now ALSO set the
+    # MCP-level isError flag (the JSON envelope stays in the content).
+    if expect_error:
+        assert result.get("isError"), f"{name} should refuse: {result}"
+    else:
+        assert not result.get("isError"), f"{name} errored: {result}"
     if "structuredContent" in result and result["structuredContent"]:
         return result["structuredContent"]
     text = "".join(
@@ -144,7 +151,7 @@ def test_stdio_roundtrip(make_deck, tmp_path):
         _handshake(srv)
 
         lite = _tool_names(srv)
-        assert len(lite) == 23, f"lite surface should be 23 tools, got {lite}"
+        assert len(lite) == 24, f"lite surface should be 24 tools, got {lite}"
         assert "enable_tools" in lite
         assert "insert_shape" not in lite, "pack tool leaked into lite"
 
@@ -188,9 +195,10 @@ def test_stdio_roundtrip(make_deck, tmp_path):
         after = hashlib.md5(deck.read_bytes()).hexdigest()
         assert after != before, "insert_shape must actually change the file"
 
-        # refusal over the wire keeps the structured envelope
+        # refusal over the wire keeps the structured envelope (and is
+        # flagged isError at the MCP level since fix wave B)
         refusal = _call(srv, "delete_slide", {"file_path": str(deck),
-                                              "slide": 99})
+                                              "slide": 99}, expect_error=True)
         assert refusal["ok"] is False
         assert refusal["error"]["code"] == "NOT_FOUND"
     finally:
@@ -226,7 +234,9 @@ def test_stdio_locked_policy():
     srv = _Server(env_extra={"KS4P_PACK_POLICY": "locked"})
     try:
         _handshake(srv)
-        out = _call(srv, "enable_tools", {"packs": ["graphics"]})
+        out = _call(
+            srv, "enable_tools", {"packs": ["graphics"]}, expect_error=True
+        )
         assert out["ok"] is False
         assert out["error"]["code"] == "CONFLICT"
         assert "insert_shape" not in _tool_names(srv)

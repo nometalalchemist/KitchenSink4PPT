@@ -166,8 +166,22 @@ def parse_color(color: str) -> tuple[str, str]:
     )
 
 
+def _check_alpha(alpha, where: str = "fill"):
+    """Refuse non-numeric alpha with a named-field message instead of the
+    raw float() ValueError text (targeted-round L6)."""
+    if alpha is None:
+        return None
+    if isinstance(alpha, bool) or not isinstance(alpha, (int, float)):
+        raise PptMcpError(
+            f"{where} 'alpha' must be a number 0.0..1.0 "
+            f"(1.0 = opaque), got {alpha!r}"
+        )
+    return float(alpha)
+
+
 def color_element(color: str, alpha: float | None = None) -> etree._Element:
     """a:srgbClr or a:schemeClr, with an a:alpha child when alpha < 1."""
+    alpha = _check_alpha(alpha)
     kind, value = parse_color(color)
     if kind == "scheme":
         el = etree.Element(qn("a:schemeClr"))
@@ -196,19 +210,65 @@ def no_fill() -> etree._Element:
 def gradient_fill(stops: list[dict], angle: float = 0.0, *, radial: bool = False) -> etree._Element:
     """Linear (default) or radial a:gradFill.
 
-    stops: [{"pos": 0..100, "color": ..., "alpha": 0..1?}, ...] with pos in
-    percent. angle: degrees clockwise from east (linear only).
+    stops: [{"pos": P, "color": ..., "alpha": 0..1?}, ...]. pos units are
+    PERCENT (0..100) by default; when EVERY stop's pos lies in 0.0..1.0 the
+    list is read as fractions and scaled by 100 (so pos 0.0/0.5/1.0 means
+    0%/50%/100%, the other common convention) — an all-under-1-percent
+    gradient is never what anyone meant (targeted-round L1). Mixed specs
+    (one stop at 0.5, another at 50) read as percent. angle: degrees
+    clockwise from east (linear only).
+
+    Every stop is validated up front (dict shape, 'color' present, 'pos'
+    and 'alpha' numeric) so malformed stops refuse as BAD_PARAMS with the
+    stop named, never escape as a raw KeyError (targeted-round H1/L6).
     """
-    if not stops or len(stops) < 2:
+    if isinstance(stops, dict):
+        stops = [stops]
+    if not isinstance(stops, (list, tuple)):
+        raise PptMcpError(
+            f"gradient 'stops' must be a list of stop dicts like "
+            f'[{{"pos": 0, "color": "RRGGBB"}}, ...], got {stops!r}'
+        )
+    if len(stops) < 2:
         raise PptMcpError("gradient needs at least 2 stops")
+    checked: list[tuple[float, dict]] = []
+    for i, stop in enumerate(stops):
+        if not isinstance(stop, dict):
+            raise PptMcpError(
+                f"gradient stop {i} must be a dict like "
+                f'{{"pos": 0, "color": "RRGGBB"}}, got {stop!r}'
+            )
+        if "color" not in stop:
+            raise PptMcpError(
+                f"gradient stop {i} is missing 'color' (each stop needs "
+                f"'color' and a numeric 'pos')"
+            )
+        pos_raw = stop.get("pos", 0)
+        if isinstance(pos_raw, bool) or not isinstance(pos_raw, (int, float)):
+            raise PptMcpError(
+                f"gradient stop {i} 'pos' must be a number (0..100 percent, "
+                f"or every stop in 0..1 as fractions), got {pos_raw!r}"
+            )
+        pos = float(pos_raw)
+        if not math.isfinite(pos):
+            raise PptMcpError(
+                f"gradient stop {i} 'pos' must be finite, got {pos!r}"
+            )
+        _check_alpha(stop.get("alpha"), f"gradient stop {i}")
+        checked.append((pos, stop))
+    if all(0.0 <= pos <= 1.0 for pos, _ in checked):
+        # Every pos fits the 0..1 fraction convention: scale to percent.
+        checked = [(pos * 100.0, stop) for pos, stop in checked]
     fill = etree.Element(qn("a:gradFill"))
     fill.set("flip", "none")
     fill.set("rotWithShape", "1")
     gslst = etree.SubElement(fill, qn("a:gsLst"))
-    for stop in sorted(stops, key=lambda s: float(s.get("pos", 0))):
-        pos = float(stop.get("pos", 0))
+    for pos, stop in sorted(checked, key=lambda item: item[0]):
         if not 0.0 <= pos <= 100.0:
-            raise PptMcpError(f"gradient stop pos must be 0..100 percent, got {pos}")
+            raise PptMcpError(
+                f"gradient stop pos must be 0..100 percent (or every stop "
+                f"0..1 as fractions), got {pos}"
+            )
         gs = etree.SubElement(gslst, qn("a:gs"))
         gs.set("pos", str(round(pos * 1000)))
         gs.append(color_element(stop["color"], stop.get("alpha")))
@@ -231,7 +291,9 @@ def fill_element(spec) -> etree._Element | None:
 
     Accepted: "none" | "RRGGBB" | "#RRGGBB" | scheme name |
     {"type": "solid", "color": ..., "alpha": 0..1} |
-    {"type": "gradient", "stops": [...], "angle": deg, "radial": bool}
+    {"type": "gradient", "stops": [...], "angle": deg, "radial": bool}.
+    Gradient stop pos is percent 0..100; a stops list whose every pos lies
+    in 0.0..1.0 is read as fractions and scaled (see gradient_fill).
     """
     if spec is None:
         return None

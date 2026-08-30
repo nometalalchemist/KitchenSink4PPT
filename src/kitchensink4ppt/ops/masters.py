@@ -1359,6 +1359,11 @@ def create_layout(pkg: PptxPackage, master, name: str, based_on=None) -> dict:
     if not isinstance(name, str) or not name.strip():
         raise PptMcpError("layout name must be a non-empty string")
     name = name.strip()
+    if len(name) > 255:
+        raise PptMcpError(
+            f"layout name is {len(name)} chars; PowerPoint caps layout "
+            "names at 255 characters, use a shorter name"
+        )
     existing = _layouts(pkg)
     for _part, nm in existing:
         if nm.lower() == name.lower():

@@ -45,6 +45,7 @@ from __future__ import annotations
 
 import copy
 import re
+from datetime import datetime
 from pathlib import Path
 
 from lxml import etree
@@ -418,8 +419,11 @@ def merge_decks(
     section_names: list[str] | None = None,
 ) -> dict:
     """Append entire decks onto the destination, in order. `sources` is a
-    non-empty list of .pptx paths (each opened read-only ONCE and never
-    mutated). design="link" adopts destination layouts with the source
+    non-empty list of presentation paths, each opened read-only ONCE and
+    never mutated; .pptx is the normal case, and .potx templates also
+    merge (their slides carried, design linked or imported like any
+    source, matching copy_slide_between's deliberate template support).
+    design="link" adopts destination layouts with the source
     appearance carried inline; design="import" brings each source's design
     families in as new masters (imported once per source master, not per
     slide). section_per_source=True wraps each source's slides in a named
@@ -562,6 +566,15 @@ def merge_decks(
 # ======================================================================
 
 
+class SplitOutputConflict(PptMcpError):
+    """A split_deck output path already exists (or output_dir is a file).
+    PptMcpError subclass so ops-level callers catch it as usual; the code
+    attribute steers the server envelope to CONFLICT, matching the old
+    FileExistsError classification."""
+
+    code = "CONFLICT"
+
+
 def _safe_name(name: str) -> str:
     cleaned = re.sub(r"[^\w\- ]+", "", name).strip()
     cleaned = re.sub(r"\s+", " ", cleaned)
@@ -614,7 +627,10 @@ def split_deck(
     section membership, and jump hyperlinks at removed slides. Outputs keep
     the deck's complete design chain and pass payload validation on save.
     Naming: <source stem>_<NN>_<piece name>.pptx in output_dir (prepend your
-    own DTG by renaming or via output_dir)."""
+    own DTG by renaming or via output_dir). Every output path is
+    pre-flighted BEFORE any piece is written, so a name collision refuses
+    with nothing on disk; if an unexpected mid-run failure does occur, the
+    error reports which pieces were already written."""
     src_file = Path(pkg_path)
     check_path(src_file, "read presentation")
     if not src_file.exists():
@@ -682,32 +698,75 @@ def split_deck(
             "nothing to split: every piece resolved empty"
         )
 
-    out_dir.mkdir(parents=True, exist_ok=True)
+    # Pre-flight EVERY output path before writing ANY piece (targeted-round
+    # M3): all names are computable up front, so a collision mid-run must
+    # refuse here, never after earlier pieces were already written.
+    if out_dir.exists() and not out_dir.is_dir():
+        raise SplitOutputConflict(
+            f"output_dir {out_dir} exists and is a file, not a directory; "
+            "pass a directory path (it is created if missing)"
+        )
+    out_paths = [
+        out_dir / f"{src_file.stem}_{j:02d}_{_safe_name(name)}.pptx"
+        for j, (name, _idxs) in enumerate(pieces, start=1)
+    ]
+    already = [str(op) for op in out_paths if op.exists()]
+    if already:
+        raise SplitOutputConflict(
+            f"{len(already)} of {len(out_paths)} split output(s) already "
+            f"exist: {', '.join(already)}. Nothing was written; delete "
+            "them or choose another output_dir."
+        )
+
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise PptMcpError(
+            f"cannot create output_dir {out_dir}: {exc}"
+        ) from exc
     outputs: list[dict] = []
-    for j, (name, idxs) in enumerate(pieces, start=1):
-        out_path = out_dir / (
-            f"{src_file.stem}_{j:02d}_{_safe_name(name)}.pptx"
+    written: list[str] = []
+    try:
+        for out_path, (name, idxs) in zip(out_paths, pieces):
+            create_presentation(
+                out_path, template=src_file, keep_slides=True
+            )
+            written.append(str(out_path))
+            out_pkg = PptxPackage(out_path)
+            keep = set(idxs)
+            deleted = 0
+            for idx in range(n - 1, -1, -1):
+                if idx not in keep:
+                    delete_slide(out_pkg, idx)
+                    deleted += 1
+            sections_removed = _prune_empty_sections(out_pkg)
+            out_pkg.save(do_backup=False)  # runs payload validation
+            outputs.append(
+                {
+                    "path": str(out_path),
+                    "name": name,
+                    "slides": len(idxs),
+                    "deleted": deleted,
+                    "empty_sections_removed": sections_removed,
+                    "bytes": out_path.stat().st_size,
+                }
+            )
+    except Exception as exc:
+        # An unexpected mid-run failure must say what already landed on
+        # disk (targeted-round M3): the directory otherwise silently mixes
+        # this run's partial output with whatever was there before.
+        if not written:
+            raise
+        note = (
+            f" NOTE: the split is incomplete — {len(written)} output "
+            f"file(s) were already written before this failure and remain "
+            f"on disk: {', '.join(written)}."
         )
-        create_presentation(out_path, template=src_file, keep_slides=True)
-        out_pkg = PptxPackage(out_path)
-        keep = set(idxs)
-        deleted = 0
-        for idx in range(n - 1, -1, -1):
-            if idx not in keep:
-                delete_slide(out_pkg, idx)
-                deleted += 1
-        sections_removed = _prune_empty_sections(out_pkg)
-        out_pkg.save(do_backup=False)  # runs payload validation
-        outputs.append(
-            {
-                "path": str(out_path),
-                "name": name,
-                "slides": len(idxs),
-                "deleted": deleted,
-                "empty_sections_removed": sections_removed,
-                "bytes": out_path.stat().st_size,
-            }
-        )
+        try:
+            wrapped = type(exc)(f"{exc}.{note}")
+        except Exception:
+            wrapped = PptMcpError(f"{exc}.{note}")
+        raise wrapped from exc
 
     return {
         "source": str(src_file),
@@ -1172,7 +1231,8 @@ def set_document_properties(pkg: PptxPackage, **props) -> dict:
     author (dc:creator), subject, keywords, comments (dc:description),
     category, last_modified_by, revision, created, modified. App fields
     (docProps/app.xml): company, manager. created/modified take W3CDTF
-    strings (e.g. '2026-08-31T12:00:00Z') and are written with the honest
+    strings (e.g. '2026-08-31T12:00:00Z') validated as REAL calendar
+    datetimes, and are written with the honest
     xsi type; they are NEVER touched unless explicitly passed, and
     PowerPoint will overwrite 'modified' on its own next save. Missing
     docProps parts are created with their package rels. Pass a field to set
@@ -1196,10 +1256,27 @@ def set_document_properties(pkg: PptxPackage, **props) -> dict:
             raise PptMcpError(f"{key} must be a string, got {value!r}")
         if key in _CORE_FIELDS:
             tag, is_dt = _CORE_FIELDS[key]
-            if is_dt and value and not _W3CDTF.match(value):
+            if is_dt and value:
+                if not _W3CDTF.match(value):
+                    raise PptMcpError(
+                        f"{key} must be a W3CDTF datetime "
+                        f"(YYYY-MM-DD or YYYY-MM-DDThh:mm:ssZ), got {value!r}"
+                    )
+                # Shape is not enough: month 13, day 45, hour 99 pass the
+                # regex but are not real datetimes (targeted-round M4).
+                try:
+                    datetime.fromisoformat(value.replace("Z", "+00:00"))
+                except ValueError as exc:
+                    raise PptMcpError(
+                        f"{key} is not a real calendar datetime: {value!r} "
+                        f"({exc}). Month is 1-12, day must exist in that "
+                        "month, hour 0-23, minute/second 0-59."
+                    ) from exc
+            if key == "revision" and value and not value.strip().isdigit():
                 raise PptMcpError(
-                    f"{key} must be a W3CDTF datetime "
-                    f"(YYYY-MM-DD or YYYY-MM-DDThh:mm:ssZ), got {value!r}"
+                    f"revision must be a whole number as a string "
+                    f"(cp:revision conventionally holds an integer, e.g. "
+                    f"'3'), got {value!r}"
                 )
             part = _ensure_core_part(pkg)
             old = _set_prop(pkg, part, tag, value, _CORE_ORDER, w3cdtf=is_dt)

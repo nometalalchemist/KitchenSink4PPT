@@ -384,11 +384,13 @@ def manage_custom_show(
 ) -> dict:
     """Custom show lifecycle (p:custShowLst in presentation.xml).
 
-    - create: `name` (unique, non-empty) + `slides` (non-empty list of
-      0-based indexes or {"slide_id": N}; a slide may appear more than once,
-      matching PowerPoint). Entries reference the presentation's existing
-      slide rIds, the structure slide-delete GC already prunes.
-    - rename: `name` (or id int) + `new_name` (unique).
+    - create: `name` (unique case-insensitively, matching the layout-name
+      policy; non-empty) + `slides` (non-empty list of 0-based indexes or
+      {"slide_id": N}; a slide may appear more than once, matching
+      PowerPoint). Entries reference the presentation's existing slide
+      rIds, the structure slide-delete GC already prunes.
+    - rename: `name` (or id int) + `new_name` (unique case-insensitively;
+      re-casing the same show is allowed).
     - delete: `name` (or id int). An emptied p:custShowLst is removed (the
       delete-GC convention), and a p:showPr range pointing at the deleted
       show resets to all slides, reported as show_range_reset.
@@ -414,10 +416,21 @@ def manage_custom_show(
                 "create needs `slides`: a non-empty list of slide selectors "
                 "(PowerPoint refuses empty custom shows)"
             )
-        if any(s.get("name", "") == name for s in _shows(pkg)):
+        # Case-INSENSITIVE collision check, aligned with create_layout's
+        # policy (targeted-round L7): one server, one meaning of "unique".
+        clash = next(
+            (
+                s.get("name", "")
+                for s in _shows(pkg)
+                if s.get("name", "").lower() == name.lower()
+            ),
+            None,
+        )
+        if clash is not None:
             raise PptMcpError(
-                f"a custom show named {name!r} already exists; names must "
-                "stay unique so they remain addressable"
+                f"a custom show named {clash!r} already exists (name "
+                "matching is case-insensitive); names must stay unique so "
+                "they remain addressable"
             )
         rids = []
         resolved = []
@@ -459,12 +472,19 @@ def manage_custom_show(
         new_name = new_name.strip()
         _idx, show = _resolve_custom_show(pkg, name)
         old = show.get("name", "")
-        if new_name != old and any(
-            s.get("name", "") == new_name for s in _shows(pkg)
-        ):
+        clash = next(
+            (
+                s.get("name", "")
+                for s in _shows(pkg)
+                if s is not show
+                and s.get("name", "").lower() == new_name.lower()
+            ),
+            None,
+        )
+        if clash is not None:
             raise PptMcpError(
-                f"a custom show named {new_name!r} already exists; names "
-                "must stay unique"
+                f"a custom show named {clash!r} already exists (name "
+                "matching is case-insensitive); names must stay unique"
             )
         show.set("name", new_name)
         pkg.mark_dirty(PRESENTATION_PART)

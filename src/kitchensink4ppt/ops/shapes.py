@@ -36,6 +36,71 @@ from ..core.package import PptxPackage, qn
 from . import geometry as g
 from .read import iter_shapes, resolve_slide
 
+# --------------------------------------------------------------- text_style
+
+#: Keys geometry.txbody understands for the single-style text replace.
+_TXBODY_STYLE_KEYS = {
+    "size", "color", "bold", "italic", "align", "anchor", "font", "wrap",
+}
+#: Extra run-level keys wired through ops/text.py's rPr writer after the
+#: body is built (geometry.txbody stays minimal on purpose).
+_TXBODY_EXTRA_KEYS = {"underline"}
+#: Aliases agents actually type, mapped to the canonical key.
+_TXBODY_STYLE_ALIASES = {
+    "font_size": "size",
+    "size_pt": "size",
+    "font_name": "font",
+    "typeface": "font",
+}
+
+
+def _split_text_style(style: dict | None) -> tuple[dict | None, dict]:
+    """Validate a text_style dict for the single-style replace: canonical
+    aliases are folded in, unknown keys REFUSE loudly (they used to be
+    silently dropped, so styled text landed unstyled with no warning).
+    Returns (base style for geometry.txbody, extra run props for
+    text._apply_run_props)."""
+    if style is None:
+        return None, {}
+    if not isinstance(style, dict):
+        raise PptMcpError(
+            f"text_style must be a dict, got {type(style).__name__}"
+        )
+    folded: dict = {}
+    for key, value in style.items():
+        canon = _TXBODY_STYLE_ALIASES.get(key, key)
+        if canon in folded and canon != key:
+            raise PptMcpError(
+                f"text_style gives {key!r} and its alias {canon!r}; "
+                "pass one of them"
+            )
+        folded[canon] = value
+    allowed = _TXBODY_STYLE_KEYS | _TXBODY_EXTRA_KEYS
+    unknown = sorted(set(folded) - allowed)
+    if unknown:
+        raise PptMcpError(
+            f"unknown text_style key(s): {', '.join(unknown)}; allowed: "
+            f"{', '.join(sorted(allowed))} (rich per-run restyling is "
+            "format_text's job)"
+        )
+    base = {k: v for k, v in folded.items() if k in _TXBODY_STYLE_KEYS}
+    extra = {k: v for k, v in folded.items() if k in _TXBODY_EXTRA_KEYS}
+    return base, extra
+
+
+def _apply_extra_run_props(body: etree._Element, extra: dict) -> None:
+    """Apply the run-level keys geometry.txbody does not know (currently
+    underline) onto every a:rPr / a:endParaRPr of a freshly built body,
+    via ops/text.py's schema-order-aware writer."""
+    if not extra:
+        return
+    from .text import _apply_run_props
+
+    for tag in ("a:rPr", "a:endParaRPr"):
+        for rpr in body.iter(qn(tag)):
+            _apply_run_props(rpr, underline=extra.get("underline"))
+
+
 # ------------------------------------------------------------------ presets
 
 #: Friendly name -> DrawingML preset. Any other name can be passed through
@@ -416,7 +481,10 @@ def insert_shape(
     # fills/lines override it, missing pieces render theme-native.
     sp.append(g.default_style())
     # p:sp requires a txBody (repair risk without one).
-    sp.append(g.txbody(text if text is not None else "", text_style))
+    base_style, extra_style = _split_text_style(text_style)
+    body = g.txbody(text if text is not None else "", base_style)
+    _apply_extra_run_props(body, extra_style)
+    sp.append(body)
     pkg.mark_dirty(part)
     result = {
         "shape_id": shape_id,
@@ -835,7 +903,9 @@ def set_shape(
                 "to p:sp shapes only"
             )
         old = elem.find(qn("p:txBody"))
-        new_body = g.txbody(text, text_style)
+        base_style, extra_style = _split_text_style(text_style)
+        new_body = g.txbody(text, base_style)
+        _apply_extra_run_props(new_body, extra_style)
         if old is not None:
             elem.replace(old, new_body)
         else:

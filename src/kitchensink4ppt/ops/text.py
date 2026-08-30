@@ -61,6 +61,7 @@ from .read import (
     notes_part_for,
     paragraph_text,
     resolve_slide,
+    shape_text,
     slides_in_scope,
     table_element,
     txbody_paragraphs,
@@ -175,12 +176,17 @@ _UNDERLINE_VALUES = {
     "words",
 }
 
-#: Placeholder type aliases (values are the p:ph type strings they match).
+#: Placeholder type aliases (values are the p:ph type strings they match,
+#: FIRST entry = the preferred exact type). "body" and "content" are one
+#: alias set: a Title-and-Content layout's content placeholder is type
+#: "obj", and agents asking for "body" used to dead-end on NOT_FOUND
+#: (production-test finding). When a slide carries both types, the exact
+#: type wins; several same-type matches still refuse as ambiguous.
 _PH_ALIASES = {
     "title": ("title", "ctrTitle"),
     "subtitle": ("subTitle",),
-    "body": ("body",),
-    "content": ("obj",),
+    "body": ("body", "obj"),
+    "content": ("obj", "body"),
 }
 
 #: Shape kinds that carry no directly editable text body (find_text parity).
@@ -510,11 +516,13 @@ def set_placeholder_text(
     paragraphs: list[dict] | None = None,
 ) -> dict:
     """Replace a placeholder's text content. `placeholder` targets by type
-    ("title" also matches ctrTitle, "subtitle", "body", "content", or a raw
-    p:ph type value) or by idx (int; a p:ph without idx counts as 0).
-    Content: `text` with '\\n' paragraph breaks and leading tabs for bullet
-    levels, or `paragraphs=[{"text": ..., "level": 0..8}, ...]`. Existing
-    paragraphs are fully replaced; bodyPr and lstStyle are untouched. Several
+    ("title" also matches ctrTitle; "subtitle"; "body" and "content" are
+    one alias set matching both body and obj placeholders, with the exact
+    type preferred when a slide has both; or a raw p:ph type value) or by
+    idx (int; a p:ph without idx counts as 0). Content: `text` with '\\n'
+    paragraph breaks and leading tabs for bullet levels, or
+    `paragraphs=[{"text": ..., "level": 0..8}, ...]`. Existing paragraphs
+    are fully replaced; bodyPr and lstStyle are untouched. Several
     matching placeholders refuse, listing candidates for idx addressing."""
     if (text is None) == (paragraphs is None):
         raise PptMcpError(
@@ -551,6 +559,13 @@ def set_placeholder_text(
             f"no placeholder {placeholder!r} on slide {rec['index']}; "
             f"placeholders present: {', '.join(inventory) or 'none'}"
         )
+    if len(candidates) > 1 and placeholder in ("body", "content"):
+        # The body/content alias set matches both types; when the slide
+        # carries both, the asked-for exact type wins instead of refusing.
+        primary = _PH_ALIASES[placeholder][0]
+        exact = [c for c in candidates if c[1] == primary]
+        if exact:
+            candidates = exact
     if len(candidates) > 1:
         listing = ", ".join(f"type={t} idx={i}" for _e, t, i in candidates)
         raise AmbiguousTarget(
@@ -1186,31 +1201,242 @@ def _autofit_record(elem: etree._Element) -> dict:
     return rec
 
 
-def get_autofit_state(pkg: PptxPackage, slide, shape=None) -> dict:
-    """Autofit state of one shape (or every text-bearing shape) on a slide:
-    the bodyPr autofit mode (normAutofit with fontScale/lnSpcReduction,
-    spAutoFit, none, or inherited when the bodyPr carries no autofit child),
-    plus a rough overflow heuristic. The caveat is structural, not a bug:
-    cached normAutofit values reflect the last PowerPoint edit and are only
+def _autofit_slide_records(pkg: PptxPackage, rec: dict) -> list[dict]:
+    """Autofit records for every text-bearing shape on one slide record."""
+    sp_tree = _sp_tree(pkg, rec["part"])
+    shapes: list[dict] = []
+    if sp_tree is not None:
+        for elem, _kind, _z, _parent in iter_shapes(sp_tree):
+            if (
+                etree.QName(elem).localname == "sp"
+                and elem.find(qn("p:txBody")) is not None
+            ):
+                shapes.append(_autofit_record(elem))
+    return shapes
+
+
+def get_autofit_state(pkg: PptxPackage, slide=None, shape=None) -> dict:
+    """Autofit state of one shape, every text-bearing shape on a slide, or
+    (slide=None) every text-bearing shape on EVERY slide: the bodyPr autofit
+    mode (normAutofit with fontScale/lnSpcReduction, spAutoFit, none, or
+    inherited when the bodyPr carries no autofit child), plus a rough
+    overflow heuristic. The caveat is structural, not a bug: cached
+    normAutofit values reflect the last PowerPoint edit and are only
     recomputed when the frame is edited again inside PowerPoint."""
+    if slide is None:
+        if shape is not None:
+            raise PptMcpError(
+                "shape scoping needs an explicit slide; pass slide together "
+                "with shape (slide=None means all slides)"
+            )
+        slides_out = [
+            {
+                "slide_index": rec["index"],
+                "slide_id": rec["slide_id"],
+                "shapes": _autofit_slide_records(pkg, rec),
+            }
+            for rec in slides_in_scope(pkg, None)
+        ]
+        return {"caveat": _AUTOFIT_CAVEAT, "slides": slides_out}
     rec = resolve_slide(pkg, slide)
     if shape is not None:
         elem, kind = _resolve_shape(pkg, rec, shape)
         _require_txbody(elem, kind, rec)
         shapes = [_autofit_record(elem)]
     else:
-        sp_tree = _sp_tree(pkg, rec["part"])
-        shapes = []
-        if sp_tree is not None:
-            for elem, _kind, _z, _parent in iter_shapes(sp_tree):
-                if (
-                    etree.QName(elem).localname == "sp"
-                    and elem.find(qn("p:txBody")) is not None
-                ):
-                    shapes.append(_autofit_record(elem))
+        shapes = _autofit_slide_records(pkg, rec)
     return {
         "slide_index": rec["index"],
         "slide_id": rec["slide_id"],
         "caveat": _AUTOFIT_CAVEAT,
         "shapes": shapes,
+    }
+
+
+# ------------------------------------------------------------------ fit_text
+
+
+def _explicit_size_elements(body: etree._Element) -> list[etree._Element]:
+    """Every element in the body carrying an explicit sz (rPr, defRPr,
+    endParaRPr): the set a uniform scale rewrites."""
+    out = []
+    for tag in ("a:rPr", "a:defRPr", "a:endParaRPr"):
+        for el in body.iter(qn(tag)):
+            if el.get("sz") is not None:
+                out.append(el)
+    return out
+
+
+def _set_normautofit(
+    bodypr: etree._Element, font_scale_pct: float | None
+) -> None:
+    """Make normAutofit the body's autofit mode, replacing any existing
+    autofit choice. font_scale_pct None or 100 writes a bare normAutofit."""
+    for tag in ("a:noAutofit", "a:normAutofit", "a:spAutoFit"):
+        for el in bodypr.findall(qn(tag)):
+            bodypr.remove(el)
+    norm = etree.Element(qn("a:normAutofit"))
+    if font_scale_pct is not None and font_scale_pct < 100:
+        norm.set("fontScale", str(int(round(font_scale_pct * 1000))))
+    # The autofit choice sits after prstTxWarp, before scene3d/sp3d/extLst.
+    warp = bodypr.find(qn("a:prstTxWarp"))
+    if warp is not None:
+        warp.addnext(norm)
+    else:
+        bodypr.insert(0, norm)
+
+
+def _fit_one_shape(elem: etree._Element, min_size: float) -> dict | None:
+    """Estimate and apply the largest uniform font scale that fits one
+    shape's text in its frame. Returns a report dict, or None when the
+    shape is not an estimable overflow case."""
+    body = elem.find(qn("p:txBody"))
+    if body is None:
+        return None
+    bodypr = body.find(qn("a:bodyPr"))
+    est0 = _overflow_heuristic(elem, body, bodypr, 100.0, 0.0)
+    if not est0 or est0.get("likely_overflow") is not True:
+        return None
+    sized = _explicit_size_elements(body)
+    base_pt = (_first_run_size(body) or 1800) / 100.0
+
+    def fits(scale_pct: float) -> tuple[bool, float | None]:
+        est = _overflow_heuristic(elem, body, bodypr, scale_pct, 0.0)
+        if not est or est.get("likely_overflow") is None:
+            return True, None
+        return not est["likely_overflow"], est.get("fill_ratio")
+
+    floor_pct = max(1.0, min(100.0, min_size / base_pt * 100.0))
+    lo, hi = floor_pct, 100.0
+    fits_floor, _r = fits(floor_pct)
+    if fits_floor:
+        # Largest fitting scale by binary search (1% resolution).
+        for _ in range(12):
+            mid = (lo + hi) / 2.0
+            ok, _r = fits(mid)
+            if ok:
+                lo = mid
+            else:
+                hi = mid
+            if hi - lo < 1.0:
+                break
+        scale_pct = lo
+        still_overflowing = False
+    else:
+        scale_pct = floor_pct
+        still_overflowing = True
+
+    before_sizes = sorted({int(el.get("sz")) / 100.0 for el in sized})
+    if sized:
+        # Explicit sizes exist: rewrite them to the fitted values (floored
+        # at min_size) and leave normAutofit at scale 100 so PowerPoint
+        # renders exactly the sizes now in the XML.
+        for el in sized:
+            new_pt = max(min_size, int(el.get("sz")) / 100.0 * scale_pct / 100.0)
+            el.set("sz", str(int(round(new_pt * 100))))
+        applied = "run_sizes"
+        written_scale = None
+    else:
+        # Every run inherits its size: nothing to rewrite, so use
+        # PowerPoint's own mechanism and write the fontScale.
+        applied = "normAutofit_scale"
+        written_scale = scale_pct
+    if bodypr is None:
+        bodypr = etree.Element(qn("a:bodyPr"))
+        body.insert(0, bodypr)
+    _set_normautofit(bodypr, written_scale)
+    after_sizes = sorted({
+        int(el.get("sz")) / 100.0 for el in _explicit_size_elements(body)
+    })
+    est_after = _overflow_heuristic(
+        elem, body, bodypr, written_scale or 100.0, 0.0
+    )
+    return {
+        "shape_id": _shape_id(elem),
+        "name": _shape_name(elem),
+        "applied": applied,
+        "scale_pct": round(scale_pct, 1),
+        "before": {
+            "sizes_pt": before_sizes or "inherited",
+            "fill_ratio": est0.get("fill_ratio"),
+        },
+        "after": {
+            "sizes_pt": after_sizes or "inherited",
+            "font_scale_pct": written_scale,
+            "fill_ratio": (est_after or {}).get("fill_ratio"),
+        },
+        "still_overflowing": still_overflowing,
+    }
+
+
+def fit_text(
+    pkg: PptxPackage, slide, shape=None, *, min_size: float = 10.0
+) -> dict:
+    """Approximate text-fit: estimate the largest uniform font scale
+    (floored at min_size pt) at which a shape's text fits its frame, using
+    the same average-glyph-width overflow HEURISTIC as get_autofit_state
+    (no real font metrics), then apply it. Shapes with explicit run sizes
+    get those sizes rewritten; shapes inheriting every size get a
+    normAutofit fontScale instead, PowerPoint's own shrink mechanism.
+    normAutofit is enabled on every touched shape either way so PowerPoint
+    re-fits on the next in-app edit. shape=None treats every text shape on
+    the slide that the heuristic flags as overflowing; a shape that still
+    cannot fit at min_size is applied at the floor and reported with
+    still_overflowing=true. This is an ESTIMATE: verify visually with
+    export_slide_images before presenting."""
+    if not isinstance(min_size, (int, float)) or isinstance(min_size, bool):
+        raise PptMcpError(f"min_size must be a number in points, got {min_size!r}")
+    if not 1 <= float(min_size) <= 400:
+        raise PptMcpError(f"min_size must be 1..400 pt, got {min_size!r}")
+    min_size = float(min_size)
+    rec = resolve_slide(pkg, slide)
+    fitted: list[dict] = []
+    skipped: list[dict] = []
+    if shape is not None:
+        elem, kind = _resolve_shape(pkg, rec, shape)
+        body = _require_txbody(elem, kind, rec)
+        if not shape_text(elem).strip():
+            raise PptMcpError(
+                f"shape {_shape_id(elem)} on slide {rec['index']} has no "
+                "text to fit"
+            )
+        report = _fit_one_shape(elem, min_size)
+        if report is None:
+            skipped.append({
+                "shape_id": _shape_id(elem),
+                "reason": (
+                    "the heuristic does not estimate this shape as "
+                    "overflowing (or its geometry is inherited); nothing "
+                    "was changed"
+                ),
+            })
+        else:
+            fitted.append(report)
+    else:
+        sp_tree = _sp_tree(pkg, rec["part"])
+        if sp_tree is not None:
+            for elem, _kind, _z, _parent in iter_shapes(sp_tree):
+                if etree.QName(elem).localname != "sp":
+                    continue
+                if elem.find(qn("p:txBody")) is None:
+                    continue
+                if not shape_text(elem).strip():
+                    continue
+                report = _fit_one_shape(elem, min_size)
+                if report is not None:
+                    fitted.append(report)
+    if fitted:
+        pkg.mark_dirty(rec["part"])
+    return {
+        "slide_index": rec["index"],
+        "slide_id": rec["slide_id"],
+        "fitted": fitted,
+        "skipped": skipped,
+        "min_size_pt": min_size,
+        "estimate": True,
+        "note": (
+            "average-glyph-width heuristic, no real font metrics; the fit "
+            "is an estimate, so render-to-verify with export_slide_images "
+            "(assembly-export pack) before presenting"
+        ),
     }

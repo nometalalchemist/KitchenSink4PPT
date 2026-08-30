@@ -588,6 +588,39 @@ def generate_orgchart(
 # ------------------------------------------------------------------- matrix
 
 
+def _matrix_grid(value, n_r: int, n_c: int, what: str) -> list | None:
+    """Normalize a matrix grid parameter (cells / shading) to a nested
+    list of rows. Accepts the nested form ([[...], [...]]) and the flat
+    row-major form ([...], chunked into n_c-wide rows), because agents
+    reading "row-major list" produce both. A dict where a row belongs
+    (the flat-form fingerprint) used to fall through to cells[r][c] and
+    die as a raw KeyError: 0 outside the refusal envelope."""
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise PptMcpError(
+            f"matrix {what} must be a list (nested rows or a flat "
+            f"row-major list), got {type(value).__name__}"
+        )
+    if any(isinstance(entry, list) for entry in value):
+        # Nested form: every top-level entry must then be a row.
+        bad = [i for i, entry in enumerate(value) if not isinstance(entry, list)]
+        if bad:
+            raise PptMcpError(
+                f"matrix {what} mixes rows and bare cells (non-list entry "
+                f"at index {bad[0]}); use either nested rows "
+                f"[[...], [...]] or one flat row-major list"
+            )
+        return value
+    # Flat row-major form: chunk into n_c-wide rows.
+    if len(value) > n_r * n_c:
+        raise PptMcpError(
+            f"matrix {what} has {len(value)} entries but the grid is "
+            f"{n_r} x {n_c} = {n_r * n_c} cells"
+        )
+    return [value[r * n_c:(r + 1) * n_c] for r in range(n_r)]
+
+
 def generate_matrix(
     pkg,
     slide,
@@ -609,10 +642,12 @@ def generate_matrix(
     a 90-degree-rotated y-axis title, and per-cell fill shading.
 
     rows / cols: an int (count, no headers) or a list of header labels.
-    cells: row-major list of rows; each entry a string or {"text",
-    "fill"?}. axis_labels: {"x": title, "y": title}. shading: row-major
-    fills overriding the default light accent1 tint (None entries keep
-    the default); a cell dict fill wins over shading.
+    cells: entries are strings or {"text", "fill"?} dicts, given either as
+    a nested list of rows ([[r0c0, r0c1], [r1c0, r1c1]]) or as one flat
+    row-major list ([r0c0, r0c1, r1c0, r1c1]); both forms are accepted.
+    axis_labels: {"x": title, "y": title}. shading: same two shapes,
+    row-major fills overriding the default light accent1 tint (None
+    entries keep the default); a cell dict fill wins over shading.
     """
     _check_box(w, h, "matrix")
     row_labels = [str(v) for v in rows] if isinstance(rows, list) else None
@@ -623,6 +658,8 @@ def generate_matrix(
         raise PptMcpError(
             f"matrix needs at least 2 cells total, got {n_r} x {n_c}"
         )
+    cells = _matrix_grid(cells, n_r, n_c, "cells")
+    shading = _matrix_grid(shading, n_r, n_c, "shading")
     axis_labels = axis_labels or {}
     s = _scale(w, h)
     ids: list[int] = []

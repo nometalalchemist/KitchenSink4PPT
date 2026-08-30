@@ -1,7 +1,7 @@
 """Tiered loading: the pack registry and the enable/disable machinery.
 
 Every tool is registered with FastMCP up front; non-lite tools start
-disabled (enabled=False) so a fresh session pays for ~23 tools, not the whole
+disabled (enabled=False) so a fresh session pays for ~24 tools, not the whole
 surface. enable_tools flips FastMCP Tool.enable(), which queues the
 notifications/tools/list_changed a client needs to re-fetch tools/list
 (verified against fastmcp 2.14: Tool.enable/disable call

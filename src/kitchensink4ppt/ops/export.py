@@ -132,6 +132,17 @@ def _require_file(path: str, purpose: str) -> Path:
     return p
 
 
+def _output_write_error(exc: OSError, what: str, target) -> PptMcpError:
+    """Map a raw OSError/PermissionError on an export output path into the
+    refusal envelope with the path and cause named (targeted-round M1): an
+    unwritable output location is an ordinary user error, not a crash."""
+    return PptMcpError(
+        f"cannot write the {what} to {target}: {exc}. The output location "
+        "must be a writable path (not read-only, locked by another "
+        "process, or a directory name colliding with a file)."
+    )
+
+
 def _verify_output(out: Path, what: str, engine: str) -> None:
     if not out.exists() or out.stat().st_size == 0:
         raise PptMcpError(
@@ -179,8 +190,11 @@ def _libreoffice_pdf(p: Path, out: Path) -> None:
         )
         produced = tdir / (p.stem + ".pdf")
         _verify_output(produced, "PDF", "LibreOffice")
-        out.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(produced), str(out))
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(produced), str(out))
+        except OSError as exc:
+            raise _output_write_error(exc, "PDF", out) from exc
     _verify_output(out, "PDF", "LibreOffice")
 
 
@@ -218,7 +232,10 @@ def export_pdf(pkg_path: str, output: str | None = None, engine: str = "auto") -
             )
         from ..com.bridge import com_export_pdf
 
-        return com_export_pdf(str(p), str(out))
+        try:
+            return com_export_pdf(str(p), str(out))
+        except OSError as exc:
+            raise _output_write_error(exc, "PDF", out) from exc
 
     # libreoffice
     if _find_soffice() is None:
@@ -266,12 +283,17 @@ def export_handout(
         )
     from ..com.bridge import com_export_handout
 
-    return com_export_handout(
-        str(p),
-        str(output) if output else None,
-        slides_per_page=slides_per_page,
-        include_notes=include_notes,
-    )
+    try:
+        return com_export_handout(
+            str(p),
+            str(output) if output else None,
+            slides_per_page=slides_per_page,
+            include_notes=include_notes,
+        )
+    except OSError as exc:
+        raise _output_write_error(
+            exc, "handout PDF", output or p.with_suffix(".pdf")
+        ) from exc
 
 
 # ------------------------------------------------------------- slide images
@@ -325,13 +347,16 @@ def export_slide_images(
             )
         from ..com.bridge import com_export_slide_images
 
-        return com_export_slide_images(
-            str(p),
-            str(out_dir),
-            slides=slides,
-            width=width,
-            height=height if height is not None else None,
-        )
+        try:
+            return com_export_slide_images(
+                str(p),
+                str(out_dir),
+                slides=slides,
+                width=width,
+                height=height if height is not None else None,
+            )
+        except OSError as exc:
+            raise _output_write_error(exc, "slide images", out_dir) from exc
 
     # libreoffice: pptx -> pdf -> pdftoppm PNGs
     if _find_soffice() is None:
@@ -348,7 +373,10 @@ def export_slide_images(
         )
     if width <= 0:
         raise PptMcpError(f"width must be positive, got {width}")
-    out_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise _output_write_error(exc, "slide images", out_dir) from exc
     images: list[dict] = []
     with tempfile.TemporaryDirectory(prefix="ks4p_lo_img_") as td:
         tdir = Path(td)
@@ -387,7 +415,12 @@ def export_slide_images(
                     f"{len(pages)} (indices are 0-based)"
                 )
             dest = out_dir / f"slide{idx + 1}.png"
-            shutil.move(str(pages[idx]), str(dest))
+            try:
+                shutil.move(str(pages[idx]), str(dest))
+            except OSError as exc:
+                raise _output_write_error(
+                    exc, f"PNG for slide {idx + 1}", dest
+                ) from exc
             _verify_output(dest, f"PNG for slide {idx + 1}", "LibreOffice")
             images.append({"slide": idx, "file": str(dest)})
     return {

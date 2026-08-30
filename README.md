@@ -69,7 +69,7 @@ Environment pins for hosts and power users:
 | `KS4P_PACK_POLICY` | `auto` (default) or `locked` (enable_tools refuses; surface fixed at startup) |
 | `KS4P_ALLOWED_ROOTS` | opt-in path sandbox; tools refuse to touch files outside these roots |
 
-## Pack inventory (137 tools total)
+## Pack inventory (138 tools total)
 
 | Pack | Tools | ~Tokens | What is in it |
 |---|---|---|---|
@@ -84,7 +84,7 @@ Environment pins for hosts and power users:
 | com | 2 | 0.2k | PowerPoint status and zombie process check (Windows) |
 | com-live | 3 | 0.3k | edit the deck while it is OPEN in the user's PowerPoint: explicit save, scroll-to-slide, session status; eleven file tools route here automatically via `live='auto'` |
 
-Full surface: about 27.0k tokens if you pin `KS4P_MODE=full` (numbers from
+Full surface: about 27.3k tokens if you pin `KS4P_MODE=full` (numbers from
 `scripts/measure_surface.py`, not hand-math).
 
 Structural table operations on the file itself (merging, inserting and
@@ -120,7 +120,7 @@ The same discipline as KitchenSink4Word, applied from day one:
 
 Beta. The file layer (packages, slides, text, graphics, tables, charts,
 comments, animations, themes, links, media, notes, masters, equations,
-accessibility, deck assembly, sweeps, export) is covered by a 779-test
+accessibility, deck assembly, sweeps, export) is covered by an 848-test
 suite, including validation that generated decks open clean in real
 PowerPoint, and the server passes a raw stdio protocol round-trip suite.
 Live editing of decks open in PowerPoint ships with its own COM gate
