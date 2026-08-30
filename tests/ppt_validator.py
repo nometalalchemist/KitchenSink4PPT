@@ -53,7 +53,14 @@ def validate_files(paths: list[Path]) -> int:
     import win32com.client
 
     pythoncom.CoInitialize()
-    app = win32com.client.DispatchEx("PowerPoint.Application")
+    try:
+        app = win32com.client.DispatchEx("PowerPoint.Application")
+    except Exception as exc:  # CI runners have no Office; honest skip
+        print(
+            "SKIPPED-NO-POWERPOINT: PowerPoint could not be launched "
+            f"(likely not installed): {exc}"
+        )
+        sys.exit(0)
     app.DisplayAlerts = PP_ALERTS_NONE
     failures = 0
     try:

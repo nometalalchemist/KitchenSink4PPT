@@ -511,5 +511,7 @@ def test_com_validation_all_five(tmp_path):
     out = proc.stdout + proc.stderr
     if "SKIPPED-USER-POWERPOINT-OPEN" in out:
         pytest.skip("user PowerPoint is open; COM validation deferred")
+    if "SKIPPED-NO-POWERPOINT" in out:
+        pytest.skip("PowerPoint not installed (CI runner); COM validation deferred")
     assert proc.returncode == 0, f"validator failed:\n{out}"
     assert "PASS" in out and "FAIL" not in out, out
