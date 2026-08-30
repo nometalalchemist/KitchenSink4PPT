@@ -138,6 +138,34 @@ WORKFLOWS: dict[str, dict] = {
             "alongside the rendered slides.",
         ],
     },
+    "one-call-diagram": {
+        "summary": (
+            "Build a timeline, org chart, matrix, cycle, or comparison "
+            "diagram from one spec call, then tweak it by role ids."
+        ),
+        "packs": ["graphics", "assembly-export"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['graphics','assembly-export'] turns on the "
+                    "generators and the render-to-verify loop"},
+            {"tool": "generate_diagram",
+             "why": "kind + spec + inch box in, a grouped tree of native "
+                    "shapes with glued connectors out; the result maps "
+                    "roles to shape ids"},
+            {"tool": "export_slide_image",
+             "why": "render and LOOK; crowding warnings in the result tell "
+                    "you where to check first"},
+            {"tool": "set_shape",
+             "why": "move or restyle any piece by its role's shape id; "
+                    "glued connectors follow"},
+        ],
+        "notes": [
+            "svg_to_shapes covers diagrams outside the five kinds; "
+            "generate_diagram is the fast path, not the ceiling.",
+            "Specs take theme colors by default, so a template change "
+            "recolors the whole diagram.",
+        ],
+    },
     "batch-edit-from-view": {
         "summary": (
             "The token-cheap editing loop, all in lite: read the anchored "
@@ -162,6 +190,132 @@ WORKFLOWS: dict[str, dict] = {
             "every failed op index; nothing is half-applied.",
             "search_and_replace inside apply_edits covers deck-wide text "
             "swaps without any anchors at all.",
+        ],
+    },
+    "animate-a-build": {
+        "summary": (
+            "Give a deck slide transitions and click-by-click entrance "
+            "builds, honestly bounded to the verified effect subset."
+        ),
+        "packs": ["transitions-animations"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['transitions-animations'] turns on the "
+                    "transition and animation set"},
+            {"tool": "get_transitions",
+             "why": "see what the deck already carries before overwriting "
+                    "(morph and friends are reported, not authored)"},
+            {"tool": "set_transition",
+             "why": "one call for one slide or the whole deck; kind, "
+                    "direction, millisecond duration, auto-advance"},
+            {"tool": "add_entrance_animation",
+             "why": "appear/fade/wipe per shape; trigger='click' builds "
+                    "click groups, by_paragraph=True builds bullet lists "
+                    "line by line"},
+            {"tool": "list_animations",
+             "why": "verify play order, triggers, and targets after "
+                    "authoring"},
+            {"tool": "clear_animations", "optional": True,
+             "why": "reset a slide (or one shape) when a build sequence "
+                    "should start over"},
+        ],
+        "notes": [
+            "delete_shape prunes its own animation nodes; foreign effect "
+            "trees survive edits untouched and are listed honestly.",
+        ],
+    },
+    "review-cycle": {
+        "summary": (
+            "Run a comment-driven review pass: read every thread, reply, "
+            "resolve what is settled, and report the deck's review state."
+        ),
+        "packs": ["review"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['review'] turns on modern threaded comments"},
+            {"tool": "comment_report",
+             "why": "the whole deck's threads grouped by slide, with a "
+                    "markdown rendering for review notes"},
+            {"tool": "add_comment",
+             "why": "new feedback anchored to a slide, a position, or a "
+                    "shape"},
+            {"tool": "reply_to_comment",
+             "why": "answer inside the thread; replies nest under the "
+                    "root"},
+            {"tool": "resolve_comment",
+             "why": "mark settled threads; resolved=False reopens"},
+            {"tool": "delete_comment", "optional": True,
+             "why": "remove a thread (cascade_replies=True) or a single "
+                    "reply once it is truly obsolete"},
+        ],
+        "notes": [
+            "Decks with classic (legacy) comments are read-only here: the "
+            "two comment systems never mix in one file.",
+        ],
+    },
+    "live-session": {
+        "summary": (
+            "Edit a deck WHILE the user has it open in PowerPoint: route "
+            "edits live, show the user, save only on request."
+        ),
+        "packs": ["com-live"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['com-live'] turns on live_save, "
+                    "live_scroll_to, and live_status"},
+            {"tool": "live_status",
+             "why": "confirm PowerPoint is responsive and the target file "
+                    "is open (and not read-only) before editing"},
+            {"tool": "get_text",
+             "why": "dual-mode reads route to the open copy automatically "
+                    "when the file is locked (live='auto', the default)"},
+            {"tool": "set_placeholder_text",
+             "why": "dual-mode edits land in the OPEN copy and stay "
+                    "unsaved; the user sees them immediately"},
+            {"tool": "live_scroll_to",
+             "why": "bring the edited slide into the user's view without "
+                    "touching their selection"},
+            {"tool": "live_save",
+             "why": "the explicit save; nothing writes the user's file "
+                    "until this call (or the user's own Ctrl+S)"},
+        ],
+        "notes": [
+            "Eleven file tools are dual-mode (get_text, get_slide_info, "
+            "search_and_replace, set_placeholder_text, insert_textbox, "
+            "format_text, insert_shape, set_shape, insert_slide, "
+            "delete_slide, set_notes); live='off' pins them file-only.",
+            "Regex replace, character-range formatting, and other "
+            "file-only parameters refuse loudly on the live path.",
+        ],
+    },
+    "cross-deck-assembly": {
+        "summary": (
+            "Assemble a deck from slides living in other presentations, "
+            "keeping either the destination design or the source's."
+        ),
+        "packs": ["assembly-export", "design"],
+        "steps": [
+            {"tool": "enable_tools",
+             "why": "packs=['assembly-export','design'] turns on the "
+                    "cross-deck copy plus ordering and validation"},
+            {"tool": "get_presentation_info",
+             "why": "inventory both decks first: slide ids, sizes, and "
+                    "section layout"},
+            {"tool": "copy_slide_between",
+             "why": "pull a source slide in; design='link' restyles onto "
+                    "the destination layout with appearance carried, "
+                    "'import' keeps the source design family"},
+            {"tool": "move_slide",
+             "why": "place the arrival in the running order"},
+            {"tool": "validate",
+             "why": "cross-package surgery earns a real opens-clean check "
+                    "before anyone presents the result"},
+        ],
+        "notes": [
+            "Slide-size mismatches copy with a warning and no rescaling; "
+            "check the seams with export_slide_image.",
+            "Same-file copies refuse by design; duplicate_slide covers "
+            "that case.",
         ],
     },
 }

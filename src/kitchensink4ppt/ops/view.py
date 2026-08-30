@@ -225,7 +225,10 @@ def _render_table(elem, anchor: str) -> list[str]:
     cells = _read.table_cells(elem)
     rows = len(cells)
     cols = len(cells[0]) if cells else 0
-    lines = [f"[a:{anchor}] table {rows}x{cols} (cells t:{anchor}:rNcN, 1-based):"]
+    lines = [
+        f"[a:{anchor}] table {rows}x{cols} "
+        f"(cell anchors t:{anchor}:rNcN, 1-based; tool row/col args 0-based):"
+    ]
     for row in cells:
         lines.append("| " + " | ".join(_pipe_cell(c) for c in row) + " |")
     return lines
@@ -271,7 +274,8 @@ def get_presentation_view(pkg: PptxPackage, scope=None, detail: str = "text") ->
     ]
     if detail != "outline":
         lines.append(
-            "Anchors: [s:N] slide id, [a:hex] shape, t:hex:rNcN table cell."
+            "Anchors: [s:N] slide id, [a:hex] shape, t:hex:rNcN table cell "
+            "(rNcN is 1-based; row/col args to table tools are 0-based)."
         )
     anchor_count = 0
 

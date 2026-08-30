@@ -47,9 +47,10 @@ headless where available. Nothing ever needs a network connection.
 
 ## Tiered loading: start light, grow mid-session
 
-The server starts in lite mode: 20 tools, roughly 3.4k tokens of tool
-context, covering reading, slide CRUD, text, batch editing, backups, and
-diagnostics. The other 47 tools are registered but disabled until asked for:
+The server starts in lite mode: 23 tools, roughly 4.3k tokens of tool
+context, covering reading, slide CRUD, text, hyperlinks, batch editing,
+backups, and diagnostics. The other 77 tools are registered but disabled
+until asked for:
 
 ```
 enable_tools(packs=["graphics"])
@@ -68,18 +69,22 @@ Environment pins for hosts and power users:
 | `KS4P_PACK_POLICY` | `auto` (default) or `locked` (enable_tools refuses; surface fixed at startup) |
 | `KS4P_ALLOWED_ROOTS` | opt-in path sandbox; tools refuse to touch files outside these roots |
 
-## Pack inventory (67 tools total)
+## Pack inventory (100 tools total)
 
 | Pack | Tools | ~Tokens | What is in it |
 |---|---|---|---|
-| lite core (always on) | 20 | 3.4k | anchored deck view, atomic batch edits, get/find/replace text, slide insert/delete/duplicate/reorder, placeholder text, info and enumeration, copy, snapshots, backups, diagnose, workflows, enable/disable_tools |
-| graphics | 13 | 3.3k | shapes, glued connectors, SVG compiler, groups, align/distribute, z-order, text boxes, run formatting, bullets |
-| tables-charts | 17 | 3.4k | create table, bulk cells, merge/unmerge, row and column insert/delete, borders and fills, widths/heights, 74 built-in styles, CSV/JSON export/import, bar/line/pie charts with editable data workbooks |
-| design | 5 | 0.8k | create presentation FROM template, slide size, hide slide, move slide, autofit overflow report |
-| assembly-export | 10 | 1.4k | speaker notes, footers and slide numbers, PDF export, per-slide PNG render, engine detection, opens-clean validation, full text extraction |
+| lite core (always on) | 23 | 4.3k | anchored deck view, atomic batch edits, get/find/replace text (live-aware), slide insert/delete/duplicate/reorder, placeholder text, hyperlinks (set/remove/list with broken-link detection), info and enumeration, copy, snapshots, backups, diagnose, workflows, enable/disable_tools |
+| graphics | 19 | 5.2k | shapes, glued connectors, SVG compiler, one-call diagram generators (timeline, org chart, matrix, cycle, comparison), images, video/audio embed, groups, align/distribute, z-order, text boxes, run formatting, bullets |
+| tables-charts | 18 | 3.8k | create table, bulk cells, merge/unmerge, row and column insert/delete, borders and fills, widths/heights, 74 built-in styles, CSV/JSON export/import, bar/line/pie/combo charts with editable data workbooks, chart formatting |
+| design | 12 | 1.9k | create presentation FROM template, apply layouts, theme read AND write (colors, fonts), brand extract/apply, layout guardrail checks, slide size, hide slide, move slide, autofit overflow report |
+| assembly-export | 12 | 1.9k | speaker notes, sections, footers and slide numbers, PDF export, per-slide PNG render, engine detection, opens-clean validation, full text extraction, cross-deck slide copy |
+| transitions-animations | 5 | 0.9k | slide transitions (fade/push/wipe/split/cut/random, millisecond durations, auto-advance) and bounded entrance animations (appear/fade/wipe, click builds, by-paragraph) |
+| review | 6 | 1.0k | modern threaded comments: add, threaded replies, resolve, cascade delete, dual-system listing (modern + classic), whole-deck review report |
 | com | 2 | 0.2k | PowerPoint status and zombie process check (Windows) |
+| com-live | 3 | 0.3k | edit the deck while it is OPEN in the user's PowerPoint: explicit save, scroll-to-slide, session status; eleven file tools route here automatically via `live='auto'` |
 
-Full surface: about 12.6k tokens if you pin `KS4P_MODE=full`.
+Full surface: about 19.6k tokens if you pin `KS4P_MODE=full` (numbers from
+`scripts/measure_surface.py`, not hand-math).
 
 Structural table operations on the file itself (merging, inserting and
 deleting rows AND columns, per-edge borders) exist in no other PowerPoint
@@ -113,12 +118,13 @@ The same discipline as KitchenSink4Word, applied from day one:
 ## Maturity
 
 Beta. The file layer (packages, slides, text, graphics, tables, charts,
-notes, export) is covered by 320+ tests, including validation that
-generated decks open clean in real PowerPoint, and the server passes a raw
-stdio protocol round-trip suite. It has not yet had a long field life;
-treat important decks with the respect the backup tools make easy, and
-expect fast point releases. Live editing of a deck open in PowerPoint,
-comments, and transitions/animations are on the roadmap, not in v1.
+comments, animations, themes, links, media, notes, export) is covered by
+a 589-test suite, including validation that generated decks open clean in real
+PowerPoint, and the server passes a raw stdio protocol round-trip suite.
+Live editing of decks open in PowerPoint ships with its own COM gate
+scripts (`tests/com_gates/`). It has not yet had a long field life; treat
+important decks with the respect the backup tools make easy, and expect
+fast point releases.
 
 ## License
 

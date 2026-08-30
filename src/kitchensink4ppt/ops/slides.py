@@ -49,6 +49,7 @@ from ..core.package import (
     PRESENTATION_PART,
     PptxPackage,
     RT_SLIDE,
+    RT_SLIDE_LAYOUT,
     qn,
     rels_name,
     rels_source,
@@ -77,6 +78,15 @@ CT_NOTES_SLIDE = (
 
 #: Deep-copy-on-duplicate reltypes without special companion handling.
 _DEEP_COPY_SIMPLE = (RT_OLE_OBJECT, RT_PACKAGE, RT_TAGS)
+
+# Modern threaded comments (mirrors ops/comments.py; kept local so the
+# slide layer does not import the comments module).
+RT_MODERN_COMMENTS = (
+    "http://schemas.microsoft.com/office/2018/10/relationships/comments"
+)
+RT_LEGACY_COMMENTS = _RT + "comments"
+#: Slide extLst extension that makes the modern comments rel render.
+EXT_URI_COMMENT_REL = "{6950BFC3-D8DA-4A85-94F7-54DA5524770B}"
 
 #: Latent placeholder types (date, footer, slide number) are never cloned to
 #: a new slide; they render from the layout/master when enabled.
@@ -584,7 +594,12 @@ def duplicate_slide(pkg: PptxPackage, slide, position: int | None = None) -> dic
     (0-based final index). Layout and media rels stay shared; notesSlide,
     chart (with colors/style/xlsx), and oleObject/package parts are
     deep-copied; hyperlink rels are duplicated with TargetMode preserved;
-    creationId GUIDs are regenerated; partnames are collision-safe."""
+    creationId GUIDs are regenerated; partnames are collision-safe.
+    Comments (modern threaded AND classic) are STRIPPED from the copy with
+    a warning, never shared or silently carried: modern comment anchors
+    reference the source slide's creation ids (which this copy
+    regenerates), so a shared or naively-copied comments part would render
+    mis-anchored review threads on the clone."""
     src_index, src_part, _entry, src_id, _rid = _resolve_slide(pkg, slide)
     n_after = len(_slide_entries(pkg)) + 1
     final = src_index + 1 if position is None else position
@@ -600,15 +615,25 @@ def duplicate_slide(pkg: PptxPackage, slide, position: int | None = None) -> dic
 
     copied: list[str] = []
     shared: list[str] = []
+    stripped_comments: list[str] = []
     rels_root = None
     src_rels = rels_name(src_part)
     if pkg.has_part(src_rels):
         rels_root = copy.deepcopy(pkg.root(src_rels))
-        for rel in rels_root:
+        for rel in list(rels_root):
             if rel.get("TargetMode") == "External":
                 continue  # hyperlink/linked-media rels: duplicated as-is
             rel_type = rel.get("Type")
             target = resolve_target(src_part, rel.get("Target", ""))
+            if rel_type in (RT_MODERN_COMMENTS, RT_LEGACY_COMMENTS):
+                # Comments never travel with the clone: modern anchors
+                # reference creation ids this copy regenerates, and a
+                # SHARED comments part would show the same threads
+                # mis-anchored on both slides. Strip rel + extLst wiring;
+                # the caller is warned below.
+                rels_root.remove(rel)
+                stripped_comments.append(target)
+                continue
             if rel_type == RT_NOTES_SLIDE:
                 new_target = _clone_notes_slide(pkg, target, new_part)
             elif rel_type == RT_CHART:
@@ -621,6 +646,15 @@ def duplicate_slide(pkg: PptxPackage, slide, position: int | None = None) -> dic
                 continue
             rel.set("Target", _rel_target(new_part, new_target))
             copied.append(new_target)
+    if stripped_comments:
+        # Drop the {6950BFC3-...} commentRel extension from the clone's
+        # extLst; a wiring stub pointing at a removed rel corrupts.
+        for ext in list(new_root.iter(qn("p:ext"))):
+            if ext.get("uri") == EXT_URI_COMMENT_REL:
+                parent = ext.getparent()
+                parent.remove(ext)
+                if len(parent) == 0 and parent.tag == qn("p:extLst"):
+                    parent.getparent().remove(parent)
 
     pkg.add_part_with_content_type(new_part, _serialize(new_root), CT_SLIDE)
     if rels_root is not None:
@@ -628,7 +662,7 @@ def duplicate_slide(pkg: PptxPackage, slide, position: int | None = None) -> dic
 
     reg = pkg.register_slide_entry(new_part, position=final)
     in_section = _assign_section_membership(pkg, reg["slide_id"], final)
-    return {
+    result = {
         "slide_id": reg["slide_id"],
         "part": new_part,
         "index": final,
@@ -639,6 +673,16 @@ def duplicate_slide(pkg: PptxPackage, slide, position: int | None = None) -> dic
         "creation_ids_regenerated": guids,
         "in_section": in_section,
     }
+    if stripped_comments:
+        result["comments_stripped"] = sorted(set(stripped_comments))
+        result["warnings"] = [
+            "the source slide carries comments; they were NOT copied to "
+            "the duplicate (comment anchors reference the original "
+            "slide's identity and would mis-anchor on the clone). The "
+            "original slide keeps its comments; add fresh ones to the "
+            "copy with add_comment if needed."
+        ]
+    return result
 
 
 # ---------------------------------------------------------- delete_slide
@@ -963,3 +1007,446 @@ def create_presentation(
         "gc_parts": gc_total,
         "slides_kept": len(pkg.slide_parts()),
     }
+
+
+# ------------------------------------------------------------ apply_layout
+
+
+def _ph_key(ph: etree._Element) -> tuple[str, int]:
+    """Placeholder matching key: (normalized type, idx). PowerPoint binds a
+    slide placeholder to a layout placeholder by idx (and by the title
+    family regardless of ctrTitle vs title), so both title spellings
+    normalize to one key."""
+    ph_type = ph.get("type", "obj")
+    if ph_type in ("title", "ctrTitle"):
+        return ("title", 0)
+    return (ph_type, int(ph.get("idx", "0")))
+
+
+def _ph_key_from_record(record: dict) -> tuple[str, int]:
+    if record["type"] in ("title", "ctrTitle"):
+        return ("title", 0)
+    return (record["type"], record["idx"])
+
+
+def _layout_ph_keys(pkg: PptxPackage, layout_part: str) -> set[tuple[str, int]]:
+    keys: set[tuple[str, int]] = set()
+    csld = pkg.root(layout_part).find(qn("p:cSld"))
+    lt_tree = csld.find(qn("p:spTree")) if csld is not None else None
+    if lt_tree is None:
+        return keys
+    ph_path = f"{qn('p:nvSpPr')}/{qn('p:nvPr')}/{qn('p:ph')}"
+    for sp in lt_tree.findall(qn("p:sp")):
+        ph = sp.find(ph_path)
+        if ph is not None:
+            keys.add(_ph_key(ph))
+    return keys
+
+
+def apply_layout(pkg: PptxPackage, slide, layout) -> dict:
+    """Re-link a slide's layout relationship to a different layout (name or
+    0-based global index; ambiguous names refuse).
+
+    Placeholder reconciliation is MINIMAL and honest: nothing on the slide
+    is added, removed, or moved. A slide placeholder whose (type, idx)
+    exists on the new layout re-inherits position and styling from it; one
+    with no match is an ORPHAN: it keeps its content and any explicit
+    geometry but no longer inherits anything meaningful, and is reported
+    with a warning so the caller can restyle or delete it. Layout
+    placeholders with no slide counterpart are reported as unused
+    (insert_slide clones them on fresh slides; this tool never fabricates
+    shapes)."""
+    index, part, _entry, slide_id, _rid = _resolve_slide(pkg, slide)
+    layout_part = _resolve_layout(pkg, layout)
+
+    rels = pkg.rels_for(part)
+    layout_rel = None
+    for rel in rels.getroot():
+        if rel.get("Type") == RT_SLIDE_LAYOUT:
+            layout_rel = rel
+            break
+    if layout_rel is None:
+        raise UnsupportedStructure(
+            f"slide {index} has no slideLayout relationship; refusing to "
+            "invent one"
+        )
+    old_layout = resolve_target(part, layout_rel.get("Target", ""))
+    if old_layout == layout_part:
+        return {
+            "slide_id": slide_id,
+            "index": index,
+            "layout": layout_part,
+            "changed": False,
+            "note": "slide already uses that layout",
+        }
+    layout_rel.set("Target", _rel_target(part, layout_part))
+    pkg.mark_dirty(rels_name(part))
+
+    layout_keys = _layout_ph_keys(pkg, layout_part)
+    matched: list[dict] = []
+    orphaned: list[dict] = []
+    warnings: list[str] = []
+    csld = pkg.root(part).find(qn("p:cSld"))
+    sp_tree = csld.find(qn("p:spTree")) if csld is not None else None
+    ph_path = f"{qn('p:nvSpPr')}/{qn('p:nvPr')}/{qn('p:ph')}"
+    if sp_tree is not None:
+        for sp in sp_tree.findall(qn("p:sp")):
+            ph = sp.find(ph_path)
+            if ph is None:
+                continue
+            cnvpr = sp.find(f"{qn('p:nvSpPr')}/{qn('p:cNvPr')}")
+            record = {
+                "shape_id": (
+                    int(cnvpr.get("id")) if cnvpr is not None else None
+                ),
+                "type": ph.get("type", "obj"),
+                "idx": int(ph.get("idx", "0")),
+            }
+            if _ph_key(ph) in layout_keys:
+                matched.append(record)
+            else:
+                orphaned.append(record)
+    for rec_ph in orphaned:
+        warnings.append(
+            f"placeholder shape {rec_ph['shape_id']} (type "
+            f"{rec_ph['type']!r}, idx {rec_ph['idx']}) has no counterpart "
+            f"on the new layout; content kept, inheritance broken"
+        )
+    unused = sorted(
+        layout_keys - {_ph_key_from_record(r) for r in matched}
+    )
+    return {
+        "slide_id": slide_id,
+        "index": index,
+        "layout": layout_part,
+        "old_layout": old_layout,
+        "changed": True,
+        "placeholders_matched": matched,
+        "placeholders_orphaned": orphaned,
+        "layout_placeholders_unused": [
+            {"type": t, "idx": i} for t, i in unused
+        ],
+        "warnings": warnings,
+    }
+
+
+# ----------------------------------------------------------- manage_section
+
+
+_SECTION_ACTIONS = ("create", "rename", "delete", "move_slide_into")
+
+
+def _sections_summary(pkg: PptxPackage) -> list[dict]:
+    from .read import _sections
+
+    return [
+        {"name": s["name"], "slide_ids": s["slide_ids"]}
+        for s in _sections(pkg)
+    ]
+
+
+def _resolve_section(
+    sec_lst: etree._Element, section
+) -> tuple[int, etree._Element]:
+    sections = sec_lst.findall(qn("p14:section"))
+    if isinstance(section, int) and not isinstance(section, bool):
+        if not 0 <= section < len(sections):
+            raise TargetNotFound(
+                f"section index {section} out of range; the deck has "
+                f"{len(sections)} section(s)"
+            )
+        return section, sections[section]
+    if isinstance(section, str):
+        hits = [
+            (i, s) for i, s in enumerate(sections)
+            if s.get("name", "") == section
+        ]
+        if len(hits) == 1:
+            return hits[0]
+        if len(hits) > 1:
+            raise AmbiguousTarget(
+                f"{len(hits)} sections are named {section!r}; use a 0-based "
+                "section index instead"
+            )
+        names = ", ".join(repr(s.get("name", "")) for s in sections)
+        raise TargetNotFound(
+            f"no section named {section!r}; sections present: "
+            f"{names or 'none'}"
+        )
+    raise PptMcpError(
+        "section must be a section name (str) or 0-based index (int)"
+    )
+
+
+def _new_section_el(name: str) -> etree._Element:
+    el = etree.Element(qn("p14:section"))
+    el.set("name", name)
+    el.set("id", "{" + str(uuid.uuid4()).upper() + "}")
+    etree.SubElement(el, qn("p14:sldIdLst"))
+    return el
+
+
+def _ensure_section_lst(pkg: PptxPackage) -> etree._Element:
+    """The p14:sectionLst, created (with its p:extLst/p:ext wrapper) when
+    the deck has none yet."""
+    existing = _section_lst(pkg)
+    if existing is not None:
+        return existing
+    pres = pkg.presentation()
+    ext_lst = pres.find(qn("p:extLst"))
+    if ext_lst is None:
+        ext_lst = etree.Element(qn("p:extLst"))
+        pkg._insert_presentation_child(ext_lst)
+    ext = etree.SubElement(ext_lst, qn("p:ext"))
+    ext.set("uri", _SECTION_EXT_URI)
+    sec_lst = etree.SubElement(
+        ext, qn("p14:sectionLst"), nsmap={"p14": NSMAP["p14"]}
+    )
+    pkg.mark_dirty(PRESENTATION_PART)
+    return sec_lst
+
+
+def _section_names(sec_lst: etree._Element) -> list[str]:
+    return [s.get("name", "") for s in sec_lst.findall(qn("p14:section"))]
+
+
+def _create_section(pkg: PptxPackage, name: str, slide) -> dict:
+    entries = _slide_entries(pkg)
+    at_index = at_id = None
+    if slide is not None:
+        at_index, _part, _entry, at_id, _rid = _resolve_slide(pkg, slide)
+    existing_lst = _section_lst(pkg)
+    if existing_lst is not None and name in _section_names(existing_lst):
+        raise PptMcpError(
+            f"a section named {name!r} already exists; section names must "
+            "stay unique so they remain addressable"
+        )
+    sec_lst = _ensure_section_lst(pkg)
+    sections = sec_lst.findall(qn("p14:section"))
+    new_sec = _new_section_el(name)
+    if not sections:
+        # First sectioning of the deck: cover EVERY slide (the invariant).
+        if at_index in (None, 0) or not entries:
+            sec_lst.append(new_sec)
+            lst = new_sec.find(qn("p14:sldIdLst"))
+            for entry in entries:
+                e = etree.SubElement(lst, qn("p14:sldId"))
+                e.set("id", entry.get("id"))
+        else:
+            default = _new_section_el("Default Section")
+            sec_lst.append(default)
+            sec_lst.append(new_sec)
+            dlst = default.find(qn("p14:sldIdLst"))
+            nlst = new_sec.find(qn("p14:sldIdLst"))
+            for i, entry in enumerate(entries):
+                target = dlst if i < at_index else nlst
+                e = etree.SubElement(target, qn("p14:sldId"))
+                e.set("id", entry.get("id"))
+    elif at_index is None:
+        sec_lst.append(new_sec)  # empty section at the end
+    else:
+        # Split the section containing the slide at that slide.
+        container = None
+        for sec in sections:
+            lst = sec.find(qn("p14:sldIdLst"))
+            if lst is None:
+                continue
+            if any(
+                entry.get("id") == str(at_id)
+                for entry in lst.findall(qn("p14:sldId"))
+            ):
+                container = (sec, lst)
+                break
+        if container is None:
+            # Invariant breach in the source deck; adopt the slide.
+            sec_lst.append(new_sec)
+            lst = new_sec.find(qn("p14:sldIdLst"))
+            e = etree.SubElement(lst, qn("p14:sldId"))
+            e.set("id", str(at_id))
+        else:
+            sec, lst = container
+            sec.addnext(new_sec)
+            nlst = new_sec.find(qn("p14:sldIdLst"))
+            take = False
+            for entry in list(lst.findall(qn("p14:sldId"))):
+                if entry.get("id") == str(at_id):
+                    take = True
+                if take:
+                    lst.remove(entry)
+                    nlst.append(entry)
+    pkg.mark_dirty(PRESENTATION_PART)
+    moves = _normalize_sections(pkg)
+    return {
+        "action": "create",
+        "name": name,
+        "section_moves": moves,
+        "sections": _sections_summary(pkg),
+    }
+
+
+def _delete_section(pkg: PptxPackage, section) -> dict:
+    sec_lst = _section_lst(pkg)
+    if sec_lst is None:
+        raise TargetNotFound("the deck has no sections")
+    idx, sec = _resolve_section(sec_lst, section)
+    sections = sec_lst.findall(qn("p14:section"))
+    deleted_name = sec.get("name", "")
+    merged_into = None
+    if len(sections) == 1:
+        # Last section: remove sectioning entirely (invariant-clean).
+        ext = sec_lst.getparent()
+        ext_lst = ext.getparent()
+        ext_lst.remove(ext)
+        if len(ext_lst) == 0:
+            ext_lst.getparent().remove(ext_lst)
+    else:
+        neighbor = sections[idx - 1] if idx > 0 else sections[idx + 1]
+        merged_into = neighbor.get("name", "")
+        nlst = _section_sld_id_lst(neighbor)
+        lst = sec.find(qn("p14:sldIdLst"))
+        if lst is not None:
+            moved_entries = list(lst.findall(qn("p14:sldId")))
+            if idx > 0:
+                for entry in moved_entries:
+                    lst.remove(entry)
+                    nlst.append(entry)
+            else:  # deleting the first section: slides PREPEND to the next
+                for entry in reversed(moved_entries):
+                    lst.remove(entry)
+                    nlst.insert(0, entry)
+        sec_lst.remove(sec)
+    pkg.mark_dirty(PRESENTATION_PART)
+    moves = _normalize_sections(pkg)
+    return {
+        "action": "delete",
+        "deleted": deleted_name,
+        "merged_into": merged_into,
+        "section_moves": moves,
+        "sections": _sections_summary(pkg),
+    }
+
+
+def _move_slide_into_section(pkg: PptxPackage, slide, section) -> dict:
+    sec_lst = _section_lst(pkg)
+    if sec_lst is None:
+        raise TargetNotFound(
+            "the deck has no sections; create one first (action='create')"
+        )
+    sec_idx, sec = _resolve_section(sec_lst, section)
+    index, part, entry, slide_id, _rid = _resolve_slide(pkg, slide)
+
+    # Destination deck position: right after the target section's current
+    # last slide; for an empty section, after the last slide of the nearest
+    # preceding non-empty section (deck start when none).
+    sections = sec_lst.findall(qn("p14:section"))
+    by_id = {e.get("id"): i for i, e in enumerate(_slide_entries(pkg))}
+
+    def _last_index(sec_el) -> int | None:
+        lst = sec_el.find(qn("p14:sldIdLst"))
+        if lst is None:
+            return None
+        indexes = [
+            by_id[e.get("id")]
+            for e in lst.findall(qn("p14:sldId"))
+            if e.get("id") in by_id and e.get("id") != str(slide_id)
+        ]
+        return max(indexes) if indexes else None
+
+    dest_after = _last_index(sec)
+    if dest_after is None:
+        for prev in range(sec_idx - 1, -1, -1):
+            dest_after = _last_index(sections[prev])
+            if dest_after is not None:
+                break
+    to = 0 if dest_after is None else dest_after + 1
+    if index < to:
+        to -= 1  # removing the slide first shifts later positions left
+
+    lst = _sld_id_lst(pkg)
+    lst.remove(entry)
+    lst.insert(to, entry)
+    # Explicit membership: out of every section, into the target's tail.
+    _drop_section_entry(pkg, slide_id)
+    e = etree.SubElement(_section_sld_id_lst(sec), qn("p14:sldId"))
+    e.set("id", str(slide_id))
+    pkg.mark_dirty(PRESENTATION_PART)
+    moves = _normalize_sections(pkg)
+    return {
+        "action": "move_slide_into",
+        "slide_id": slide_id,
+        "part": part,
+        "from": index,
+        "to": to,
+        "section": sec.get("name", ""),
+        "section_moves": moves,
+        "sections": _sections_summary(pkg),
+    }
+
+
+def manage_section(
+    pkg: PptxPackage,
+    action: str,
+    *,
+    section=None,
+    name: str | None = None,
+    slide=None,
+) -> dict:
+    """Section lifecycle: create, rename, delete, move_slide_into. The
+    Phase 2 invariants are renormalized after every mutation: when sections
+    exist, every slide id lives in exactly one section, each section's list
+    follows deck order, and sections are contiguous in deck order.
+
+    - create: `name` required (unique). With `slide`: the new section
+      starts at that slide, splitting the section containing it; on a deck
+      with NO sections it covers from that slide to the end, with a
+      "Default Section" ahead of it when needed. Without `slide`: the
+      first section covers the whole deck; with existing sections an empty
+      section is appended.
+    - rename: `section` + new `name` (unique).
+    - delete: `section`; its slides merge into the previous section (next
+      when deleting the first); deleting the only section removes
+      sectioning entirely. Slides are never deleted.
+    - move_slide_into: `slide` + `section`; the slide MOVES in deck order
+      to the section's end (sections are contiguous ranges, so membership
+      cannot change without moving the slide)."""
+    if action not in _SECTION_ACTIONS:
+        raise PptMcpError(
+            f"unknown action {action!r}; one of: "
+            f"{', '.join(_SECTION_ACTIONS)}"
+        )
+    if action == "create":
+        if not name or not str(name).strip():
+            raise PptMcpError("create needs a non-empty section name")
+        return _create_section(pkg, str(name).strip(), slide)
+    if action == "rename":
+        if section is None:
+            raise PptMcpError("rename needs `section` (name or index)")
+        if not name or not str(name).strip():
+            raise PptMcpError("rename needs a non-empty new `name`")
+        new_name = str(name).strip()
+        sec_lst = _section_lst(pkg)
+        if sec_lst is None:
+            raise TargetNotFound("the deck has no sections")
+        idx, sec = _resolve_section(sec_lst, section)
+        old = sec.get("name", "")
+        if new_name != old and new_name in _section_names(sec_lst):
+            raise PptMcpError(
+                f"a section named {new_name!r} already exists; names must "
+                "stay unique"
+            )
+        sec.set("name", new_name)
+        pkg.mark_dirty(PRESENTATION_PART)
+        return {
+            "action": "rename",
+            "index": idx,
+            "old_name": old,
+            "name": new_name,
+            "sections": _sections_summary(pkg),
+        }
+    if action == "delete":
+        if section is None:
+            raise PptMcpError("delete needs `section` (name or index)")
+        return _delete_section(pkg, section)
+    if section is None or slide is None:
+        raise PptMcpError("move_slide_into needs both `slide` and `section`")
+    return _move_slide_into_section(pkg, slide, section)

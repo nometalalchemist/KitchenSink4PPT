@@ -144,7 +144,7 @@ def test_stdio_roundtrip(make_deck, tmp_path):
         _handshake(srv)
 
         lite = _tool_names(srv)
-        assert len(lite) == 20, f"lite surface should be 20 tools, got {lite}"
+        assert len(lite) == 23, f"lite surface should be 23 tools, got {lite}"
         assert "enable_tools" in lite
         assert "insert_shape" not in lite, "pack tool leaked into lite"
 
@@ -161,7 +161,13 @@ def test_stdio_roundtrip(make_deck, tmp_path):
 
         grown = _tool_names(srv)
         assert "insert_shape" in grown
-        assert len(grown) == len(lite) + 13
+        # importing server populates the pack registry in THIS process
+        from kitchensink4ppt import packs as _packs
+        from kitchensink4ppt import server as _server  # noqa: F401
+
+        graphics_size = len(_packs.tool_names()["graphics"])
+        assert len(grown) == len(lite) + graphics_size
+        assert graphics_size >= 16  # 13 v1 tools + the 3 image tools
 
         srv.drain_notifications(timeout=2.0)
         assert any(
@@ -198,7 +204,15 @@ def test_stdio_ks4p_mode_full():
         names = _tool_names(srv)
         assert "insert_shape" in names
         assert "create_chart" in names
-        assert len(names) == 67
+        # Full-surface count: derive from the registry rather than a magic
+        # number so pack additions (images, apply_layout, get_theme,
+        # manage_section in Expansion A) do not silently drift.
+        from kitchensink4ppt import packs as _packs
+        from kitchensink4ppt import server as _server  # noqa: F401
+
+        expected = sum(len(v) for v in _packs.tool_names().values())
+        assert len(names) == expected
+        assert expected >= 100  # wave 6 floor: 73 + 27 integration tools
     finally:
         srv.close()
 

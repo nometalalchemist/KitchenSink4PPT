@@ -169,6 +169,33 @@ def _build_notes_master_xml(notes_cx: int, notes_cy: int) -> bytes:
     return xml.encode("utf-8")
 
 
+def _adopt_unregistered_notes_master(pkg: PptxPackage) -> str | None:
+    """python-pptx-lineage decks carry a notesMaster in the presentation
+    rels without a p:notesMasterIdLst entry. Fabricating a second master on
+    such decks produces a file PowerPoint refuses to open; adopt and
+    register the existing one instead."""
+    try:
+        rels = pkg.rels_for(PRESENTATION_PART)
+    except KeyError:
+        return None
+    for rel in rels.getroot():
+        if (
+            rel.get("Type") == _RT_NOTES_MASTER
+            and rel.get("TargetMode") != "External"
+        ):
+            rid = rel.get("Id")
+            pres = pkg.presentation()
+            lst = pres.find(qn("p:notesMasterIdLst"))
+            if lst is None:
+                lst = etree.Element(qn("p:notesMasterIdLst"))
+                pkg._insert_presentation_child(lst)
+            nm_id = etree.SubElement(lst, qn("p:notesMasterId"))
+            nm_id.set(qn("r:id"), rid)
+            pkg.mark_dirty(PRESENTATION_PART)
+            return pkg.relationship_target(PRESENTATION_PART, rid)
+    return None
+
+
 def _ensure_notes_master(pkg: PptxPackage) -> tuple[str, bool]:
     """(notesMaster part name, created?). Creates the part, its theme (a
     copy of the first slide master's theme), the rels, the content types,
@@ -176,6 +203,9 @@ def _ensure_notes_master(pkg: PptxPackage) -> tuple[str, bool]:
     existing = _notes_master_part(pkg)
     if existing is not None:
         return existing, False
+    adopted = _adopt_unregistered_notes_master(pkg)
+    if adopted is not None:
+        return adopted, False
     src_theme = _first_master_theme(pkg)
     if src_theme is None or not pkg.has_part(src_theme):
         raise UnsupportedStructure(

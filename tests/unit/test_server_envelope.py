@@ -126,7 +126,8 @@ def test_docstring_budget_and_no_em_dashes():
     tools get headroom to ~350) and free of em dashes."""
     multiplex = {
         "list_elements", "manage_backups", "enable_tools", "apply_edits",
-        "get_workflows", "diagnose", "validate",
+        "get_workflows", "diagnose", "validate", "manage_section",
+        "generate_diagram",
     }
     for name, tool in server.mcp._tool_manager._tools.items():
         desc = tool.description or ""

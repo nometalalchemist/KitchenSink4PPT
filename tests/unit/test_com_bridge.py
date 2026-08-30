@@ -81,17 +81,34 @@ def _com_gate():
 # One scenario per subprocess: the script below is the entire COM round for
 # a mode, and the pytest process only parses its JSON verdict.
 _SCENARIO = r"""
-import json, sys, time
+import contextlib, json, subprocess, sys, time
 from pathlib import Path
 
 from kitchensink4ppt.com import bridge
 from kitchensink4ppt.ops import export as export_ops
 
+
+def powerpnt_pids():
+    # PID-precise zombie accounting (pattern from test_live.py): a
+    # concurrent automation round's own POWERPNT must never fail OUR
+    # hygiene check, so we track the pid delta, not the global count.
+    r = subprocess.run(
+        ["tasklist", "/FI", "IMAGENAME eq POWERPNT.EXE", "/FO", "CSV", "/NH"],
+        capture_output=True, text=True, timeout=30,
+    )
+    pids = set()
+    for ln in r.stdout.splitlines():
+        if "POWERPNT" in ln.upper():
+            with contextlib.suppress(Exception):
+                pids.add(int(ln.split('","')[1].strip('"')))
+    return pids
+
+
 mode = sys.argv[1]
 out = {}
-pre = bridge.powerpnt_count()
-out["pre_powerpnt"] = pre
-if pre > 0:
+pre_pids = powerpnt_pids()
+out["pre_powerpnt"] = len(pre_pids)
+if pre_pids:
     out["skipped"] = "user PowerPoint opened mid-round; refusing to attach"
     print("RESULT " + json.dumps(out))
     sys.exit(0)
@@ -128,8 +145,16 @@ elif mode == "validate":
     out["bad_seconds"] = round(time.monotonic() - t0, 1)
 
 out["status"] = bridge.powerpoint_status()
-out["post_powerpnt"] = bridge.powerpnt_count()
-out["zombie"] = bridge.zombie_check()
+# Drain briefly, then account PID-precisely: only pids that appeared
+# during OUR round count as zombies.
+deadline = time.monotonic() + 45.0
+while time.monotonic() < deadline:
+    if not (powerpnt_pids() - pre_pids):
+        break
+    time.sleep(1.0)
+out["new_zombies"] = sorted(powerpnt_pids() - pre_pids)
+out["post_powerpnt"] = bridge.powerpnt_count()  # informational only
+out["zombie"] = bridge.zombie_check()           # informational only
 print("RESULT " + json.dumps(out))
 """
 
@@ -201,14 +226,15 @@ def test_com_export_round(tmp_path):
     assert out["source_bytes_unchanged"] is True
     assert out["source_mtime_unchanged"] is True
 
-    # launched case: the instance we started is gone again
+    # launched case: the instance we started is gone again (PID-precise;
+    # a concurrent round's own instance never fails our accounting)
     assert out["pre_powerpnt"] == 0
-    assert out["post_powerpnt"] == 0
-    assert out["zombie"]["powerpnt_processes"] == 0
+    assert out["new_zombies"] == []
 
     # status diagnostic ran without attaching
     assert out["status"]["installed"] is True
-    assert out["status"]["powerpoint_running"] is False
+    if out["post_powerpnt"] == 0:  # global state only meaningful when quiet
+        assert out["status"]["powerpoint_running"] is False
 
 
 @pytest.mark.timeout(600)
@@ -231,8 +257,8 @@ def test_com_validate_round(tmp_path):
     # hanging on a modal repair dialog; well under the subprocess timeout.
     assert out["bad_seconds"] < 120
 
-    assert out["post_powerpnt"] == 0
-    assert out["zombie"]["powerpnt_processes"] == 0
+    # PID-precise zombie hygiene (global counts are informational only)
+    assert out["new_zombies"] == []
 
 
 # ------------------------------------------------- diagnostics (no dispatch)

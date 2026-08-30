@@ -449,6 +449,22 @@ def _master_parts(pkg: PptxPackage) -> list[str]:
 
 
 def _layouts_of_master(pkg: PptxPackage, master_part: str) -> list[str]:
+    """Layout parts of one master in the master's p:sldLayoutIdLst order,
+    the order PowerPoint's layout picker shows and the order insert_slide
+    and apply_layout index by. Rels order is NOT that order in real decks
+    (Expansion A finding: the proposal deck's rels list is scrambled), so
+    the id list is authoritative; rels order is only the fallback for a
+    master without one."""
+    lst = pkg.root(master_part).find(qn("p:sldLayoutIdLst"))
+    if lst is not None:
+        out = []
+        for lid in lst.findall(qn("p:sldLayoutId")):
+            rid = lid.get(qn("r:id"))
+            try:
+                out.append(pkg.relationship_target(master_part, rid))
+            except (KeyError, PptMcpError):
+                continue
+        return out
     try:
         rels = pkg.rels_for(master_part)
     except KeyError:
@@ -688,7 +704,21 @@ def list_elements(pkg: PptxPackage, kind: str, scope=None) -> dict:
                                 media_part = pkg.relationship_target(part, rid)
                             except (KeyError, PptMcpError):
                                 media_part = None
-                    items.append({**base, **shape, "media_part": media_part})
+                    item = {**base, **shape, "media_part": media_part}
+                    if media_part is not None and pkg.has_part(media_part):
+                        # cheap header facts (lazy import: media imports
+                        # this module, so a top-level import would cycle)
+                        from .media import image_size_px, sniff_format
+
+                        data = pkg.raw_part(media_part)
+                        item["media_bytes"] = len(data)
+                        fmt = sniff_format(data)
+                        if fmt:
+                            item["format"] = fmt
+                        px = image_size_px(data, fmt)
+                        if px is not None:
+                            item["px"] = {"w": px[0], "h": px[1]}
+                    items.append(item)
 
     return {"kind": kind, "count": len(items), "items": items}
 

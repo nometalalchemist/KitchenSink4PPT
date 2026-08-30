@@ -385,8 +385,12 @@ def _apply_run_props(
         remove_children(rpr, FILL_CHOICE_TAGS)  # fill choice is exclusive
         rank_insert(rpr, _fill_element(color), RPR_ORDER)
     if font is not None:
-        latin = ensure_child(rpr, "a:latin", RPR_ORDER)
-        latin.set("typeface", font)
+        # CJK glyphs render through a:ea (and complex scripts through a:cs),
+        # so a latin-only write silently leaves Hangul/Kanji in the theme
+        # font. Mirror the typeface into all three slots.
+        for tag in ("a:latin", "a:ea", "a:cs"):
+            el = ensure_child(rpr, tag, RPR_ORDER)
+            el.set("typeface", font)
 
 
 def _apply_paragraph_props(
@@ -727,10 +731,14 @@ def format_text(
     body = _require_txbody(elem, kind, rec)
     paras = body.findall(qn("a:p"))
     if not paras:
-        raise TargetNotFound(
+        exc = TargetNotFound(
             f"shape {_shape_id(elem)} on slide {rec['index']} has an empty "
             "text body; add text first (set_placeholder_text/insert_textbox)"
         )
+        # insert_textbox lives in the graphics pack; set_placeholder_text is
+        # lite and correctly triggers no hint (discoverability round fix 4).
+        exc.hint_tools = ["insert_textbox"]
+        raise exc
     if paragraph is not None:
         if not 0 <= paragraph < len(paras):
             raise TargetNotFound(

@@ -1,7 +1,7 @@
 """Tiered loading: the pack registry and the enable/disable machinery.
 
 Every tool is registered with FastMCP up front; non-lite tools start
-disabled (enabled=False) so a fresh session pays for ~20 tools, not the whole
+disabled (enabled=False) so a fresh session pays for ~23 tools, not the whole
 surface. enable_tools flips FastMCP Tool.enable(), which queues the
 notifications/tools/list_changed a client needs to re-fetch tools/list
 (verified against fastmcp 2.14: Tool.enable/disable call
@@ -31,23 +31,42 @@ from .core.errors import PptMcpError
 PACK_SUMMARIES: dict[str, str] = {
     "graphics": (
         "shapes, connectors, groups, align/distribute, z-order, SVG-to-"
-        "native-shapes compiler, text boxes, run formatting, bullets"
+        "native-shapes compiler, image insert/replace/crop, text boxes, "
+        "run formatting, bullets"
     ),
     "tables-charts": (
         "structural table surgery (create, cells, merge, rows/cols, "
-        "borders, styles, CSV/JSON round-trip) and native bar/line/pie charts"
+        "borders, styles, CSV/JSON round-trip) and native bar/line/pie/"
+        "combo charts with formatting"
     ),
     "design": (
-        "create-from-template, slide size, hide slides, move slides, "
-        "autofit overflow reporting"
+        "create-from-template, apply layouts, theme colors/fonts read, "
+        "slide size, hide slides, move slides, autofit overflow reporting, "
+        "layout guardrail review (check_layout), theme color/font editing, "
+        "brand extract/apply"
     ),
     "assembly-export": (
-        "speaker notes, footers, PDF and per-slide PNG export, opens-clean "
-        "validation, full text extraction"
+        "speaker notes, sections, footers, PDF and per-slide PNG export, "
+        "opens-clean validation, full text extraction, cross-deck slide copy"
+    ),
+    "transitions-animations": (
+        "slide transitions (fade/push/wipe/split/cut/random, ms duration, "
+        "auto-advance) and bounded entrance animations (appear/fade/wipe, "
+        "click builds, by-paragraph)"
+    ),
+    "review": (
+        "modern threaded comments: add, threaded replies, resolve, cascade "
+        "delete, dual-system listing (modern + classic), whole-deck review "
+        "report"
     ),
     "com": (
         "PowerPoint application diagnostics: install/running status and "
         "zombie process check (Windows only)"
+    ),
+    "com-live": (
+        "edit the presentation while it is OPEN in the user's PowerPoint: "
+        "explicit save, scroll-to-slide, session status (dual-mode file "
+        "tools route here automatically via live='auto')"
     ),
 }
 EVERYTHING = "everything"

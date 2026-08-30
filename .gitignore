@@ -34,3 +34,6 @@ Developer Feedback/
 
 # packed bundles ship as release assets, not commits
 bundle/*.mcpb
+
+# Private brand feedback (outside repo, defensive)
+Brand Feedback/

@@ -231,8 +231,9 @@ def open_presentation(session: _PowerPointSession, path: Path, *, read_only: boo
             raise DocumentLocked(
                 f"{path.name} is open in the user's running PowerPoint; this "
                 "tool never operates on the user's open copy. Close it in "
-                "PowerPoint and retry (live editing of open presentations is "
-                "a planned com-live capability)."
+                "PowerPoint and retry, or use the com-live tools (live_save, "
+                "live_scroll_to, live_status; dual-mode editing tools route "
+                "there via live='auto') to work on the open copy."
             )
     try:
         pres = session.app.Presentations.Open(

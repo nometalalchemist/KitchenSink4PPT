@@ -425,8 +425,11 @@ def _apply_cell_rpr(rpr: etree._Element, style: dict) -> None:
     if "color" in style:
         rpr.append(g.solid_fill(style["color"]))
     if "font" in style:
-        latin = etree.SubElement(rpr, qn("a:latin"))
-        latin.set("typeface", str(style["font"]))
+        # Mirror into a:ea/a:cs so CJK text takes the font too (latin-only
+        # writes leave Hangul in the theme's East Asian face).
+        for tag in ("a:latin", "a:ea", "a:cs"):
+            el = etree.SubElement(rpr, qn(tag))
+            el.set("typeface", str(style["font"]))
 
 
 def _cell_text(tc: etree._Element) -> str:
@@ -852,10 +855,13 @@ def delete_table_rows(
             f"rows {at}..{at + count - 1} out of range; the table has {nrows} rows"
         )
     if count == nrows:
-        raise PptMcpError(
+        exc = PptMcpError(
             "deleting every row would leave an invalid empty table; delete "
-            "the table shape instead (shapes.delete_shape)"
+            "the table shape instead: delete_shape (graphics pack), or the "
+            "apply_edits op delete_shape, which works in lite"
         )
+        exc.hint_tools = ["delete_shape"]
+        raise exc
     end = at + count  # exclusive
     shrink: list[tuple[dict, int]] = []
     for reg in merge_regions(tbl):
@@ -867,11 +873,13 @@ def delete_table_rows(
             overlap = min(reg["r2"], end - 1) - at + 1
             shrink.append((reg, overlap))
         else:
-            raise UnsupportedStructure(
+            exc = UnsupportedStructure(
                 f"deleting rows {at}..{end - 1} removes the origin of merged "
                 f"region {_region_str(reg)} but not its continuation rows; "
                 f"unmerge_cells(row={reg['r1']}, col={reg['c1']}) first"
             )
+            exc.hint_tools = ["unmerge_cells"]
+            raise exc
     for reg, overlap in shrink:
         # Shrink the span on the origin row's cells (origin + hMerge
         # continuations carry rowSpan); a shrunk-to-1 span drops the attr.
@@ -984,10 +992,13 @@ def delete_table_cols(
             f"{ncols} columns"
         )
     if count == ncols:
-        raise PptMcpError(
+        exc = PptMcpError(
             "deleting every column would leave an invalid empty table; "
-            "delete the table shape instead (shapes.delete_shape)"
+            "delete the table shape instead: delete_shape (graphics pack), "
+            "or the apply_edits op delete_shape, which works in lite"
         )
+        exc.hint_tools = ["delete_shape"]
+        raise exc
     end = at + count
     shrink: list[tuple[dict, int]] = []
     for reg in merge_regions(tbl):
@@ -999,11 +1010,13 @@ def delete_table_cols(
             overlap = min(reg["c2"], end - 1) - at + 1
             shrink.append((reg, overlap))
         else:
-            raise UnsupportedStructure(
+            exc = UnsupportedStructure(
                 f"deleting columns {at}..{end - 1} removes the origin of "
                 f"merged region {_region_str(reg)} but not its continuation "
                 f"columns; unmerge_cells(row={reg['r1']}, col={reg['c1']}) first"
             )
+            exc.hint_tools = ["unmerge_cells"]
+            raise exc
     for reg, overlap in shrink:
         # Shrink the span on the origin column's cells (origin + vMerge
         # continuations carry gridSpan); a shrunk-to-1 span drops the attr.

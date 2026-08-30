@@ -883,7 +883,10 @@ def set_shape(
 def delete_shape(pkg: PptxPackage, slide, shape: int) -> dict:
     """Delete one shape by id. Connectors glued to it lose that glue (the
     stCxn/endCxn reference is dropped, the connector keeps its geometry),
-    matching PowerPoint's own delete behavior."""
+    matching PowerPoint's own delete behavior. Timing nodes and build
+    entries referencing the deleted ids are pruned in the same pass (a
+    dangling spid makes PowerPoint silently repair the slide); the counts
+    surface as timing_report."""
     rec = resolve_slide(pkg, slide)
     part = rec["part"]
     elem, _chain = _find_shape(pkg, part, shape)
@@ -907,10 +910,14 @@ def delete_shape(pkg: PptxPackage, slide, shape: int) -> dict:
                 cid = _shape_id(cxnsp)
                 if cid is not None and cid not in unglued:
                     unglued.append(cid)
+    from .animations import _prune_spids
+
+    timing_report = _prune_spids(pkg.root(part), deleted_ids)
     pkg.mark_dirty(part)
     return {
         "deleted": sorted(deleted_ids),
         "unglued_connectors": unglued,
+        "timing_report": timing_report,
         "slide_index": rec["index"],
         "slide_id": rec["slide_id"],
     }

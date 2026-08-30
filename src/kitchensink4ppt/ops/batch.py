@@ -67,9 +67,18 @@ def _resolve_one(pkg: PptxPackage, edit: dict) -> dict:
         raise PptMcpError('each edit must be a dict with an "op" key')
     op = edit["op"]
     if op not in _OPS:
-        raise PptMcpError(
+        exc = PptMcpError(
             f"op {op!r} is not batchable; supported: {sorted(_OPS)}"
         )
+        # When the unknown op names a REAL registered tool, declare it so
+        # the server's pack-hint machinery emits the enable_tools line
+        # (discoverability round, Finding A). packs holds only the registry,
+        # never FastMCP itself, so this import stays ops-clean.
+        from ..packs import pack_of
+
+        if isinstance(op, str) and pack_of(op) is not None:
+            exc.hint_tools = [op]
+        raise exc
     allowed, required = _OPS[op]
     extra = set(edit) - allowed - _LOCATION_KEYS - {"op"}
     if extra:
@@ -210,6 +219,7 @@ def apply_edits(pkg: PptxPackage, edits: list[dict], atomic: bool = True) -> dic
     # Phase 1: resolve EVERYTHING before anything mutates.
     targets: list[dict] = []
     failures: list[dict] = []
+    hint_tools: list[str] = []
     stale = False
     not_found = False
     for i, edit in enumerate(edits):
@@ -229,6 +239,9 @@ def apply_edits(pkg: PptxPackage, edits: list[dict], atomic: bool = True) -> dic
                  "op": edit.get("op") if isinstance(edit, dict) else None,
                  "error": str(exc)}
             )
+            for tool in getattr(exc, "hint_tools", None) or []:
+                if tool not in hint_tools:
+                    hint_tools.append(tool)
             targets.append({})
         except Exception as exc:
             failures.append(
@@ -236,6 +249,12 @@ def apply_edits(pkg: PptxPackage, edits: list[dict], atomic: bool = True) -> dic
                  "op": edit.get("op") if isinstance(edit, dict) else None,
                  "error": f"{type(exc).__name__}: {exc}"}
             )
+            # Per-edit hint_tools must survive the aggregation, or every
+            # instrumented raise site under apply_edits is dead code on the
+            # wire (discoverability round, contract point 3).
+            for tool in getattr(exc, "hint_tools", None) or []:
+                if tool not in hint_tools:
+                    hint_tools.append(tool)
             targets.append({})
     if failures:
         err = PptMcpError(
@@ -251,6 +270,8 @@ def apply_edits(pkg: PptxPackage, edits: list[dict], atomic: bool = True) -> dic
         else:
             err.code = "BAD_PARAMS"
         err.detail = {"failures": failures}
+        if hint_tools:
+            err.hint_tools = hint_tools
         raise err
 
     # Phase 2: apply in order. A failure here raises; the caller's _edit
@@ -261,10 +282,17 @@ def apply_edits(pkg: PptxPackage, edits: list[dict], atomic: bool = True) -> dic
         try:
             result = _apply_one(pkg, edit, target)
         except PptMcpError as exc:
-            raise PptMcpError(
+            err = PptMcpError(
                 f"edit {i} ({edit['op']}) failed during apply; the batch "
                 f"was ABANDONED and the file is unchanged: {exc}"
-            ) from exc
+            )
+            # Keep the raise site's hint_tools alive across the re-wrap
+            # (e.g. a batched format_text on a table cell points at
+            # set_table_cells; discoverability round, contract point 3).
+            tools = getattr(exc, "hint_tools", None)
+            if tools:
+                err.hint_tools = list(tools)
+            raise err from exc
         if isinstance(result, dict):
             warnings.extend(result.pop("warnings", []) or [])
         changed[str(i)] = result

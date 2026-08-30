@@ -50,7 +50,10 @@ def test_workflow_tools_live_in_declared_packs():
 def test_each_pack_has_a_workflow_naming_it():
     """Discoverability rule 4: recipes are how packs get found."""
     named = {p for wf in _wf.WORKFLOWS.values() for p in wf["packs"]}
-    for pack in ("graphics", "tables-charts", "design", "assembly-export"):
+    for pack in (
+        "graphics", "tables-charts", "design", "assembly-export",
+        "transitions-animations", "review", "com-live",
+    ):
         assert pack in named, f"no workflow advertises pack {pack}"
 
 
