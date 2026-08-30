@@ -36,3 +36,6 @@ bundle/*.mcpb
 
 # Private brand feedback (outside repo, defensive)
 Brand Feedback/
+
+# CI needs this one synthetic 2KB test asset (PowerPoint-generated blank video)
+!tests/artifacts/tiny_video.mp4
