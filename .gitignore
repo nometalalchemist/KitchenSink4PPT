@@ -1,0 +1,33 @@
+# Environment / caches
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Backups created by the server (slot folders)
+.ks4p-backups/
+
+# PRIVATE, never publish:
+# The test corpus is the author's real presentation decks (dissertation
+# defense, conference talks). Tests skip cleanly when it is absent; drop
+# your own .pptx files here to run the full suite.
+tests/corpus/*.pptx
+tests/corpus/*.potx
+
+# Validator state flag (written when validation is skipped because the
+# user's PowerPoint was open)
+tests/.ppt_validator_skipped
+
+# Local build-planning notes and private research (project-specific)
+KICKOFF.md
+PLAN.md
+BUILD_LOG.md
+research/
+docs/
+Developer Feedback/
+
+# packed bundles ship as release assets, not commits
+bundle/*.mcpb
