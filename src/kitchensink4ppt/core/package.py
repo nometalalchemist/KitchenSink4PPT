@@ -23,6 +23,7 @@ wrong is the classic corruption):
 
 from __future__ import annotations
 
+import hashlib
 import io
 import os
 import posixpath
@@ -468,7 +469,16 @@ class PptxPackage:
         # Validate the payload before touching the destination.
         self._validate_payload(payload)
 
-        tmp = dest_path.with_name(dest_path.name + ".ppt-mcp-tmp")
+        # Linux filenames cap at 255 BYTES (not chars); a long CJK name plus
+        # our suffix can exceed it, so hash-shorten while staying in the same
+        # directory (atomic os.replace needs the same filesystem).
+        tmp_name = dest_path.name + ".ppt-mcp-tmp"
+        if len(tmp_name.encode("utf-8", "surrogatepass")) > 240:
+            digest = hashlib.sha1(
+                dest_path.name.encode("utf-8", "surrogatepass")
+            ).hexdigest()[:16]
+            tmp_name = f".{digest}.ppt-mcp-tmp"
+        tmp = dest_path.with_name(tmp_name)
         tmp.write_bytes(payload)
         try:
             # Capture the current (pre-mutation) content into the backup slots

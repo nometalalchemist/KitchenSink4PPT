@@ -565,10 +565,16 @@ def _bake_theme_refs(
         if len(typeface) < 4 or typeface[0] != "+":
             continue
         fam, slot = typeface[1:3], typeface[4:6]
-        face = fonts.get(fam, {}).get(slot)
+        # Empty ea/cs slots are common on latin-only themes; fall back to the
+        # latin face, and if that is empty too, drop the attribute entirely.
+        # Leaving the token would let the DESTINATION theme re-resolve it,
+        # which is exactly the restyling this bake exists to prevent.
+        face = fonts.get(fam, {}).get(slot) or fonts.get(fam, {}).get("lt")
         if face:
             el.set("typeface", face)
-            counts["theme_fonts"] = counts.get("theme_fonts", 0) + 1
+        else:
+            del el.attrib["typeface"]
+        counts["theme_fonts"] = counts.get("theme_fonts", 0) + 1
 
 
 # ------------------------------------------------ link mode: layout + carry
