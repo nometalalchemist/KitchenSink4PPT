@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nometalalchemist/kitchensink4ppt",
+  "title": "KitchenSink4PPT",
+  "description": "Everything plus the kitchen sink for PowerPoint: native editable diagrams from SVG, glued connectors, table surgery, live editing, comments with replies.",
+  "version": "1.0.0",
+  "websiteUrl": "https://nometalalchemist.github.io/KitchenSink4PPT/",
+  "repository": {
+    "url": "https://github.com/nometalalchemist/KitchenSink4PPT",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "kitchensink4ppt",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+  SHIP-DAY PLACEHOLDERS (replace before deploy):
+    138  final registered tool count (masthead catalog number, specs strip, colophon)
+    848  final test count (specs strip, comparison foot-note)
+    1500+ final adversarial stress-call count (specs strip, comparison foot-note)
+  Also re-verify the comparison-table survey date line before ship.
+  COUNT DOCTRINE: 138 is the ONLY total stated on this page; the inventory deliberately
+  carries no per-pack counts except the lite core's "~20" (which also appears in DEPT. 04; keep them
+  identical). If per-pack counts are ever added, they must visibly sum to the stated total, or a
+  careful reader will do the math and get two answers (this happened on the KS4W page).
+  STOREFRONT LINKS: two links point to storefront/index.html (staging). When the storefront
+  moves to the nometalalchemist.github.io root repo, change both (masthead FAMILY link and
+  the DEPT. 07 storefront card) to https://nometalalchemist.github.io/ and delete the
+  docs/storefront/ staging folder.
+-->
+<title>KitchenSink4PPT: Everything plus the kitchen sink for Microsoft PowerPoint</title>
+<meta name="description" content="138-tool MCP server for Microsoft PowerPoint. Native editable diagrams from SVG with glued connectors (move the node, the arrows follow), file-based table surgery, slide duplication done right, template-aware deck creation, tiered loading. Engineered not to corrupt.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>">
+<link rel="llms" href="llms.txt" type="text/plain">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,50&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* metric-matched local fallbacks: on a cold cache the swap to the webfonts cannot re-wrap text.
+   Courier New shares IBM Plex Mono's exact 0.6em advance width (measured 100.0%);
+   Georgia scaled 104% matches Fraunces at text weights (measured 104.9% regular, 103.4% italic). */
+@font-face{font-family:"Plex Mono Fallback";src:local("Courier New");size-adjust:100%;line-gap-override:0%}
+@font-face{font-family:"Fraunces Fallback";src:local("Georgia");size-adjust:104%;line-gap-override:0%}
+:root{
+  --paper:#f5efe0; --paper-deep:#ede4cd; --ink:#1e3550; --ink-soft:#3f5878;
+  --patina:#2e6e55; --patina-bright:#3c8a6b; --glow:#e0a43c; --stamp:#a3352b; --rule:#c9bda0;
+  --pool-op:.45; --dusk-tint:rgba(46,110,85,.07);
+  --shadow: 0 2px 0 var(--rule), 0 10px 30px rgba(30,53,80,.10);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'IBM Plex Mono',"Plex Mono Fallback",ui-monospace,monospace;
+  background:var(--paper); color:var(--ink); line-height:1.6;
+  transition:background-color .6s ease;
+  background-image:
+    radial-gradient(ellipse at 20% -10%, var(--dusk-tint), transparent 55%),
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(30,53,80,.035) 27px 28px);
+}
+/* dusk mode: the pull-chain swaps the paper stock for evening light (per visit, not stored) */
+body.dusk{
+  --paper:#ecdfbd; --paper-deep:#e1d1a6; --pool-op:.85;
+  --dusk-tint:rgba(224,164,60,.16);
+}
+body.dusk .pendant .bulb{filter:sepia(.15) saturate(1.1) drop-shadow(0 4px 14px rgba(224,164,60,.55))}
+h1,h2,h3,.serif{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif}
+a{color:var(--patina)}
+a:hover{text-decoration-style:wavy;text-decoration-thickness:1px;text-underline-offset:3px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* ---------- masthead ---------- */
+.masthead{border-bottom:3px double var(--ink);padding:14px 0;font-size:12px;
+  letter-spacing:.18em;text-transform:uppercase;display:flex;justify-content:space-between;
+  gap:12px;flex-wrap:wrap}
+.masthead b{letter-spacing:.02em}
+
+/* ---------- hero ---------- */
+.hero{padding:64px 0 56px;text-align:center;position:relative;overflow:hidden}
+.catalog-no{display:inline-block;border:1.5px solid var(--ink);padding:4px 14px;
+  font-size:11px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:28px;
+  background:var(--paper-deep)}
+.hero h1{font-size:clamp(44px,8.5vw,104px);font-weight:900;line-height:.95;
+  letter-spacing:-.015em;font-variation-settings:'SOFT' 50;
+  text-shadow:3px 3px 0 var(--paper-deep), 5px 5px 0 var(--rule)}
+.hero h1 .four{color:var(--patina)}
+.tagline{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-style:italic;font-size:clamp(18px,2.6vw,26px);
+  color:var(--ink-soft);margin:22px auto 0;max-width:660px}
+
+/* the pendant lamp (family fixture: Word owns the faucet, PPT owns the light over the bench) */
+.pendant{display:inline-block;position:relative;animation:sway 7s ease-in-out infinite;transform-origin:top center}
+.pendant .cord{display:block;width:2px;height:38px;background:var(--ink);margin:0 auto;position:relative}
+.pendant .cord:before{content:"";position:absolute;top:-2px;left:-5px;width:12px;height:5px;
+  background:var(--ink);border-radius:0 0 3px 3px}
+.pendant .bulb{font-size:clamp(48px,7vw,72px);line-height:1;display:block;
+  transform:rotate(180deg);filter:sepia(.25) saturate(.85);
+  animation:flicker 5.5s linear infinite;transition:filter .6s}
+.pendant .chain{position:absolute;top:34px;right:-16px;width:20px;height:44px;background:none;
+  border:none;cursor:pointer;padding:0}
+.pendant .chain:before{content:"";position:absolute;top:0;left:9px;width:2px;height:30px;
+  background-image:repeating-linear-gradient(0deg, var(--ink-soft) 0 3px, transparent 3px 6px)}
+.pendant .chain .bead{position:absolute;top:30px;left:5px;width:10px;height:10px;border-radius:50%;
+  background:var(--ink-soft);border:1.5px solid var(--ink)}
+.pendant .chain:hover .bead{background:var(--glow)}
+.pendant .chain:focus-visible{outline:2px dashed var(--patina);outline-offset:2px}
+.pendant .chain.pulled{animation:pull .35s ease-out}
+@keyframes pull{0%{transform:translateY(0)}45%{transform:translateY(7px)}100%{transform:translateY(0)}}
+.chain-hint{display:block;font-size:9px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--ink-soft);opacity:.55;margin-top:6px}
+.pool{width:120px;height:16px;margin:2px auto 0;border-radius:50%;
+  background:radial-gradient(ellipse, rgba(224,164,60,var(--pool-op)), transparent 70%);
+  animation:flicker 5.5s linear infinite;transition:transform .6s}
+body.dusk .pool{transform:scaleX(1.5) scaleY(1.25)}
+@keyframes sway{0%,100%{transform:rotate(0deg)}25%{transform:rotate(1.6deg)}75%{transform:rotate(-1.6deg)}}
+@keyframes flicker{0%,4%{opacity:.25}5%,7%{opacity:1}8%{opacity:.4}9%,100%{opacity:1}}
+
+.specs-strip{display:flex;justify-content:center;gap:0;margin:44px auto 0;
+  border:2px solid var(--ink);max-width:720px;background:var(--paper-deep);
+  box-shadow:var(--shadow);flex-wrap:wrap}
+.spec{padding:16px 28px;border-right:1px solid var(--rule);flex:1;min-width:150px}
+.spec:last-child{border-right:none}
+.spec .n{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-weight:900;font-size:34px;display:block;overflow-wrap:anywhere}
+/* numbers filled at ship */
+.spec .l{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft)}
+.stamp{position:absolute;top:34px;right:max(12px,6vw);transform:rotate(9deg);
+  border:3px solid var(--stamp);color:var(--stamp);padding:8px 14px;font-weight:600;
+  font-size:12px;letter-spacing:.14em;text-transform:uppercase;border-radius:4px;
+  opacity:.85;mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='white'/%3E%3Ccircle cx='1' cy='1' r='.35' fill='black'/%3E%3C/svg%3E")}
+@media(max-width:640px){.stamp{display:none}}
+
+/* reveal on load */
+.rev{opacity:0;transform:translateY(14px);animation:rev .7s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes rev{to{opacity:1;transform:none}}
+.d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.28s}
+.d4{animation-delay:.42s}.d5{animation-delay:.56s}
+
+/* ---------- sections ---------- */
+section{padding:64px 0;border-top:1px solid var(--rule)}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:34px}
+.sec-head h2{font-size:clamp(26px,4vw,40px);font-weight:800}
+.sec-head .no{font-size:12px;letter-spacing:.25em;color:var(--patina);white-space:nowrap;
+  border:2px solid currentColor;border-radius:3px;padding:3px 10px;transform:rotate(-2deg);
+  display:inline-block;opacity:.85;
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='white'/%3E%3Ccircle cx='2.5' cy='1.5' r='.3' fill='black'/%3E%3C/svg%3E")}
+.sec-head:after{content:"";flex:1;border-bottom:2px dotted var(--rule);transform:translateY(-6px)}
+.for-lead{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-size:clamp(16px,2.1vw,20px);line-height:1.65;max-width:820px;margin:0 auto 30px}
+
+/* spec-sheet corner registration ticks */
+.ticked{position:relative}
+.ticked:before,.ticked:after{content:"";position:absolute;width:14px;height:14px;pointer-events:none}
+.ticked:before{top:-8px;left:-8px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.ticked:after{bottom:-8px;right:-8px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+
+/* headline demo: image vs native shapes */
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--rule);border:2px solid var(--ink);box-shadow:var(--shadow)}
+@media(max-width:760px){.demo-grid{grid-template-columns:1fr}}
+.demo-panel{background:var(--paper);padding:22px 22px 18px;position:relative}
+.demo-panel h3{font-size:12px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:14px}
+.demo-panel.bad h3{color:var(--stamp)}
+.demo-panel.good h3{color:var(--patina)}
+.demo-panel p{font-size:12.5px;color:var(--ink-soft);margin-top:12px;line-height:1.55}
+.demo-fig{background:var(--paper-deep);border:1px solid var(--rule);padding:8px;display:flex;justify-content:center;position:relative}
+.demo-fig svg{max-width:100%;height:auto;display:block}
+.demo-panel.bad .demo-fig{filter:blur(.7px) sepia(.35) contrast(.92);cursor:not-allowed;user-select:none}
+.demo-panel.bad .demo-fig svg{pointer-events:none}
+.nope{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%) rotate(-8deg) scale(.7);
+  border:3px solid var(--stamp);color:var(--stamp);padding:6px 14px;font-weight:600;font-size:13px;
+  letter-spacing:.14em;text-transform:uppercase;border-radius:4px;background:rgba(245,239,224,.85);
+  opacity:0;transition:opacity .12s, transform .12s;pointer-events:none;z-index:2}
+.demo-panel.bad:active .nope{opacity:1;transform:translate(-50%,-50%) rotate(-8deg) scale(1)}
+.corner-tag{position:absolute;top:14px;right:14px;font-size:10px;letter-spacing:.18em;
+  border:1.5px solid var(--stamp);color:var(--stamp);padding:2px 8px;transform:rotate(4deg);z-index:2}
+.corner-tag.native{border-color:var(--patina);color:var(--patina);transform:rotate(-3deg)}
+#demoStage{cursor:default}
+#demoStage .inert{pointer-events:none}
+#ghostC{opacity:.55}
+#nodeC{cursor:grab;touch-action:none;transform-box:fill-box;transform-origin:center;
+  animation:beckon 2.6s ease-in-out infinite}
+#demoStage.touched #nodeC{animation:none}
+@keyframes beckon{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+#nodeC:active{cursor:grabbing}
+#nodeC:focus{outline:none;stroke:var(--glow);stroke-width:3.5}
+/* the GRAB THIS annotation: present before any interaction, fades after the first drag or nudge */
+.grab-hint{pointer-events:none;opacity:1;transition:opacity .6s}
+#demoStage.touched .grab-hint{opacity:0}
+.grab-hint text{font-family:'IBM Plex Mono',"Plex Mono Fallback",ui-monospace,monospace;font-size:11px;font-weight:600;
+  letter-spacing:.14em;fill:var(--stamp)}
+.demo-caption{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-style:italic;font-size:13.5px;color:var(--patina);
+  margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.stampbtn{font-family:'IBM Plex Mono',"Plex Mono Fallback",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  border:2px solid var(--stamp);color:var(--stamp);background:none;border-radius:4px;padding:4px 10px;
+  cursor:pointer;transform:rotate(-3deg);transition:all .15s;font-weight:600}
+.stampbtn:hover{transform:rotate(-3deg) translate(-1px,-1px);box-shadow:2px 2px 0 var(--rule)}
+.stampbtn:focus-visible{outline:2px dashed var(--stamp);outline-offset:2px}
+
+/* origin tale */
+.tale{border:2px solid var(--ink);background:var(--paper-deep);padding:34px 38px;
+  box-shadow:var(--shadow);position:relative;max-width:820px;margin:0 auto}
+.tale:before{content:attr(data-label);position:absolute;top:-11px;left:28px;
+  background:var(--ink);color:var(--paper);font-size:10px;letter-spacing:.3em;
+  padding:4px 12px}
+.tale p{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-size:clamp(17px,2.2vw,21px);line-height:1.65}
+.tale p+p{margin-top:14px}
+.tale em{color:var(--stamp);font-style:normal;font-weight:700}
+
+/* inventory (packs as departments) */
+.depts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2px;
+  background:var(--rule);border:2px solid var(--ink)}
+.dept{background:var(--paper);padding:20px 20px 16px;transition:background .25s;position:relative}
+.dept:hover{background:var(--paper-deep)}
+.dept:hover:after{content:"✎";position:absolute;top:8px;right:10px;font-size:14px;
+  color:var(--patina);opacity:.45;transform:rotate(12deg)}
+.dept h3{font-size:17px;font-weight:800;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.dept h3 .num{font-family:'IBM Plex Mono',"Plex Mono Fallback",monospace;font-size:10px;color:var(--patina);letter-spacing:.15em;white-space:nowrap}
+.dept p{font-size:12.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55}
+.dept .ex{font-size:11.5px;color:var(--patina);margin-top:8px;line-height:1.5}
+.dept .count{display:inline-block;margin-top:10px;font-size:10px;border:1px solid var(--patina);
+  color:var(--patina);padding:2px 8px;letter-spacing:.15em}
+.dept.backorder{background:repeating-linear-gradient(-45deg, var(--paper) 0 10px, var(--paper-deep) 10px 20px)}
+.dept.backorder:hover:after{content:"soon."}
+.dept.backorder h3 .num{color:var(--ink-soft)}
+.dept.backorder .count{border-style:dashed;border-color:var(--ink-soft);color:var(--ink-soft)}
+
+/* compare */
+.tablewrap{overflow-x:auto;border:2px solid var(--ink);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--paper)}
+th,td{padding:10px 14px;border-bottom:1px solid var(--rule);text-align:center;white-space:nowrap}
+th{background:var(--ink);color:var(--paper);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+td:first-child,th:first-child{text-align:left;font-weight:600;white-space:normal;min-width:170px}
+tr:nth-child(even) td{background:var(--paper-deep)}
+.yes{color:#20713d;font-weight:700}.no{color:var(--stamp);opacity:.75}
+.nd{color:var(--ink-soft);opacity:.55;font-size:11px;font-weight:500}
+.part{color:var(--ink-soft);font-weight:600;font-size:12px}
+.us{background:rgba(46,110,85,.12)!important;font-weight:700}
+th.us{background:var(--patina)!important;color:var(--paper)}
+.foot-note{font-size:11px;color:var(--ink-soft);margin-top:10px}
+/* scenario table: rows are requests, cells are what actually happens, so they wrap */
+.scenario td{white-space:normal;font-size:12px;line-height:1.5;vertical-align:top;text-align:left;min-width:150px}
+.scenario td:first-child{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-size:15px;font-weight:700;min-width:190px}
+.scenario th{text-align:left}
+.scenario .later{color:var(--ink-soft);font-weight:600;font-size:12px}
+
+/* terminal */
+.term{background:var(--ink);color:#e8edf5;border:2px solid var(--ink);box-shadow:var(--shadow);
+  padding:26px 28px;font-size:14.5px;overflow-x:auto}
+.term .c{color:#8fa8c8}
+.term .p{color:var(--patina-bright)}
+.term .g{color:var(--glow)}
+.term div{white-space:pre}
+.install-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+@media(max-width:760px){.install-grid{grid-template-columns:1fr}}
+.install-grid h3{font-size:15px;letter-spacing:.06em;margin-bottom:12px}
+
+/* the install section as a tear-off order form */
+.orderform{border:2px dashed var(--ink);padding:30px 28px 24px;position:relative;background:var(--paper)}
+.orderform:before{content:"✂";position:absolute;top:-14px;left:22px;background:var(--paper);
+  padding:0 8px;font-size:17px;color:var(--ink-soft);transform:scaleX(-1)}
+.orderform .form-no{position:absolute;top:-9px;right:22px;background:var(--paper);padding:0 8px;
+  font-size:10px;letter-spacing:.25em;color:var(--ink-soft);text-transform:uppercase}
+
+/* guarantee */
+.guarantee{max-width:820px;margin:0 auto;text-align:center;border:3px double var(--ink);
+  padding:38px 34px;background:var(--paper-deep);box-shadow:var(--shadow)}
+.guarantee h3{font-size:clamp(22px,3vw,30px);font-weight:900;margin-bottom:14px}
+.guarantee p{font-size:14px;color:var(--ink-soft);max-width:600px;margin:0 auto}
+.guarantee .seal{font-size:40px;display:block;margin-bottom:8px}
+
+/* service + family counters */
+.ticket{display:inline-block;border:2px dashed var(--ink);background:var(--paper-deep);
+  padding:6px 18px;font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--ink-soft);margin-bottom:24px;transform:rotate(-1.5deg);position:relative}
+.ticket:before,.ticket:after{content:"";position:absolute;top:50%;width:10px;height:10px;
+  border-radius:50%;background:var(--paper);border:2px dashed var(--ink);transform:translateY(-50%)}
+.ticket:before{left:-7px}
+.ticket:after{right:-7px}
+.service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px}
+.counter{border:2px solid var(--ink);background:var(--paper);padding:26px 24px;
+  box-shadow:var(--shadow);text-decoration:none;color:var(--ink);display:block;
+  transition:all .15s;position:relative}
+.counter:hover{transform:translate(-2px,-2px);box-shadow:2px 4px 0 var(--rule), 8px 14px 30px rgba(30,53,80,.16);background:var(--paper-deep)}
+.counter .icon{font-size:30px;display:block;margin-bottom:10px;position:relative;width:max-content}
+.counter h3{font-size:18px;font-weight:800;margin-bottom:8px}
+.counter p{font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+.counter .go{display:inline-block;margin-top:14px;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--patina);font-weight:600}
+
+/* the faucet cameo: one respectful drip when the family strip scrolls into view */
+.cameo-drip{position:absolute;left:50%;bottom:-4px;width:5px;height:8px;margin-left:-2px;
+  background:var(--ink-soft);border-radius:50% 50% 60% 60%;opacity:0}
+.icon.dripping .cameo-drip{animation:dripOnce 1.7s ease-in .4s 1}
+@keyframes dripOnce{0%{opacity:0;transform:translateY(-4px) scaleY(.6)}
+  12%{opacity:.85;transform:translateY(0) scaleY(1)}
+  88%{opacity:.85;transform:translateY(46px) scaleY(1.25)}
+  100%{opacity:0;transform:translateY(52px)}}
+
+/* footer */
+footer{border-top:3px double var(--ink);padding:36px 0 48px;font-size:12px;color:var(--ink-soft)}
+footer .row{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer a{color:var(--patina)}
+.colophon{text-align:center;padding:22px 0 0;font-size:10px;letter-spacing:.28em;
+  text-transform:uppercase;opacity:.45}
+.btn{display:inline-block;border:2px solid var(--ink);background:var(--paper);color:var(--ink);
+  text-decoration:none;padding:12px 26px;font-weight:600;font-size:14px;letter-spacing:.05em;
+  box-shadow:3px 3px 0 var(--ink);transition:all .15s;margin:6px 8px 0 0}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+.btn.primary{background:var(--patina);border-color:var(--patina);color:var(--paper);
+  box-shadow:3px 3px 0 var(--ink)}
+.demo-invite{display:inline-block;margin-top:22px;font-size:12px;letter-spacing:.06em;
+  color:var(--patina);text-decoration:none;border-bottom:1.5px dashed var(--patina);padding-bottom:2px}
+.demo-invite:hover{color:var(--ink);border-bottom-style:solid}
+
+/* reduced motion: all ambient animation collapses to its final frame; the drag demo is untouched (user-initiated) */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap masthead rev d1">
+  <span><b>FINE INSTRUMENTS</b> FOR SLIDE FABRICATION</span>
+  <span>CATALOG № 138 · <a href="storefront/index.html">FAMILY</a> · <a href="#service">SERVICE</a> · <a href="https://github.com/nometalalchemist/KitchenSink4PPT">GITHUB</a> · <a href="https://pypi.org/project/kitchensink4ppt/">PYPI</a> · <a href="llms.txt">LLMS.TXT</a></span>
+</div>
+
+<header class="hero wrap">
+  <div class="stamp rev d4">SHAPES,<br>NOT SCREENSHOTS</div>
+  <div class="rev d1">
+    <span class="pendant">
+      <span class="cord"></span><span class="bulb">💡</span>
+      <button class="chain" id="pullChain" type="button" aria-pressed="false" aria-label="Pull the lamp chain to toggle dusk lighting"><span class="bead"></span></button>
+    </span>
+    <div class="pool"></div>
+    <span class="chain-hint">pull the chain</span>
+  </div>
+  <div class="catalog-no rev d2">Model Context Protocol · Server for Microsoft PowerPoint</div>
+  <h1 class="rev d2">Kitchen&shy;Sink<span class="four">4</span>PPT</h1>
+  <p class="tagline rev d3">Everything <em>plus</em> the kitchen sink for Microsoft&nbsp;PowerPoint: the .pptx&nbsp;MCP&nbsp;server that builds diagrams your hands can still move.</p>
+  <div class="specs-strip rev d4">
+    <div class="spec"><span class="n">138</span><span class="l">Tools</span></div>
+    <div class="spec"><span class="n">848</span><span class="l">Tests</span></div>
+    <div class="spec"><span class="n">158</span><span class="l">Stress calls</span></div>
+    <div class="spec"><span class="n">0</span><span class="l">Corruptions</span></div>
+  </div>
+  <div class="rev d5" style="margin-top:36px">
+    <a class="btn primary" href="#install">Install the Sink</a>
+    <a class="btn" href="https://github.com/nometalalchemist/KitchenSink4PPT">Read the Source</a>
+  </div>
+  <a class="demo-invite rev d5" href="#headline">↓ or try it first: there is a diagram below you can drag, and the arrows follow</a>
+</header>
+
+<section id="headline">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">DEPT. 00</span><h2>Move the node, the arrows follow</h2></div>
+    <p class="for-lead">Every AI pipeline can put a diagram on a slide. Almost all of them hand you a picture of one: flat pixels, sealed shut. The night before you present, one box needs to move half an inch, and a picture does not care how small the change is. This server draws diagrams the other way: SVG goes in, grouped native PowerPoint shapes come out, with connectors glued to the shapes they join. Drag a node in PowerPoint and the arrows follow. Ask the agent to recolor one box by name and only that box changes. No regeneration round trip, no image API, no PowerPoint install needed to build it.</p>
+    <div class="demo-grid ticked">
+      <div class="demo-panel bad">
+        <span class="corner-tag">FLAT PNG</span>
+        <span class="nope">IT'S A PICTURE</span>
+        <h3>What the rest of the shelf sells</h3>
+        <div class="demo-fig" title="Nothing here moves. It is a picture.">
+          <svg viewBox="0 0 300 180" width="300" height="180" role="img" aria-label="A three-node diagram flattened into a static image">
+            <defs><marker id="ah0" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#3f5878"/></marker></defs>
+            <line x1="78" y1="52" x2="185" y2="85" stroke="#3f5878" stroke-width="2" marker-end="url(#ah0)"/>
+            <line x1="78" y1="121" x2="185" y2="98" stroke="#3f5878" stroke-width="2" marker-end="url(#ah0)"/>
+            <line x1="60" y1="64" x2="60" y2="105" stroke="#3f5878" stroke-width="2" marker-end="url(#ah0)"/>
+            <circle cx="60" cy="45" r="17" fill="#ede4cd" stroke="#1e3550" stroke-width="2"/>
+            <circle cx="60" cy="128" r="17" fill="#ede4cd" stroke="#1e3550" stroke-width="2"/>
+            <circle cx="207" cy="92" r="17" fill="#c9bda0" stroke="#1e3550" stroke-width="2"/>
+          </svg>
+        </div>
+        <p>One bitmap. Try to drag it: nothing. To move one node, you go back to the generator, describe the change, wait, and hope the other two nodes come back where they were.</p>
+      </div>
+      <div class="demo-panel good">
+        <span class="corner-tag native">NATIVE SHAPES</span>
+        <h3>What this catalog sells</h3>
+        <div class="demo-fig">
+          <svg id="demoStage" viewBox="0 0 300 180" width="300" height="180" role="img" aria-label="The same diagram as native shapes. The green node is draggable; its connectors stay glued and follow it.">
+            <defs>
+              <marker id="ah1" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#2e6e55"/></marker>
+              <marker id="ahHint" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#a3352b"/></marker>
+            </defs>
+            <circle id="ghostC" class="inert" cx="207" cy="92" r="17" fill="none" stroke="#c9bda0" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <line id="linAC" class="inert" x1="78" y1="52" x2="185" y2="85" stroke="#2e6e55" stroke-width="2" marker-end="url(#ah1)"/>
+            <line id="linBC" class="inert" x1="78" y1="121" x2="185" y2="98" stroke="#2e6e55" stroke-width="2" marker-end="url(#ah1)"/>
+            <line class="inert" x1="60" y1="64" x2="60" y2="105" stroke="#2e6e55" stroke-width="2" marker-end="url(#ah1)"/>
+            <circle class="inert" cx="60" cy="45" r="17" fill="#ede4cd" stroke="#1e3550" stroke-width="2"/>
+            <circle class="inert" cx="60" cy="128" r="17" fill="#ede4cd" stroke="#1e3550" stroke-width="2"/>
+            <circle id="nodeC" cx="207" cy="92" r="17" fill="#3c8a6b" stroke="#1e3550" stroke-width="2"
+              tabindex="0" role="button"
+              aria-label="Draggable node. Drag with a pointer or nudge with the arrow keys; the connectors stay glued."/>
+            <g class="grab-hint" transform="rotate(-6 248 42)" aria-hidden="true">
+              <text x="230" y="36">GRAB</text>
+              <text x="230" y="50">THIS</text>
+              <path d="M234,56 Q219,66 214,73" fill="none" stroke="#a3352b" stroke-width="2" marker-end="url(#ahHint)"/>
+            </g>
+          </svg>
+        </div>
+        <div class="demo-caption"><span>go ahead, drag the green node. the arrows follow.</span><button class="stampbtn" id="demoReset" type="button">RESET ⟲</button></div>
+        <p>A grouped set of real PowerPoint shapes with glued connectors. Nudge the node yourself in ten seconds, or tell the agent to edit exactly one shape by its identity. Everything else stays untouched. Keyboard works too: focus the node and use the arrow keys.</p>
+      </div>
+    </div>
+    <p class="foot-note">The demo above runs in your browser for the sake of the point; the shipped output is ordinary PowerPoint geometry (preset and freeform shapes, gradients, theme-color fills, straight, elbow, and curved connectors), so it behaves in PowerPoint exactly the way shapes you drew by hand behave.</p>
+  </div>
+</section>
+
+<section id="tale">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">DEPT. 01</span><h2>Why this exists</h2></div>
+    <div class="tale" data-label="A CAUTIONARY TALE">
+      <p>Ask an AI to put an org chart on slide 12. Almost every tool that can draw one hands you a <em>picture</em> of an org chart; the few that draw real boxes only offer fixed layouts, take them or leave them. Then the reorg happens: one name changes, one box moves under a different manager. The box cannot move. It is not a box; it is <em>pixels</em>. Your choices are to regenerate the whole image and hope nothing else shifted, to pay an image service again for the same chart, or to rebuild it by hand, forty minutes of dragging rectangles you did not make.</p>
+      <p>Shopping around does not save you. The most popular PowerPoint MCP server sits <em>archived</em>: nearly two thousand stars, no successor, and it could add slides but never properly delete, duplicate, or reorder them. The tools that go deeper all need Windows with PowerPoint open before they will do anything at all.</p>
+      <p>KitchenSink4PPT draws the chart as <em>real PowerPoint shapes</em>: boxes you can drag, connectors that stay attached when you do, text you can click into. The one-name fix takes ten seconds, by you or by the agent, and the arrows follow.</p>
+    </div>
+  </div>
+</section>
+
+<section id="inventory">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">DEPT. 02</span><h2>The inventory, by pack</h2></div>
+    <p class="for-lead">The catalog is organized as capability packs. A session starts from the lite core, 24 tools at about 4.5k tokens, and switches on the pack a job needs with one call. Every department below ships in v1.0. All 138 tools, 159 operations.</p>
+    <div class="depts">
+      <div class="dept"><h3><span>Lite Core</span> <span class="num">PACK 0 · ALWAYS ON</span></h3><p>An anchored markdown view of the whole deck, text read and search-and-replace, slide CRUD done right (insert by layout, deep duplicate, delete with cleanup, reorder, hide), batch edits with one save per batch, snapshots and backups, diagnostics, and the enable_tools switchboard.</p><p class="ex">e.g. read the deck as markdown with stable anchors · duplicate the heaviest slide cleanly · apply twenty edits in one atomic batch</p><span class="count">23 TOOLS · ALWAYS ON</span></div>
+      <div class="dept"><h3><span>Graphics</span> <span class="num">THE CENTERPIECE</span></h3><p>SVG compiled to grouped native shapes, preset and freeform geometry with gradients and theme-color fills, connectors glued to the shapes they join, edit-in-place by shape identity, group and ungroup, align, distribute, z-order.</p><p class="ex">e.g. turn an SVG diagram into shapes you can drag · restyle one connector by id · align a row of boxes mechanically, not by eye</p><span class="count">SHIPS IN v1.0</span></div>
+      <div class="dept"><h3><span>Tables plus Charts</span> <span class="num">FIRST OF ITS KIND</span></h3><p>The first file-based structural table operations in any PowerPoint MCP server: merge cells, insert and delete rows AND columns, borders and shading, verified named table styles, CSV and JSON round trips. Chart building rides along.</p><p class="ex">e.g. merge a header row nobody else can touch · add a column without rebuilding the table · load a table straight from CSV</p><span class="count">SHIPS IN v1.0</span></div>
+      <div class="dept"><h3><span>Design</span> <span class="num">YOUR TEMPLATE, KEPT</span></h3><p>Create presentations FROM your own template, list and apply layouts and masters, read the theme, and fill shapes with theme-color references so they follow the palette when the theme changes.</p><p class="ex">e.g. start a deck from the house template · apply the right layout by name · fill a shape with accent 2, not a hex guess</p><span class="count">SHIPS IN v1.0</span></div>
+      <div class="dept"><h3><span>Assembly plus Export</span> <span class="num">OUT THE DOOR</span></h3><p>Speaker notes, sections, footers and slide numbers, hide slide, PDF export, per-slide PNG export as a render-to-verify primitive, opens-clean validation, and a text-overflow report.</p><p class="ex">e.g. write the speaker notes · export slide 7 as a PNG to check the layout · confirm the deck opens with no repair prompt</p><span class="count">SHIPS IN v1.0</span></div>
+      <div class="dept"><h3><span>Review</span> <span class="num">A FIRST, TWICE</span></h3><p>Modern threaded comments with REPLIES, which exist in no other PowerPoint MCP server, resolve and cascade delete, a whole-deck review report, structural deck compare, and anonymize-for-review.</p><p class="ex">e.g. reply to the reviewer in the thread · diff two versions of the deck · strip authorship before blind review</p><span class="count">SHIPS IN v1.0</span></div>
+      <div class="dept"><h3><span>Transitions plus Animations</span> <span class="num">FILE-BASED, FIRST</span></h3><p>Slide transitions with millisecond timing, click and by-paragraph entrance builds, and the tested guarantee that edits never strip the animations a deck already has.</p><p class="ex">e.g. fade every slide · build the lineage slide one panel per click · edit an animated deck without losing its animations</p><span class="count">SHIPS IN v1.0</span></div>
+      <div class="dept"><h3><span>Live Editing</span> <span class="num">OPEN DECK? FINE.</span></h3><p>Edit the deck while it is open in the user's PowerPoint: the same tools route automatically, edits stay unsaved until asked, the cursor is never touched, and the undo guarantee is reported honestly.</p><p class="ex">e.g. fix a typo in the deck you are presenting from tomorrow · see unsaved edits the file on disk does not have</p><span class="count">SHIPS IN v1.0</span></div>
+      <div class="dept"><h3><span>Sweeps</span> <span class="num">THE DEEP CLEAN</span></h3><p>Deck-wide operations that reach where PowerPoint itself cannot: font inventory and replacement including charts and phantom declarations, color remapping with literal-to-theme unification, proofing language, whole-deck logo replacement preserving crops, and compress with an offender report.</p><p class="ex">e.g. find the 121 phantom fonts pasted into a deck · make every stray hex follow the theme · swap the old logo everywhere, crops intact</p><span class="count">SHIPS IN v1.0</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">DEPT. 03</span><h2>Against the field</h2></div>
+    <p class="for-lead">Feature grids flatter everybody. Here is the comparison as seven things you would actually ask an agent for, and what happens next.</p>
+    <div class="ticked"><div class="tablewrap">
+      <table class="scenario">
+        <tr><th>"Hey, could you…"</th><th class="us">💡 KitchenSink4PPT</th><th>Most popular server (archived)</th><th>COM tier*</th></tr>
+        <tr><td>"Draw me a flowchart I can edit afterward."</td><td class="us yes">✔ grouped native shapes with glued connectors, any diagram SVG can describe</td><td class="nd">n/d</td><td class="part">fixed SmartArt layouts, Windows with PowerPoint running</td></tr>
+        <tr><td>"Now move that box, keep the arrows attached."</td><td class="us yes">✔ drag it, or have the agent move it by name; the arrows follow</td><td class="no">✘ nothing to move</td><td class="part">inside SmartArt only</td></tr>
+        <tr><td>"Merge these two cells in the table on slide 6."</td><td class="us yes">✔ straight in the file, the first server anywhere to do it</td><td class="no">✘</td><td class="yes">✔ with PowerPoint running</td></tr>
+        <tr><td>"Delete slide 4, duplicate 7, reorder the rest."</td><td class="us yes">✔ with proper cleanup, nothing dangling</td><td class="no">✘ add-only; slides go in, never out</td><td class="yes">✔</td></tr>
+        <tr><td>"Start the deck from our house template."</td><td class="us yes">✔ layout-aware, theme colors kept</td><td class="nd">n/d</td><td class="nd">n/d</td></tr>
+        <tr><td>"Copy slide 8 into the other deck."</td><td class="us yes">native copy, link or full design import, media deduplicated</td><td class="no">✘</td><td class="nd">n/d</td></tr>
+        <tr><td>"Reply to the reviewer's comment."</td><td class="us yes">threaded replies, verified rendering in PowerPoint itself</td><td class="no">✘</td><td class="no">✘ reply exists in no PowerPoint MCP server today</td></tr>
+      </table>
+    </div></div>
+    <p class="foot-note">Capability survey as of 2026-08-31, compiled from public repositories, documentation, and issue trackers. n/d: not documented in the sources surveyed (not a claimed absence). * COM tier: the servers that automate a running PowerPoint on Windows; capable, but Windows-locked and unavailable without the application. Test and stress evidence lives in the specs strip up top (848 tests, over 1,500 adversarial transport calls, 0 corruptions). Corrections welcome: open an issue.</p>
+  </div>
+</section>
+
+<section id="efficiency">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">DEPT. 04</span><h2>Context efficiency</h2></div>
+    <p class="for-lead">Every MCP server occupies part of an agent's context window before any work starts. The Word sink published its bill and promised tiered loading for v2; this server ships tiered loading on day one. A session starts from the lite core, roughly 20 tools. When a job needs more, the agent enables the pack by name and the tools appear mid-session. The lazy path is a dead end on purpose: lite carries no degraded stand-ins, and any refusal for out-of-scope work names the exact pack and the exact call that unlocks it. The refusal is the signpost.</p>
+    <div class="specs-strip" style="margin-top:26px">
+      <div class="spec"><span class="n">~20</span><span class="l">Tools in the lite core</span></div>
+      <div class="spec"><span class="n">3-5k</span><span class="l">Tokens, lite core up front</span></div>
+      <div class="spec"><span class="n">1</span><span class="l">Call to the whole sink</span></div>
+    </div>
+    <div class="term" style="margin-top:26px"><div><span class="c"># an agent in lite mode tries structural table work</span>
+<span class="p">&gt;</span> merge_cells …
+<span class="g">REFUSED:</span> table structure lives in the tables-charts pack.
+         Run enable_tools(["tables-charts"]) to switch it on.
+<span class="p">&gt;</span> enable_tools(["tables-charts"])
+<span class="g">OK:</span> pack enabled, tools registered, token cost reported.</div></div>
+    <p class="foot-note" style="margin-top:18px">Power users who want everything loaded from the start can pin it: <b>KS4P_MODE=full</b> in the server environment, or a comma-separated pack list. Administrators can lock the selection with KS4P_PACK_POLICY=locked.</p>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">DEPT. 05</span><h2>Installation</h2></div>
+    <div class="orderform">
+      <span class="form-no">ORDER FORM № KS4P-1</span>
+      <div class="install-grid">
+        <div>
+          <h3>① GET THE FIXTURE</h3>
+          <div class="term"><div><span class="p">$</span> pip install kitchensink4ppt</div></div>
+        </div>
+        <div>
+          <h3>② WIRE IT UP (Claude Code)</h3>
+          <div class="term"><div><span class="p">$</span> claude mcp add ppt -s user -- kitchensink4ppt</div></div>
+        </div>
+      </div>
+      <div style="margin-top:26px">
+        <h3 style="font-size:15px;letter-spacing:.06em;margin-bottom:12px">③ ANY OTHER MCP CLIENT (stdio)</h3>
+        <div class="term"><div>{
+  <span class="g">"mcpServers"</span>: {
+    <span class="g">"ppt"</span>: {
+      <span class="g">"command"</span>: <span class="c">"kitchensink4ppt"</span>,
+      <span class="g">"env"</span>: { <span class="g">"KS4P_MODE"</span>: <span class="c">"lite"</span> }  <span class="c">// "lite" (default) · "full" · "graphics,design"</span>
+    }
+  }
+}</div></div>
+      </div>
+      <p class="foot-note" style="margin-top:18px">File-based tools, which are the large majority, need no PowerPoint installation and run cross-platform. The export and validation tools (PDF, per-slide PNG, opens-clean check) use a local Microsoft PowerPoint via COM when one is present. Full setup in the <a href="https://github.com/nometalalchemist/KitchenSink4PPT#install">README</a>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="service">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">DEPT. 06</span><h2>Service department</h2></div>
+    <span class="ticket">NOW SERVING · TAKE A NUMBER · SAME DESK AS THE WORD SINK, ONE AISLE OVER</span>
+    <div class="service-grid">
+      <a class="counter" href="https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=bug_report.yml">
+        <span class="icon">🔧</span>
+        <h3>Found a flicker?</h3>
+        <p>Something glitched, refused, or misbehaved. File a report at the repair counter: the form asks exactly what a fix needs. Never attach a private deck; rebuild the structure with placeholder text.</p>
+        <span class="go">File a bug report →</span>
+      </a>
+      <a class="counter" href="https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=feature_request.yml">
+        <span class="icon">🔌</span>
+        <h3>Missing an attachment?</h3>
+        <p>A PowerPoint capability the sink should also have. Describe the real task behind it and it goes on the workbench.</p>
+        <span class="go">Request a feature →</span>
+      </a>
+      <a class="counter" href="https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml">
+        <span class="icon">💼</span>
+        <h3>Commercial fitting?</h3>
+        <p>Free for any use under AGPL-3.0 terms. Commercial license available for use cases that cannot comply with copyleft; this counter is where you arrange one.</p>
+        <span class="go">Arrange a license →</span>
+      </a>
+    </div>
+    <p class="foot-note" style="margin-top:16px">Reports are public GitHub issues (a free GitHub account is needed to file one). Every report lands in the maintainer's inbox.</p>
+  </div>
+</section>
+
+<section id="guarantee">
+  <div class="wrap">
+    <div class="guarantee">
+      <span class="seal">🛡️</span>
+      <h3>Engineered Not to Corrupt</h3>
+      <p>Atomic validated saves. Automatic timestamped backups before every change. Byte-identical passthrough of anything not being edited, so animations, media, and embedded objects pass through untouched. Every release gates on real decks round-tripping byte-clean and opening in PowerPoint without a repair prompt, and on an adversarial round through the raw MCP transport. When a target is ambiguous, the server refuses with candidates rather than guessing; a wrong first match is somebody else's policy.</p>
+      <p style="margin-top:14px;font-size:11px;opacity:.75">Provided as-is, without warranty of any kind, per the license; the engineering above is simply how seriously your decks are taken. Keep backups. (It makes them for you.)</p>
+    </div>
+  </div>
+</section>
+
+<section id="family">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">DEPT. 07</span><h2>The family</h2></div>
+    <div class="service-grid">
+      <a class="counter" href="https://nometalalchemist.github.io/KitchenSink4Word/">
+        <span class="icon" id="faucetCameo">🚰<span class="cameo-drip"></span></span>
+        <h3>KitchenSink4Word</h3>
+        <p>The original fixture: everything plus the kitchen sink for Microsoft Word. 189 tools, live editing of open documents, citations, merge-aware table surgery, tracked changes, engineered not to corrupt.</p>
+        <span class="go">Visit the plumbing aisle →</span>
+      </a>
+      <a class="counter" href="storefront/index.html">
+        <span class="icon">🏪</span>
+        <h3>The storefront</h3>
+        <p>The whole hardware store on one page: every KitchenSink server, its fixture, and its counter, plus a shelf or two that are not empty by accident.</p>
+        <span class="go">Browse the store →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap row">
+    <span>© 2026 · <b>AGPL-3.0</b>: free for any use under AGPL terms.<br>Commercial license available for use cases that cannot comply with copyleft; <a href="https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml">open an issue</a> to arrange one.</span>
+    <span style="text-align:right"><a href="https://github.com/nometalalchemist/KitchenSink4PPT">github.com/nometalalchemist/KitchenSink4PPT</a> · <a href="https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose">report a glitch</a><br>Built on the KitchenSink4Word safety core, prototyped with Claude Code, and hardened through adversarial rounds until the test agents ran out of complaints. That's a lotta lumens! 💡</span>
+  </div>
+  <div class="wrap colophon">SET IN FRAUNCES &amp; IBM PLEX MONO · CATALOG № 138</div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- 1. the drag demo: glued connectors, re-derived live ---------- */
+var svg = document.getElementById("demoStage");
+if (svg && document.getElementById("nodeC")){
+  var node = document.getElementById("nodeC");
+  var R = 17, HOME = {x:207, y:92};
+  var sources = [
+    {el: document.getElementById("linAC"), sx: 60, sy: 45},
+    {el: document.getElementById("linBC"), sx: 60, sy: 128}
+  ];
+  var pos = {x: HOME.x, y: HOME.y};
+  var raf = false;
+
+  function apply(){
+    raf = false;
+    node.setAttribute("cx", pos.x);
+    node.setAttribute("cy", pos.y);
+    for (var i = 0; i < sources.length; i++){
+      var s = sources[i];
+      var dx = pos.x - s.sx, dy = pos.y - s.sy;
+      var d = Math.sqrt(dx*dx + dy*dy) || 1;
+      var ux = dx / d, uy = dy / d;
+      /* glue: both endpoints ride the circle rims, arrowhead lands at the node's edge */
+      s.el.setAttribute("x1", (s.sx + ux * (R + 2)).toFixed(1));
+      s.el.setAttribute("y1", (s.sy + uy * (R + 2)).toFixed(1));
+      s.el.setAttribute("x2", (pos.x - ux * (R + 6)).toFixed(1));
+      s.el.setAttribute("y2", (pos.y - uy * (R + 6)).toFixed(1));
+    }
+  }
+  function setPos(x, y){
+    pos.x = Math.max(24, Math.min(276, x));
+    pos.y = Math.max(26, Math.min(154, y));
+    if (!raf){ raf = true; requestAnimationFrame(apply); }
+  }
+  function toStage(e){
+    var r = svg.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width * 300, y: (e.clientY - r.top) / r.height * 180 };
+  }
+
+  var dragging = false;
+  node.addEventListener("pointerdown", function(e){
+    dragging = true;
+    svg.classList.add("touched"); /* first grab: the GRAB THIS hint fades, the idle pulse stops */
+    try { node.setPointerCapture(e.pointerId); } catch(err){}
+    e.preventDefault();
+  });
+  node.addEventListener("pointermove", function(e){
+    if (!dragging) return;
+    var p = toStage(e);
+    setPos(p.x, p.y);
+  });
+  node.addEventListener("pointerup", function(){ dragging = false; });
+  node.addEventListener("pointercancel", function(){ dragging = false; });
+
+  node.addEventListener("keydown", function(e){
+    var step = e.shiftKey ? 14 : 6;
+    switch (e.key){
+      case "ArrowLeft":  setPos(pos.x - step, pos.y); break;
+      case "ArrowRight": setPos(pos.x + step, pos.y); break;
+      case "ArrowUp":    setPos(pos.x, pos.y - step); break;
+      case "ArrowDown":  setPos(pos.x, pos.y + step); break;
+      case "Home":       setPos(HOME.x, HOME.y); break;
+      default: return;
+    }
+    svg.classList.add("touched"); /* keyboard counts as a first interaction too */
+    e.preventDefault();
+  });
+
+  var reset = document.getElementById("demoReset");
+  if (reset) reset.addEventListener("click", function(){ setPos(HOME.x, HOME.y); });
+  apply();
+}
+
+/* ---------- 2. the pull-chain: dusk lighting, per visit only ---------- */
+var chain = document.getElementById("pullChain");
+if (chain){
+  chain.addEventListener("click", function(){
+    var on = document.body.classList.toggle("dusk");
+    chain.setAttribute("aria-pressed", String(on));
+    chain.classList.remove("pulled");
+    void chain.offsetWidth; /* restart the pull animation */
+    chain.classList.add("pulled");
+  });
+}
+
+/* ---------- 3. the faucet cameo: one drip when the family strip appears ---------- */
+var faucet = document.getElementById("faucetCameo");
+if (faucet && "IntersectionObserver" in window){
+  var seen = false;
+  var io = new IntersectionObserver(function(entries){
+    for (var i = 0; i < entries.length; i++){
+      if (entries[i].isIntersecting && !seen){
+        seen = true;
+        faucet.classList.add("dripping");
+        io.disconnect();
+      }
+    }
+  }, { threshold: 0.6 });
+  io.observe(faucet);
+}
+})();
+</script>
+
+</body>
+</html>

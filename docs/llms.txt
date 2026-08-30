@@ -1,0 +1,82 @@
+# KitchenSink4PPT
+
+> Everything plus the kitchen sink for Microsoft PowerPoint: the KitchenSink-family .pptx MCP server. 138 tools organized as capability packs with tiered loading from day one. Headline capability: native tweakable graphics, meaning SVG converted to grouped native PowerPoint shapes with glued connectors, editable afterward by shape identity (move the node, the arrows follow). Also the first file-based structural table operations in any PowerPoint MCP server (merge cells, insert/delete rows and columns), slide CRUD done right (insert, deep duplicate, delete with cleanup, reorder, hide), create-from-template with theme-color-referenced fills, and render-to-verify export. Engineered not to corrupt: atomic validated saves, automatic backups before every mutation, byte-identical passthrough of untouched parts, published adversarial test evidence.
+
+This file describes v1.0.
+Platform: file-based tools (the large majority) are cross-platform and need no PowerPoint installation; the export and validation tools (PDF, per-slide PNG, opens-clean check) use a local Microsoft PowerPoint via COM on Windows when present.
+MCP transport: stdio.
+
+## Install
+
+- pip: `pip install kitchensink4ppt`
+- uvx (no install): `uvx kitchensink4ppt`
+- Claude Code: `claude mcp add ppt -s user -- kitchensink4ppt`
+- Any other MCP client: run the `kitchensink4ppt` (or `ppt-mcp`) executable over stdio, e.g. `{"mcpServers": {"ppt": {"command": "kitchensink4ppt"}}}`
+- MCP registry name: `io.github.nometalalchemist/kitchensink4ppt`
+
+## Tiered loading (day one, not a roadmap item)
+
+Sessions start in a lite core of about 20 tools (roughly 3,000-5,000 tokens). Packs are enabled mid-session with `enable_tools(["pack-name"])`; the server emits tools/list_changed and reports the token cost added. The lite core contains no degraded stand-ins for pack capabilities, and any refusal for out-of-scope work names the exact pack and the exact enable_tools call that unlocks it.
+
+Environment pins for clients without list_changed support, or for power users:
+- `KS4P_MODE=lite` (default) | `KS4P_MODE=full` | `KS4P_MODE=graphics,design` (comma-separated pack list)
+- `KS4P_PACK_POLICY=locked` prevents runtime pack changes (administrator setting)
+
+## Capabilities by pack
+
+Lite core (always on, ~20 tools):
+`get_presentation_view` (anchored markdown projection of the deck: slides, shapes with ids, tables, notes), `apply_edits` (batched, every anchor validated first, one backup and one save per batch), `get_text`, `find_text`, `search_and_replace`, `insert_slide`, `delete_slide`, `duplicate_slide`, `reorder_slides`, placeholder/text setters, `get_slide_info`, `list_elements`, `copy_document`, `create_snapshot`, `manage_backups`, `diagnose`, `get_workflows`, `enable_tools`
+
+graphics (the centerpiece):
+`svg_to_shapes` (arbitrary SVG compiled to grouped native PowerPoint shapes; transforms flattened, arcs converted to Beziers), `insert_shape` (presets plus freeform custom geometry, gradients, theme-color fills), `insert_connector` (straight/elbow/curved, GLUED to shapes so they follow when a shape moves), `set_shape` (edit-in-place by shape id: geometry, fill, line, text, dash, arrowheads), `group_shapes`/`ungroup_shapes`, `align_shapes`, `distribute_shapes`, `set_z_order`, `format_shape_text`
+
+tables-charts (first file-based structural table ops in the ecosystem):
+`create_table`, `set_cells`, `set_cells_block`, `merge_cells`, insert/delete rows AND columns, `set_column_widths`, `format_cells` (borders, shading), `apply_table_style` (verified style GUIDs), `export_table`/`import_table` (CSV/JSON); chart creation where release testing stays green
+
+design:
+`create_presentation` (from YOUR template), `list_layouts`/`list_masters`, `apply_layout`, `get_theme` (colors and fonts), theme-color-referenced fills (schemeClr tokens that follow the theme)
+
+assembly-export:
+`set_notes`/`get_notes` (speaker notes), `manage_section`, `set_footer` and slide numbers, `hide_slide`, `export_pdf` (COM), `export_slide_image` (per-slide PNG, the render-to-verify primitive), `validate` (opens-clean plus overflow report), `extract_text`
+
+All ten packs ship populated in v1.0: lite (24), graphics (24), tables-charts (19), design (25), assembly-export (23), transitions-animations (5), review (7), sweeps (6), com (2), com-live (3). Sweeps covers deck-wide font/color/language/logo operations and compress; review includes threaded comment replies and structural deck compare; com-live edits decks open in PowerPoint via live=auto routing.
+
+## Recommended workflows
+
+Build a diagram an audience member can still adjust:
+`enable_tools(["graphics"])` -> `svg_to_shapes` (the whole diagram lands as one grouped set of native shapes with glued connectors) -> `set_shape` by id for any tweak (recolor one node, re-dash one connector) -> `enable_tools(["assembly-export"])` -> `export_slide_image` to verify visually -> `validate`.
+
+Restructure a table nobody else can touch:
+`get_presentation_view` (find the table and its anchor) -> `enable_tools(["tables-charts"])` -> insert/delete columns, `merge_cells`, `format_cells` -> `set_cells_block` for the data -> `validate`.
+
+Build a deck on the house template:
+`enable_tools(["design"])` -> `create_presentation` from the template -> `apply_layout` per slide -> populate placeholders via lite core -> theme-color fills for any added shapes -> `export_pdf`.
+
+Heavy editing with a safety net:
+`copy_document` (work on a dated copy) -> `create_snapshot` -> `get_presentation_view` -> `apply_edits` (batched, anchors validated) -> `validate` -> `export_slide_image` on changed slides.
+
+## Safety model
+
+- Atomic validated saves; a failed operation leaves the original byte-identical.
+- Automatic timestamped backup before every file mutation.
+- Byte-identical passthrough of anything not being edited: animations, media, embedded objects, and unrecognized parts pass through untouched.
+- Ambiguous targets are REFUSED with a candidate list; no tool ever acts on a first match.
+- Slide order is resolved through the presentation's slide list, never ZIP entry order.
+- Release evidence for v1.0: 848 tests, over 1,500 adversarial calls through the raw MCP stdio transport, zero corruptions, verified by opening outputs in invisible PowerPoint and failing on any repair prompt.
+
+## The KitchenSink family
+
+- KitchenSink4Word (the original fixture, 189 tools for .docx): https://nometalalchemist.github.io/KitchenSink4Word/
+- Family storefront: https://nometalalchemist.github.io/
+
+## Links
+
+- GitHub: https://github.com/nometalalchemist/KitchenSink4PPT
+- PyPI: https://pypi.org/project/kitchensink4ppt/
+- MCP registry: io.github.nometalalchemist/kitchensink4ppt
+- Landing page: https://nometalalchemist.github.io/KitchenSink4PPT/
+- Issues (bugs, feature requests, licensing): https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose
+
+## License
+
+AGPL-3.0. Free for any use under AGPL terms (copyleft: modifications to served copies must be shared). Commercial license available for use cases that cannot comply with AGPL: https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml

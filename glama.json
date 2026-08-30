@@ -1,0 +1,41 @@
+{
+  "name": "kitchensink4ppt",
+  "display_name": "KitchenSink4PPT",
+  "description": "Everything plus the kitchen sink for PowerPoint: native editable diagrams from SVG, glued connectors, file-based table surgery, live editing, comments with replies, deck-wide sweeps.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nometalalchemist/KitchenSink4PPT"
+  },
+  "homepage": "https://nometalalchemist.github.io/KitchenSink4PPT/",
+  "license": "AGPL-3.0",
+  "author": {
+    "name": "nometalalchemist",
+    "url": "https://github.com/nometalalchemist"
+  },
+  "categories": [
+    "productivity",
+    "documents"
+  ],
+  "tags": [
+    "powerpoint",
+    "pptx",
+    "office",
+    "slides",
+    "presentations",
+    "diagrams",
+    "svg",
+    "mcp"
+  ],
+  "install": {
+    "pip": "pip install kitchensink4ppt",
+    "uvx": "uvx kitchensink4ppt",
+    "claude_code": "claude mcp add word -- uvx kitchensink4ppt"
+  },
+  "platforms": [
+    "windows",
+    "linux",
+    "macos"
+  ],
+  "runtime": "python",
+  "transport": "stdio"
+}
