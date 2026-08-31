@@ -1,3 +1,4 @@
+<!-- mcp-name: io.github.nometalalchemist/kitchensink4ppt -->
 # KitchenSink4PPT
 
 Everything plus the kitchen sink for Microsoft PowerPoint: an MCP server for
