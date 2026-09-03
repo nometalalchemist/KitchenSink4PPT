@@ -5,7 +5,7 @@ description = "Everything plus the kitchen sink for Microsoft PowerPoint - a .pp
 readme = "README.md"
 license = "AGPL-3.0-only"
 license-files = ["LICENSE", "NOTICE.md"]
-authors = [{ name = "Nykolus Alvut" }]
+authors = [{ name = "nometalalchemist" }]
 keywords = [
     "mcp", "powerpoint", "pptx", "ooxml", "claude", "model-context-protocol",
     "presentations", "slides", "shapes", "svg", "vector-graphics", "tables",
