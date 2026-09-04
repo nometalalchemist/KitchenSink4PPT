@@ -123,11 +123,12 @@ The same discipline as KitchenSink4Word, applied from day one:
 
 Beta. The file layer (packages, slides, text, graphics, tables, charts,
 comments, animations, themes, links, media, notes, masters, equations,
-accessibility, deck assembly, sweeps, export) is covered by an 848-test
+accessibility, deck assembly, sweeps, export) is covered by an 885-test
 suite, including validation that generated decks open clean in real
 PowerPoint, and the server passes a raw stdio protocol round-trip suite.
-Live editing of decks open in PowerPoint ships with its own COM gate
-scripts (`tests/com_gates/`). It has not yet had a long field life; treat
+Live editing of decks open in PowerPoint runs every call through one
+process-wide lock with dialog detection at the window layer and bounded
+timeouts, and ships with its own COM gate scripts (`tests/com_gates/`). It has not yet had a long field life; treat
 important decks with the respect the backup tools make easy, and expect
 fast point releases.
 

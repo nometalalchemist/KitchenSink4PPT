@@ -16,6 +16,11 @@ Env contract:
 
 No persistence, by design: every session starts at KS4P_MODE.
 
+v1.1 consolidated nine packs into six on the author's cost rule: a pack has
+to earn its own menu line, and anything billing under about 1.5k tokens
+belongs inside a neighbour unless it is gated on an environment the file
+packs do not share. PACK_ALIASES keeps every v1.0 name resolving.
+
 server.py populates the registry via register(); this module never imports
 FastMCP itself and holds only the Tool objects it is handed.
 """
@@ -27,7 +32,7 @@ import os
 
 from .core.errors import PptMcpError
 
-# v1 packs in menu order. "lite" is the always-on core, not a pack.
+# Packs in menu order. "lite" is the always-on core, not a pack.
 PACK_SUMMARIES: dict[str, str] = {
     "graphics": (
         "shapes, connectors, groups, align/distribute, z-order, SVG-to-"
