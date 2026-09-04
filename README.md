@@ -74,19 +74,21 @@ Environment pins for hosts and power users:
 
 | Pack | Tools | ~Tokens | What is in it |
 |---|---|---|---|
-| lite core (always on) | 23 | 4.3k | anchored deck view, atomic batch edits, get/find/replace text (live-aware, SmartArt text included), slide insert/delete/duplicate/reorder, placeholder text, hyperlinks (set/remove/list with broken-link detection), info and enumeration, copy, snapshots, backups, diagnose, workflows, enable/disable_tools |
-| graphics | 24 | 6.1k | shapes, glued connectors, SVG compiler, one-call diagram generators (timeline, org chart, matrix, cycle, comparison), images, video/audio embed, groups, align/distribute, z-order, text boxes, run formatting, bullets, format painter (copy_format/copy_position), native LaTeX equations |
+| lite core (always on) | 24 | 4.5k | anchored deck view, atomic batch edits, get/find/replace text (live-aware, SmartArt text included), slide insert/delete/duplicate/reorder, placeholder text, hyperlinks (set/remove/list with broken-link detection), info and enumeration, copy, snapshots, backups, diagnose, workflows, enable/disable_tools |
+| graphics | 24 | 6.2k | shapes, glued connectors, SVG compiler, one-call diagram generators (timeline, org chart, matrix, cycle, comparison), images, video/audio embed, groups, align/distribute, z-order, text boxes, run formatting, bullets, format painter (copy_format/copy_position), native LaTeX equations |
 | tables-charts | 19 | 4.0k | create table, bulk cells, merge/unmerge, row and column insert/delete, borders and fills, widths/heights, 74 built-in styles, CSV/JSON export/import, bar/line/pie/scatter/combo charts with editable data workbooks, chart formatting and data readback |
 | design | 25 | 4.8k | create presentation FROM template, apply layouts, theme read AND write (colors, fonts), brand extract/apply, layout guardrail checks, slide size, hide/move slide, autofit report, slide and master/layout backgrounds, full master and layout editing (placeholders, decoration shapes, create_layout), accessibility audit and repair |
-| assembly-export | 23 | 3.9k | speaker notes, sections, footers and slide numbers, PDF/PNG/handout export, engine detection, opens-clean validation, text extraction, cross-deck slide copy, deck merge and split, agenda slides, deck statistics, document properties, anonymize, slide-show setup and custom shows |
-| transitions-animations | 5 | 0.9k | slide transitions (fade/push/wipe/split/cut/random, millisecond durations, auto-advance) and bounded entrance animations (appear/fade/wipe, click builds, by-paragraph) |
-| review | 7 | 1.1k | modern threaded comments: add, threaded replies, resolve, cascade delete, dual-system listing (modern + classic), whole-deck review report, structural deck-to-deck diff (compare_decks) |
-| sweeps | 6 | 1.2k | deck-wide sweeps: font inventory/replace (incl. charts and phantom declarations), color remap and literal-to-theme unification, proofing language, whole-deck logo replace, compress/purge |
-| com | 2 | 0.2k | PowerPoint status and zombie process check (Windows) |
-| com-live | 3 | 0.3k | edit the deck while it is OPEN in the user's PowerPoint: explicit save, scroll-to-slide, session status; eleven file tools route here automatically via `live='auto'` |
+| assembly-export | 28 | 4.9k | speaker notes, sections, footers and slide numbers, PDF/PNG/handout export, engine detection, opens-clean validation, text extraction, cross-deck slide copy, deck merge and split, agenda slides, deck statistics, document properties, anonymize, slide-show setup and custom shows, slide transitions (fade/push/wipe/split/cut/random, millisecond durations, auto-advance) and bounded entrance animations (appear/fade/wipe, click builds, by-paragraph) |
+| review-sweeps | 13 | 2.3k | modern threaded comments (add, replies, resolve, cascade delete, dual-system listing), whole-deck review report, structural deck-to-deck diff (compare_decks), and the deck-wide sweeps: font inventory/replace (incl. charts and phantom declarations), color remap and literal-to-theme unification, proofing language, whole-deck logo replace, compress/purge |
+| com (Windows only) | 5 | 0.5k | PowerPoint status and zombie process check, plus editing the deck while it is OPEN in the user's PowerPoint: explicit save, scroll-to-slide, session status; eleven file tools route here automatically via `live='auto'` |
 
 Full surface: about 27.3k tokens if you pin `KS4P_MODE=full` (numbers from
 `scripts/measure_surface.py`, not hand-math).
+
+v1.1 consolidated nine packs into six. The v1.0 names
+`transitions-animations`, `review`, `sweeps`, and `com-live` still resolve
+to their new homes in `enable_tools`, `disable_tools`, and `KS4P_MODE`, so
+nothing that worked before stops working.
 
 Structural table operations on the file itself (merging, inserting and
 deleting rows AND columns, per-edge borders) exist in no other PowerPoint
@@ -121,11 +123,12 @@ The same discipline as KitchenSink4Word, applied from day one:
 
 Beta. The file layer (packages, slides, text, graphics, tables, charts,
 comments, animations, themes, links, media, notes, masters, equations,
-accessibility, deck assembly, sweeps, export) is covered by an 848-test
+accessibility, deck assembly, sweeps, export) is covered by an 885-test
 suite, including validation that generated decks open clean in real
 PowerPoint, and the server passes a raw stdio protocol round-trip suite.
-Live editing of decks open in PowerPoint ships with its own COM gate
-scripts (`tests/com_gates/`). It has not yet had a long field life; treat
+Live editing of decks open in PowerPoint runs every call through one
+process-wide lock with dialog detection at the window layer and bounded
+timeouts, and ships with its own COM gate scripts (`tests/com_gates/`). It has not yet had a long field life; treat
 important decks with the respect the backup tools make easy, and expect
 fast point releases.
 

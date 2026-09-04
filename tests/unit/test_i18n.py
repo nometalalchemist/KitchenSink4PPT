@@ -26,6 +26,8 @@ import unicodedata
 from pathlib import Path
 
 import pytest
+
+import com_test_gate as _com_test_gate
 from lxml import etree
 
 from kitchensink4ppt.core.package import PptxPackage, qn
@@ -610,12 +612,11 @@ def _com_gate():
         pytest.skip("pywin32 not installed")
     if not bridge.powerpoint_installed():
         pytest.skip("PowerPoint is not installed on this machine")
-    if bridge.powerpnt_count() > 0:
-        pytest.skip(
-            "SKIPPED-USER-POWERPOINT-OPEN: POWERPNT.EXE is running (the "
-            "user's instance; PowerPoint is a singleton COM server). COM "
-            "coverage did NOT run."
-        )
+    reason = _com_test_gate.powerpoint_blocks_com_tests(
+        bridge.powerpnt_count
+    )
+    if reason:
+        pytest.skip(reason)
 
 
 _KO_COM_SCENARIO = r"""

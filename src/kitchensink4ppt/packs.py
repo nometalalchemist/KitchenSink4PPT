@@ -16,6 +16,11 @@ Env contract:
 
 No persistence, by design: every session starts at KS4P_MODE.
 
+v1.1 consolidated nine packs into six on the author's cost rule: a pack has
+to earn its own menu line, and anything billing under about 1.5k tokens
+belongs inside a neighbour unless it is gated on an environment the file
+packs do not share. PACK_ALIASES keeps every v1.0 name resolving.
+
 server.py populates the registry via register(); this module never imports
 FastMCP itself and holds only the Tool objects it is handed.
 """
@@ -27,7 +32,7 @@ import os
 
 from .core.errors import PptMcpError
 
-# v1 packs in menu order. "lite" is the always-on core, not a pack.
+# Packs in menu order. "lite" is the always-on core, not a pack.
 PACK_SUMMARIES: dict[str, str] = {
     "graphics": (
         "shapes, connectors, groups, align/distribute, z-order, SVG-to-"
@@ -48,38 +53,42 @@ PACK_SUMMARIES: dict[str, str] = {
         "decoration shapes, create_layout), accessibility audit/repair"
     ),
     "assembly-export": (
-        "speaker notes, sections, footers, PDF/PNG/handout export, "
-        "opens-clean validation, text extraction, cross-deck slide copy, "
-        "deck merge/split, agenda slides, deck statistics, document "
-        "properties, anonymize, slide-show setup and custom shows"
+        "finish and ship the deck: speaker notes, sections, footers, "
+        "PDF/PNG/handout export, opens-clean validation, text extraction, "
+        "cross-deck slide copy, deck merge/split, agenda slides, deck "
+        "statistics, document properties, anonymize, slide-show setup and "
+        "custom shows, slide transitions (fade/push/wipe/split/cut/random, "
+        "ms duration, auto-advance) and bounded entrance animations "
+        "(appear/fade/wipe, click builds, by-paragraph)"
     ),
-    "transitions-animations": (
-        "slide transitions (fade/push/wipe/split/cut/random, ms duration, "
-        "auto-advance) and bounded entrance animations (appear/fade/wipe, "
-        "click builds, by-paragraph)"
-    ),
-    "review": (
-        "modern threaded comments: add, threaded replies, resolve, cascade "
-        "delete, dual-system listing (modern + classic), whole-deck review "
-        "report, structural deck-to-deck diff (compare_decks)"
-    ),
-    "sweeps": (
-        "deck-wide sweeps: font inventory/replace (incl. charts and "
+    "review-sweeps": (
+        "whole-deck review and cleanup: modern threaded comments (add, "
+        "replies, resolve, cascade delete, dual-system listing), review "
+        "report, structural deck-to-deck diff (compare_decks), plus "
+        "deck-wide sweeps for font inventory/replace (incl. charts and "
         "phantom declarations), color remap and literal-to-theme "
         "unification, proofing language, whole-deck logo replace, "
         "compress/purge"
     ),
     "com": (
-        "PowerPoint application diagnostics: install/running status and "
-        "zombie process check (Windows only)"
-    ),
-    "com-live": (
-        "edit the presentation while it is OPEN in the user's PowerPoint: "
-        "explicit save, scroll-to-slide, session status (dual-mode file "
-        "tools route here automatically via live='auto')"
+        "the PowerPoint application tier (Windows only): install/running "
+        "status, zombie process check, and editing the presentation while "
+        "it is OPEN in the user's PowerPoint (explicit save, scroll-to-"
+        "slide, session status; dual-mode file tools route here "
+        "automatically via live='auto')"
     ),
 }
 EVERYTHING = "everything"
+
+# v1.0 pack names kept working after the v1.1 consolidation. enable_tools,
+# disable_tools, and KS4P_MODE all resolve these silently: an old env string
+# or a cached recipe must not brick a session over a rename.
+PACK_ALIASES: dict[str, str] = {
+    "transitions-animations": "assembly-export",
+    "review": "review-sweeps",
+    "sweeps": "review-sweeps",
+    "com-live": "com",
+}
 
 # pack -> {tool_name: fastmcp Tool}; "lite" holds the always-on core.
 _REGISTRY: dict[str, dict[str, object]] = {"lite": {}}
@@ -167,6 +176,7 @@ def _validate(packs: list[str]) -> list[str]:
                 "the lite core is always on; it cannot be enabled or "
                 "disabled as a pack"
             )
+        name = PACK_ALIASES.get(name, name)
         if name not in PACK_SUMMARIES:
             raise PptMcpError(
                 f"unknown pack {p!r}; valid packs: {pack_names()} "

@@ -197,10 +197,10 @@ WORKFLOWS: dict[str, dict] = {
             "Give a deck slide transitions and click-by-click entrance "
             "builds, honestly bounded to the verified effect subset."
         ),
-        "packs": ["transitions-animations"],
+        "packs": ["assembly-export"],
         "steps": [
             {"tool": "enable_tools",
-             "why": "packs=['transitions-animations'] turns on the "
+             "why": "packs=['assembly-export'] turns on the "
                     "transition and animation set"},
             {"tool": "get_transitions",
              "why": "see what the deck already carries before overwriting "
@@ -229,10 +229,11 @@ WORKFLOWS: dict[str, dict] = {
             "Run a comment-driven review pass: read every thread, reply, "
             "resolve what is settled, and report the deck's review state."
         ),
-        "packs": ["review"],
+        "packs": ["review-sweeps"],
         "steps": [
             {"tool": "enable_tools",
-             "why": "packs=['review'] turns on modern threaded comments"},
+             "why": "packs=['review-sweeps'] turns on modern threaded "
+                    "comments"},
             {"tool": "comment_report",
              "why": "the whole deck's threads grouped by slide, with a "
                     "markdown rendering for review notes"},
@@ -258,10 +259,10 @@ WORKFLOWS: dict[str, dict] = {
             "Edit a deck WHILE the user has it open in PowerPoint: route "
             "edits live, show the user, save only on request."
         ),
-        "packs": ["com-live"],
+        "packs": ["com"],
         "steps": [
             {"tool": "enable_tools",
-             "why": "packs=['com-live'] turns on live_save, "
+             "why": "packs=['com'] turns on live_save, "
                     "live_scroll_to, and live_status"},
             {"tool": "live_status",
              "why": "confirm PowerPoint is responsive and the target file "
@@ -323,10 +324,11 @@ WORKFLOWS: dict[str, dict] = {
             "Move a deck onto a new brand COMPLETELY: theme first, then "
             "the literal colors and fonts the theme cannot reach."
         ),
-        "packs": ["design", "sweeps"],
+        "packs": ["design", "review-sweeps"],
         "steps": [
             {"tool": "enable_tools",
-             "why": "packs=['design','sweeps'] turns on brand transfer and "
+             "why": "packs=['design','review-sweeps'] turns on brand "
+                    "transfer and "
                     "the deck-wide sweeps"},
             {"tool": "extract_brand",
              "why": "read the SOURCE deck's palette: theme slots, fonts, "

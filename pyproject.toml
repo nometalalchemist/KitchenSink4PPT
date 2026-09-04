@@ -1,6 +1,6 @@
 [project]
 name = "kitchensink4ppt"
-version = "1.0.1"
+version = "1.1.0"
 description = "Everything plus the kitchen sink for Microsoft PowerPoint - a .pptx MCP server engineered not to corrupt: atomic validated saves, slot backups, native vector graphics as editable PowerPoint shapes"
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -45,6 +45,10 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 timeout = 120
+# Without the plugin installed, every timeout= setting and
+# @pytest.mark.timeout in the suite goes silently inert, which is how a COM
+# hang once ran unbounded during a field round. Fail the run instead.
+required_plugins = ["pytest-timeout"]
 markers = [
     "live: needs an interactive PowerPoint instance (auto-skipped where PowerPoint is unavailable)",
 ]

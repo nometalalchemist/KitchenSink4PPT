@@ -1073,9 +1073,47 @@ def live_scroll_to(path: str, slide) -> dict:
 
 def live_status() -> dict:
     """Responsiveness probe + per-presentation dirty state of the user's
-    PowerPoint; safe anytime (helper-thread probe, names only)."""
+    PowerPoint; safe anytime (helper-thread probe, names only).
+
+    v1.1 additions: modal dialogs read at the OS window layer (COM cannot
+    see the dialogs that are blocking COM), and the COM serialization
+    snapshot. When another tool call holds the lock the state is reported
+    as 'serving' and nothing is probed: the instance is not unresponsive,
+    it is busy on our own behalf, and saying 'busy' would send the caller
+    hunting for a PowerPoint problem that does not exist."""
+    from . import dialogs as _dialogs
+    from . import serial as _serial
+
+    out: dict = {"interactive_state": "unknown", "open_presentations": []}
+    pending: list = []
+    with contextlib.suppress(Exception):
+        pending = _dialogs.pending_dialogs()
+    out["pending_dialogs"] = pending
+    out["blocked"] = bool(pending)
+    if pending:
+        out["blocked_note"] = (
+            "PowerPoint has a modal dialog open; live tools will be "
+            "rejected until it is dismissed. Dismiss it in PowerPoint "
+            "(this server never clicks a dialog for you), then retry."
+        )
+    out["com_serialization"] = _serial.lock_snapshot()
+
+    if not _serial.acquire(timeout=2.0):
+        out["interactive_state"] = "serving"
+        out["note"] = (
+            "another COM operation holds the serialization lock; "
+            "PowerPoint was not probed and the next live call will queue"
+        )
+        return out
+    try:
+        return _live_status_probe(out)
+    finally:
+        _serial.release()
+
+
+def _live_status_probe(out: dict) -> dict:
     state = live.probe_with_timeout()
-    out = {"interactive_state": state, "open_presentations": []}
+    out["interactive_state"] = state
     if state != "ready":
         return out
     pythoncom, pywintypes, win32com = live._com_modules()
