@@ -59,3 +59,8 @@ class PowerPointBlocked(PptMcpError):
 
 class PowerPointDisconnected(PptMcpError):
     """PowerPoint or the presentation closed mid-call; the edit may be partially applied."""
+
+
+class LiveLockTimeout(PptMcpError):
+    """Another server process held the cross-process live-session lock past
+    the wait window; the live call was refused and nothing was changed."""
