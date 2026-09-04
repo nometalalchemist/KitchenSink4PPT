@@ -379,6 +379,78 @@ def test_session_records_pid_only_when_it_launched_powerpoint(monkeypatch):
     assert tid not in bridge._SELF_LAUNCHED_PIDS  # cleared on exit
 
 
+# ------------------- field-test finding: slides= type validation (F1)
+
+
+def _no_powerpoint_allowed(monkeypatch):
+    """Any attempt to reach a PowerPoint session is an immediate failure:
+    these refusals must land BEFORE the launch."""
+
+    def boom():
+        raise AssertionError(
+            "PowerPoint was launched before the argument was validated"
+        )
+
+    monkeypatch.setattr(bridge, "_com_modules", boom)
+
+
+def test_slide_images_refuses_string_slides_before_launching(
+    monkeypatch, tmp_path
+):
+    """Field test 2026-09-04: a string passed as `slides` is iterable, so
+    list("C:/deck.pptx") became a per-character slide list and the caller
+    got 'slide index C out of range' AFTER a full launch-and-open cycle.
+    Refuse immediately, and name the real mistake."""
+    deck = tmp_path / "deck.pptx"
+    deck.write_bytes(b"PK\x03\x04stub")
+    _no_powerpoint_allowed(monkeypatch)
+    with pytest.raises(PptMcpError, match="got a string"):
+        bridge.com_export_slide_images(
+            str(deck), str(tmp_path / "out"), "C:/deck.pptx"
+        )
+
+
+def test_slide_images_refuses_non_sequence_and_non_int_slides(
+    monkeypatch, tmp_path
+):
+    deck = tmp_path / "deck.pptx"
+    deck.write_bytes(b"PK\x03\x04stub")
+    _no_powerpoint_allowed(monkeypatch)
+    with pytest.raises(PptMcpError, match="slides must be a list"):
+        bridge.com_export_slide_images(
+            str(deck), str(tmp_path / "out"), 3
+        )
+    with pytest.raises(PptMcpError, match="0-based integers"):
+        bridge.com_export_slide_images(
+            str(deck), str(tmp_path / "out"), [0, "1"]
+        )
+    with pytest.raises(PptMcpError, match="0-based integers"):
+        bridge.com_export_slide_images(
+            str(deck), str(tmp_path / "out"), [True]
+        )
+
+
+def test_slide_images_still_accepts_the_valid_shapes(monkeypatch, tmp_path):
+    """The guard must not reject legitimate callers: None and integer
+    sequences have to survive validation and go on to reach PowerPoint."""
+    deck = tmp_path / "deck.pptx"
+    deck.write_bytes(b"PK\x03\x04stub")
+    reached: list = []
+
+    def marker():
+        reached.append(True)
+        raise PptMcpError("reached the session")
+
+    monkeypatch.setattr(bridge, "_com_modules", marker)
+    for value in (None, [0, 1], (0, 2), range(2)):
+        reached.clear()
+        with pytest.raises(PptMcpError, match="reached the session"):
+            bridge.com_export_slide_images(
+                str(deck), str(tmp_path / "out"), value
+            )
+        assert reached, f"slides={value!r} was rejected but should be valid"
+
+
 # --------------------------------------- 3. alerts suppression contract
 
 
@@ -433,6 +505,53 @@ def test_frame_classes_are_not_dialog_classes():
     """A normally running PowerPoint must never read as blocked."""
     assert not (dialogs.DIALOG_CLASSES & dialogs.FRAME_CLASSES)
     assert "PPTFrameClass" not in dialogs.DIALOG_CLASSES
+
+
+def test_dialog_class_set_matches_empirical_discovery():
+    """Locked to what dialog_class_discovery.py actually observed on
+    PowerPoint 365 (2026-09-04), not to Word's set.
+
+    NUIDialog is the confirmed class of a real blocking PowerPoint modal.
+    MsoSplash is excluded on purpose: a splash window appears during a
+    NORMAL launch, so treating it as a dialog would make blocked=True
+    fire on healthy startups and destroy the flag's credibility. _WwB is
+    a Word class and has no business here."""
+    assert "NUIDialog" in dialogs.DIALOG_CLASSES
+    assert "#32770" in dialogs.DIALOG_CLASSES
+    assert "MsoSplash" not in dialogs.DIALOG_CLASSES
+    assert "_WwB" not in dialogs.DIALOG_CLASSES
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Win32 only")
+def test_dialog_body_text_is_read_from_static_children():
+    """The #32770 path must still recover the message body: that is the
+    half of dialog reporting PowerPoint's NetUI alerts cannot give us."""
+    import ctypes
+    import os
+
+    user32 = ctypes.windll.user32
+    user32.CreateWindowExW.restype = ctypes.c_void_p
+    WS_POPUP, WS_VISIBLE, WS_CHILD = 0x80000000, 0x10000000, 0x40000000
+    title = "ks4p body-text probe"
+    body = "The file is locked for editing by another user."
+    hwnd = user32.CreateWindowExW(
+        0, "#32770", title, WS_POPUP | WS_VISIBLE,
+        -32000, -32000, 200, 100, None, None, None, None,
+    )
+    assert hwnd
+    child = user32.CreateWindowExW(
+        0, "Static", body, WS_CHILD | WS_VISIBLE,
+        0, 0, 180, 40, ctypes.c_void_p(hwnd), None, None, None,
+    )
+    assert child
+    try:
+        found = dialogs.pending_dialogs(pids={os.getpid()})
+        hit = next(d for d in found if d["title"] == title)
+        assert hit.get("text") == body
+        # a dialog that DOES expose its text must not claim it is missing
+        assert "text_unavailable" not in hit
+    finally:
+        user32.DestroyWindow(hwnd)
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Win32 only")

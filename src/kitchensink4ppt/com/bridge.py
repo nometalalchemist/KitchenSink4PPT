@@ -633,6 +633,31 @@ def com_export_slide_images(
     out_dir.mkdir(parents=True, exist_ok=True)
     if width <= 0:
         raise PptMcpError(f"width must be positive, got {width}")
+    # Validate `slides` BEFORE launching PowerPoint. A string is iterable,
+    # so list("C:/deck.pptx") used to become a per-character slide list and
+    # the caller got "slide index C out of range" after a full launch-open
+    # cycle (field test 2026-09-04: 8.7 seconds to produce a nonsense
+    # message). Refuse in microseconds with a message that names the actual
+    # mistake.
+    if slides is not None:
+        if isinstance(slides, (str, bytes)):
+            raise PptMcpError(
+                "slides must be a list of 0-based integers, got a string "
+                f"({slides!r}); a string would be read one character per "
+                "slide. Pass [0, 1, 2], or None for every slide."
+            )
+        if not isinstance(slides, (list, tuple, set, frozenset, range)):
+            raise PptMcpError(
+                "slides must be a list of 0-based integers, got "
+                f"{type(slides).__name__}. Pass [0, 1, 2], or None for "
+                "every slide."
+            )
+        for idx in slides:
+            if isinstance(idx, bool) or not isinstance(idx, int):
+                raise PptMcpError(
+                    "slides must contain 0-based integers, found "
+                    f"{idx!r} ({type(idx).__name__})"
+                )
     images: list[dict] = []
     with _powerpoint() as session:
         pres = open_presentation(session, p, read_only=True)

@@ -24,29 +24,44 @@ from __future__ import annotations
 import contextlib
 import sys
 
-# Window classes PowerPoint uses for alerts and dialogs. Verified
-# empirically against PowerPoint 365 on this machine (2026-09-04; see
-# window_classes() and the field-test report) plus the shared Office set:
-# - "#32770": the standard Windows dialog class (file-permission errors,
-#   same-name conflicts, save-as prompts, the classic alert cascade)
-# - "NUIDialog": Office's modern alert/dialog class (Office 2013+)
-# - "bosa_sdm_Mso96": Office's classic internal dialog class as PowerPoint
-#   registers it (Word's equivalent is bosa_sdm_msword)
-# - "MsoSplash": the Office splash/progress window, which is modal enough
-#   to reject COM calls while it is up
-# - "_WwB": legacy Office dialog frame that still appears for some
-#   embedded-object prompts
+# Window classes PowerPoint uses for alerts and dialogs.
+#
+# Verified empirically against PowerPoint 365 on this machine (2026-09-04,
+# tests/com_gates/dialog_class_discovery.py): provoking a real modal by
+# opening a corrupt deck with DisplayAlerts left at ppAlertsAll produced
+# exactly one new visible top-level window, class "NUIDialog", title
+# "Microsoft PowerPoint", while the ordinary frame stayed "PPTFrameClass".
+# The detector saw the modal and produced no hit on the normal deck.
+#
+# - "NUIDialog": PowerPoint's modern alert class. EMPIRICALLY CONFIRMED as
+#   the class of a real blocking modal on this build.
+# - "#32770": the standard Windows dialog class, used by the common file
+#   dialogs and permission/save-as errors that Office defers to Windows for.
+# - "bosa_sdm_Mso96": Office's classic internal dialog class (the sibling of
+#   Word's bosa_sdm_msword). Not observed on this build; kept because it is
+#   a dialog class by construction, so it cannot produce a frame false
+#   positive on older builds that still use it.
+#
+# Deliberately NOT included: "MsoSplash" (a splash window is not a modal
+# alert, and flagging blocked=True during a normal launch would make the
+# flag untrustworthy) and Word's "_WwB" (wrong application).
 DIALOG_CLASSES = {
     "#32770",
     "NUIDialog",
     "bosa_sdm_Mso96",
-    "MsoSplash",
-    "_WwB",
 }
 
 #: PowerPoint's ordinary (non-dialog) window classes, excluded from
 #: detection so a normal running PowerPoint never reads as blocked.
+#: PPTFrameClass is the empirically observed main frame.
 FRAME_CLASSES = {"PPTFrameClass", "MDIClient", "mdiClass", "paneClassDC"}
+
+#: Office's NetUI rendering surface. A NUIDialog hosts exactly one of
+#: these and nothing else: the message is DRAWN on it, not hosted in child
+#: controls, so the body text has no window text to read. Detecting this
+#: is how the module reports "a real dialog is up but I cannot read its
+#: wording" instead of reporting an empty message and looking broken.
+_NETUI_CLASS = "NetUIHWND"
 
 _MAX_TEXT = 512
 _MAX_STATICS = 6
@@ -72,16 +87,22 @@ def _class_name(ctypes, user32, hwnd) -> str:
     return buf.value
 
 
-def _static_texts(ctypes, user32, hwnd) -> list[str]:
+def _static_texts(ctypes, user32, hwnd) -> tuple[list[str], bool]:
     """Visible text of the dialog's Static children (the message body of a
-    standard alert), cheap and read-only."""
+    standard alert), cheap and read-only. Returns (texts, netui), where
+    netui says the dialog renders its message on a NetUI surface and has
+    no readable child text at all."""
     texts: list[str] = []
+    netui = False
 
     @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
     def child_cb(child, _lp):
+        nonlocal netui
         if len(texts) >= _MAX_STATICS:
             return False
         cls = _class_name(ctypes, user32, child)
+        if cls == _NETUI_CLASS:
+            netui = True
         if cls.lower() in ("static", "richedit20w"):
             t = _window_text(ctypes, user32, child).strip()
             if t:
@@ -90,7 +111,7 @@ def _static_texts(ctypes, user32, hwnd) -> list[str]:
 
     with contextlib.suppress(Exception):
         user32.EnumChildWindows(hwnd, child_cb, 0)
-    return texts
+    return texts, netui
 
 
 def _enumerate(pids: set, want_classes: set | None) -> list[dict]:
@@ -120,9 +141,19 @@ def _enumerate(pids: set, want_classes: set | None) -> list[dict]:
                 "title": _window_text(ctypes, user32, hwnd),
                 "class": cls,
             }
-            statics = _static_texts(ctypes, user32, hwnd)
+            statics, netui = _static_texts(ctypes, user32, hwnd)
             if statics:
                 entry["text"] = " | ".join(statics)
+            elif netui:
+                # Honest degradation rather than a silently empty message:
+                # PowerPoint's own alerts render on a NetUI surface, so the
+                # dialog is definitely real and definitely blocking, but its
+                # wording exists only as pixels at this layer.
+                entry["text_unavailable"] = (
+                    "PowerPoint renders this alert on a NetUI surface, so "
+                    "its wording cannot be read from the window layer. The "
+                    "dialog IS open and IS blocking COM; read it on screen."
+                )
             found.append(entry)
         except Exception:
             pass
