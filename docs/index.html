@@ -270,6 +270,8 @@ th.us{background:var(--patina)!important;color:var(--paper)}
 .scenario td:first-child{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-size:15px;font-weight:700;min-width:190px}
 .scenario th{text-align:left}
 .scenario .later{color:var(--ink-soft);font-weight:600;font-size:12px}
+/* the field's star counts, sized to sit under a column name without shouting */
+.scenario th .stars{display:block;margin-top:4px;font-size:10px;letter-spacing:.05em;font-weight:500;text-transform:none;opacity:.72}
 
 /* terminal */
 .term{background:var(--ink);color:#e8edf5;border:2px solid var(--ink);box-shadow:var(--shadow);
@@ -498,7 +500,7 @@ footer a{color:var(--patina)}
     <p class="for-lead" data-i18n="cmp.lead">Feature grids flatter everybody. Here it is instead as seven things you would actually ask an agent for, and what happens next.</p>
     <div class="ticked"><div class="tablewrap">
       <table class="scenario">
-        <tr><th data-i18n="cmp.h1">"Hey, could you…"</th><th class="us">💡 KitchenSink4PPT</th><th data-i18n="cmp.h3">Most popular server (archived)</th><th data-i18n="cmp.h4">COM tier*</th></tr>
+        <tr><th data-i18n="cmp.h1">"Hey, could you…"</th><th class="us">💡 KitchenSink4PPT</th><th data-i18n="cmp.h3">GongRzhe (archived)<span class="stars">1,851 GitHub stars&dagger;</span></th><th data-i18n="cmp.h4">COM tier*<span class="stars">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span></th></tr>
         <tr><td data-i18n="cr1.q">"Draw me a flowchart I can edit afterward."</td><td class="us yes" data-i18n="cr1.us">✔ grouped native shapes with glued connectors, any diagram SVG can describe</td><td class="nd">n/d</td><td class="part" data-i18n="cr1.com">fixed SmartArt layouts, Windows with PowerPoint running</td></tr>
         <tr><td data-i18n="cr2.q">"Now move that box, keep the arrows attached."</td><td class="us yes" data-i18n="cr2.us">✔ drag it, or have the agent move it by name; the arrows follow</td><td class="no" data-i18n="cr2.pop">✘ nothing to move</td><td class="part" data-i18n="cr2.com">inside SmartArt only</td></tr>
         <tr><td data-i18n="cr3.q">"Merge these two cells in the table on slide 6."</td><td class="us yes" data-i18n="cr3.us">✔ straight in the file, the first server anywhere to do it</td><td class="no">✘</td><td class="yes" data-i18n="cr3.com">✔ with PowerPoint running</td></tr>
@@ -508,7 +510,7 @@ footer a{color:var(--patina)}
         <tr><td data-i18n="cr7.q">"Reply to the reviewer's comment."</td><td class="us yes" data-i18n="cr7.us">threaded replies, verified rendering in PowerPoint itself</td><td class="no">✘</td><td class="no" data-i18n="cr7.com">✘ reply exists in no PowerPoint MCP server today</td></tr>
       </table>
     </div></div>
-    <p class="foot-note" data-i18n="cmp.note">Capability survey as of 2026-08-31, compiled from public repositories, documentation, and issue trackers. n/d: not documented in the sources surveyed (not a claimed absence). * COM tier: the servers that automate a running PowerPoint on Windows; capable, but Windows-locked and unavailable without the application. Test and stress evidence lives in the specs strip up top (885 tests, over 1,500 adversarial transport calls, 0 corruptions). Corrections welcome: open an issue.</p>
+    <p class="foot-note" data-i18n="cmp.note">Capability survey as of 2026-08-31, compiled from public repositories, documentation, and issue trackers. n/d: not documented in the sources surveyed (not a claimed absence). The most popular server is GongRzhe/Office-PowerPoint-MCP-Server, archived since March 2026. * COM tier: the servers that automate a running PowerPoint on Windows (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19); capable, but Windows-locked and unavailable without the application. &dagger; Star counts read from the GitHub API on 2026-09-04, shown for context: stars say how long a shelf has been in view, not what is on it. The 1,851-star leader has been archived since March 2026 and still cannot take a slide back out. Test and stress evidence lives in the specs strip up top (885 tests, over 1,500 adversarial transport calls, 0 corruptions). Corrections welcome: open an issue.</p>
   </div>
 </section>
 
@@ -815,8 +817,8 @@ en: {
 "h2.cmp": "Against the rest of the aisle",
 "cmp.lead": "Feature grids flatter everybody. Here it is instead as seven things you would actually ask an agent for, and what happens next.",
 "cmp.h1": "\"Hey, could you…\"",
-"cmp.h3": "Most popular server (archived)",
-"cmp.h4": "COM tier*",
+"cmp.h3": "GongRzhe (archived)<span class=\"stars\">1,851 GitHub stars&dagger;</span>",
+"cmp.h4": "COM tier*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "\"Draw me a flowchart I can edit afterward.\"",
 "cr1.us": "✔ grouped native shapes with glued connectors, any diagram SVG can describe",
 "cr1.com": "fixed SmartArt layouts, Windows with PowerPoint running",
@@ -837,7 +839,7 @@ en: {
 "cr7.q": "\"Reply to the reviewer's comment.\"",
 "cr7.us": "threaded replies, verified rendering in PowerPoint itself",
 "cr7.com": "✘ reply exists in no PowerPoint MCP server today",
-"cmp.note": "Capability survey as of 2026-08-31, compiled from public repositories, documentation, and issue trackers. n/d: not documented in the sources surveyed (not a claimed absence). * COM tier: the servers that automate a running PowerPoint on Windows; capable, but Windows-locked and unavailable without the application. Test and stress evidence lives in the specs strip up top (885 tests, over 1,500 adversarial transport calls, 0 corruptions). Corrections welcome: open an issue.",
+"cmp.note": "Capability survey as of 2026-08-31, compiled from public repositories, documentation, and issue trackers. n/d: not documented in the sources surveyed (not a claimed absence). The most popular server is GongRzhe/Office-PowerPoint-MCP-Server, archived since March 2026. * COM tier: the servers that automate a running PowerPoint on Windows (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19); capable, but Windows-locked and unavailable without the application. &dagger; Star counts read from the GitHub API on 2026-09-04, shown for context: stars say how long a shelf has been in view, not what is on it. The 1,851-star leader has been archived since March 2026 and still cannot take a slide back out. Test and stress evidence lives in the specs strip up top (885 tests, over 1,500 adversarial transport calls, 0 corruptions). Corrections welcome: open an issue.",
 "h2.eff": "The context bill",
 "eff.lead": "Every MCP server draws on an agent's context window before any work starts, the way every fixture on the floor draws current whether anyone is looking at it or not. The Word sink published its bill and promised tiered loading for v2; this server ships tiered loading on day one. A session starts from the lite core, 24 tools. When a job needs more, the agent enables the pack by name and the tools appear mid-session. The lazy path is a dead end on purpose: lite carries no degraded stand-ins, and any refusal for out-of-scope work names the exact pack and the exact call that unlocks it. The refusal is the signpost.",
 "eff.s1": "Tools in the lite core",
@@ -948,8 +950,8 @@ ko: {
 "h2.cmp": "같은 통로의 다른 물건과 비교",
 "cmp.lead": "기능 비교표는 모두를 좋게 보이게 만듭니다. 그래서 실제로 에이전트에게 시킬 법한 일곱 가지 부탁과, 그다음에 벌어지는 일로 대신 보여 드립니다.",
 "cmp.h1": "“저기, 혹시…”",
-"cmp.h3": "최다 인기 서버 (보관됨)",
-"cmp.h4": "COM 계열*",
+"cmp.h3": "GongRzhe (보관됨)<span class=\"stars\">GitHub 스타 1,851&dagger;</span>",
+"cmp.h4": "COM 계열*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "“나중에 편집할 수 있는 순서도 하나 그려 줘.”",
 "cr1.us": "✔ 붙은 연결선을 갖춘 그룹 네이티브 도형, SVG로 그릴 수 있는 다이어그램이면 무엇이든",
 "cr1.com": "고정 SmartArt 레이아웃, PowerPoint가 실행 중인 Windows 필요",
@@ -970,7 +972,7 @@ ko: {
 "cr7.q": "“검토자 메모에 답글 달아 줘.”",
 "cr7.us": "스레드형 답글, PowerPoint 본체에서 렌더링 검증 완료",
 "cr7.com": "✘ 답글 기능은 오늘날 어떤 PowerPoint MCP 서버에도 없음",
-"cmp.note": "2026-08-31 기준 기능 조사. 공개 저장소, 문서, 이슈 트래커에서 취합했습니다. n/d: 조사한 자료에서 확인되지 않음(없다는 주장이 아닙니다). * COM 계열: Windows에서 실행 중인 PowerPoint를 자동화하는 서버들로, 유능하지만 Windows에 묶여 있고 애플리케이션 없이는 쓸 수 없습니다. 테스트와 스트레스 근거는 상단 사양 띠에 있습니다(테스트 885건, 적대적 전송 호출 1,500건 이상, 손상 0건). 정정은 환영합니다. 이슈를 열어 주세요.",
+"cmp.note": "2026-08-31 기준 기능 조사. 공개 저장소, 문서, 이슈 트래커에서 취합했습니다. n/d: 조사한 자료에서 확인되지 않음(없다는 주장이 아닙니다). 최다 인기 서버는 GongRzhe/Office-PowerPoint-MCP-Server이며 2026년 3월부터 보관 상태입니다. * COM 계열: Windows에서 실행 중인 PowerPoint를 자동화하는 서버들(Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19)로, 유능하지만 Windows에 묶여 있고 애플리케이션 없이는 쓸 수 없습니다. &dagger; 스타 수는 2026-09-04에 GitHub API로 읽은 값이며 참고용입니다. 스타는 그 선반이 얼마나 오래 눈에 띄었는지를 보여줄 뿐, 그 위에 무엇이 놓였는지는 말해 주지 않습니다. 스타 1,851개의 선두 제품은 2026년 3월부터 보관 상태이고, 지금도 슬라이드를 도로 빼내지 못합니다. 테스트와 스트레스 근거는 상단 사양 띠에 있습니다(테스트 885건, 적대적 전송 호출 1,500건 이상, 손상 0건). 정정은 환영합니다. 이슈를 열어 주세요.",
 "h2.eff": "컨텍스트 청구서",
 "eff.lead": "모든 MCP 서버는 일을 시작하기도 전에 에이전트의 컨텍스트 창을 끌어다 씁니다. 매장에 켜 둔 조명이 아무도 보지 않아도 전기를 먹는 것과 같습니다. Word 싱크대는 청구서를 공개하고 v2에서 계층형 로딩을 약속했는데, 이 서버는 계층형 로딩을 첫날부터 싣고 나왔습니다. 세션은 24개 도구의 라이트 코어로 시작하고, 작업에 더 필요하면 에이전트가 팩을 이름으로 켜서 도구가 세션 도중에 나타납니다. 게으른 경로가 막다른 길인 것은 일부러 그런 것입니다: 라이트에는 성능 낮춘 대역이 없고, 범위 밖 작업에 대한 거부는 정확한 팩 이름과 그것을 여는 정확한 호출을 알려 줍니다. 거부가 곧 이정표입니다.",
 "eff.s1": "라이트 코어의 도구 수",
@@ -1081,8 +1083,8 @@ ja: {
 "h2.cmp": "売り場のほかの品と比べて",
 "cmp.lead": "機能マトリクスは誰でも良く見せます。ですので代わりに、実際にエージェントへ頼みそうな7つのお願いと、その後に起きることで並べます。",
 "cmp.h1": "「ねえ、ちょっと…」",
-"cmp.h3": "最人気サーバー(アーカイブ済み)",
-"cmp.h4": "COM 系*",
+"cmp.h3": "GongRzhe(アーカイブ済み)<span class=\"stars\">GitHub スター 1,851&dagger;</span>",
+"cmp.h4": "COM 系*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "「あとで編集できるフローチャートを描いて。」",
 "cr1.us": "✔ 接着コネクタ付きのグループ化ネイティブ図形、SVG で描ける図なら何でも",
 "cr1.com": "固定 SmartArt レイアウト、PowerPoint 起動中の Windows が必要",
@@ -1103,7 +1105,7 @@ ja: {
 "cr7.q": "「校閲者のコメントに返信して。」",
 "cr7.us": "スレッド返信、PowerPoint 本体での描画を検証済み",
 "cr7.com": "✘ 返信は今日どの PowerPoint MCP サーバーにも存在しない",
-"cmp.note": "2026-08-31 時点の機能調査。公開リポジトリ、ドキュメント、Issue トラッカーから集約しました。n/d:調査した資料では確認できず(欠如の断定ではありません)。* COM 系:Windows 上で起動中の PowerPoint を自動化するサーバー群。有能ですが Windows に縛られ、アプリケーションなしでは使えません。テストと負荷の証跡は上部のスペック帯に(テスト885件、敵対的トランスポート呼び出し1,500件超、破損0件)。訂正歓迎、Issue をどうぞ。",
+"cmp.note": "2026-08-31 時点の機能調査。公開リポジトリ、ドキュメント、Issue トラッカーから集約しました。n/d:調査した資料では確認できず(欠如の断定ではありません)。最人気サーバーは GongRzhe/Office-PowerPoint-MCP-Server で、2026年3月からアーカイブ済みです。* COM 系:Windows 上で起動中の PowerPoint を自動化するサーバー群(Ayushmaniar/powerpoint-mcp 113、ykuwai/ppt-mcp 58、trsdn/mcp-server-ppt 36、sbroenne/mcp-server-powerpoint 19)。有能ですが Windows に縛られ、アプリケーションなしでは使えません。&dagger; スター数は 2026-09-04 に GitHub API から取得した参考値です。スターはその棚がどれだけ長く目に触れてきたかを示すもので、棚に何が載っているかを示すものではありません。スター1,851の売れ筋は2026年3月からアーカイブ済みで、いまだにスライドを取り下げることができません。テストと負荷の証跡は上部のスペック帯に(テスト885件、敵対的トランスポート呼び出し1,500件超、破損0件)。訂正歓迎、Issue をどうぞ。",
 "h2.eff": "コンテキストの請求書",
 "eff.lead": "どの MCP サーバーも、仕事を始める前からエージェントのコンテキストウィンドウを食います。売り場の照明が、誰も見ていなくても電気を使うのと同じです。Word の流しは請求書を公開し、v2 での段階式読み込みを約束しました。このサーバーは段階式読み込みを初日から積んでいます。セッションは24ツールのライトコアから始まり、仕事に足りなければエージェントがパックを名前で有効化し、ツールはセッションの途中で現れます。怠惰な道がわざと行き止まりなのです:ライトには劣化版の代役はなく、範囲外の仕事への拒否は、正確なパック名とそれを解錠する正確な呼び出しを告げます。拒否こそが道しるべです。",
 "eff.s1": "ライトコアのツール数",
@@ -1214,8 +1216,8 @@ zh: {
 "h2.cmp": "跟同一通道的其他货比一比",
 "cmp.lead": "功能对比表人人都好看。所以这里换个摆法:七件你真会开口让智能体做的事,以及接下来发生什么。",
 "cmp.h1": "“嘿,能不能…”",
-"cmp.h3": "最流行的服务器(已归档)",
-"cmp.h4": "COM 阵营*",
+"cmp.h3": "GongRzhe(已归档)<span class=\"stars\">GitHub 星标 1,851&dagger;</span>",
+"cmp.h4": "COM 阵营*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "“给我画张事后还能编辑的流程图。”",
 "cr1.us": "✔ 分组原生图形加粘附连接线,SVG 画得出的图都行",
 "cr1.com": "固定 SmartArt 版式,需要运行着 PowerPoint 的 Windows",
@@ -1236,7 +1238,7 @@ zh: {
 "cr7.q": "“回复审阅人的批注。”",
 "cr7.us": "多层回复,渲染已在 PowerPoint 本尊里验证",
 "cr7.com": "✘ 回复功能今天不存在于任何 PowerPoint MCP 服务器",
-"cmp.note": "能力调查,截至 2026-08-31,汇总自公开仓库、文档与 issue 跟踪器。n/d:在所查资料中未见记载(并非断言其没有)。* COM 阵营:在 Windows 上自动化运行中 PowerPoint 的那些服务器;有本事,但被锁在 Windows 上,没有应用就没法用。测试与压力证据在顶部规格条里(885 项测试,1,500 余次对抗性传输调用,0 次损坏)。欢迎指正,请开 issue。",
+"cmp.note": "能力调查,截至 2026-08-31,汇总自公开仓库、文档与 issue 跟踪器。n/d:在所查资料中未见记载(并非断言其没有)。最流行的服务器是 GongRzhe/Office-PowerPoint-MCP-Server,自 2026 年 3 月起已归档。* COM 阵营:在 Windows 上自动化运行中 PowerPoint 的那些服务器(Ayushmaniar/powerpoint-mcp 113、ykuwai/ppt-mcp 58、trsdn/mcp-server-ppt 36、sbroenne/mcp-server-powerpoint 19);有本事,但被锁在 Windows 上,没有应用就没法用。&dagger; 星标数于 2026-09-04 通过 GitHub API 读取,仅供参考:星标说明一个货架被人看了多久,而不是架上摆着什么。那位 1,851 星的领头货自 2026 年 3 月起归档,至今仍然没法把一张幻灯片撤下来。测试与压力证据在顶部规格条里(885 项测试,1,500 余次对抗性传输调用,0 次损坏)。欢迎指正,请开 issue。",
 "h2.eff": "上下文账单",
 "eff.lead": "每个 MCP 服务器都在干活之前就吃掉智能体的一部分上下文窗口,就像卖场里的灯,没人看也照样耗电。Word 水槽公开了账单,并承诺 v2 分层加载;这台服务器第一天就带着分层加载出货。会话从24 件工具的精简内核起步,活儿需要更多时,智能体按名字启用能力包,工具在会话中途出现。偷懒的路是故意堵死的:精简内核不放降级的替身,超范围工作的拒绝会点名确切的包和解锁它的确切调用。拒绝本身就是路标。",
 "eff.s1": "精简内核的工具数",
@@ -1347,8 +1349,8 @@ de: {
 "h2.cmp": "Gegen den Rest des Gangs",
 "cmp.lead": "Feature-Tabellen schmeicheln jedem. Deshalb hier stattdessen sieben Dinge, um die man einen Agenten wirklich bitten würde, und was dann passiert.",
 "cmp.h1": "„Du, könntest du…“",
-"cmp.h3": "Beliebtester Server (archiviert)",
-"cmp.h4": "COM-Riege*",
+"cmp.h3": "GongRzhe (archiviert)<span class=\"stars\">1.851 GitHub-Sterne&dagger;</span>",
+"cmp.h4": "COM-Riege*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "„Zeichne mir ein Flussdiagramm, das ich danach bearbeiten kann.“",
 "cr1.us": "✔ gruppierte native Formen mit angeklebten Verbindern, jedes Diagramm, das SVG beschreiben kann",
 "cr1.com": "feste SmartArt-Layouts, Windows mit laufendem PowerPoint",
@@ -1369,7 +1371,7 @@ de: {
 "cr7.q": "„Antworte auf den Kommentar des Prüfers.“",
 "cr7.us": "Antworten im Thread, Darstellung in PowerPoint selbst verifiziert",
 "cr7.com": "✘ Antworten gibt es heute in keinem PowerPoint-MCP-Server",
-"cmp.note": "Fähigkeitserhebung, Stand 2026-08-31, zusammengetragen aus öffentlichen Repositories, Dokumentation und Issue-Trackern. n/d: in den gesichteten Quellen nicht dokumentiert (keine behauptete Abwesenheit). * COM-Riege: die Server, die ein laufendes PowerPoint unter Windows automatisieren; fähig, aber Windows-gebunden und ohne die Anwendung nicht verfügbar. Test- und Stressbelege stehen oben im Spezifikationsstreifen (885 Tests, über 1.500 adversariale Transportaufrufe, 0 Beschädigungen). Korrekturen willkommen: einfach ein Issue öffnen.",
+"cmp.note": "Fähigkeitserhebung, Stand 2026-08-31, zusammengetragen aus öffentlichen Repositories, Dokumentation und Issue-Trackern. n/d: in den gesichteten Quellen nicht dokumentiert (keine behauptete Abwesenheit). Der beliebteste Server ist GongRzhe/Office-PowerPoint-MCP-Server, seit März 2026 archiviert. * COM-Riege: die Server, die ein laufendes PowerPoint unter Windows automatisieren (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19); fähig, aber Windows-gebunden und ohne die Anwendung nicht verfügbar. &dagger; Sternzahlen am 2026-09-04 über die GitHub-API gelesen, zur Einordnung: Sterne sagen, wie lange ein Regal schon zu sehen ist, nicht was darin steht. Der Spitzenreiter mit 1.851 Sternen ist seit März 2026 archiviert und bekommt eine Folie noch immer nicht wieder heraus. Test- und Stressbelege stehen oben im Spezifikationsstreifen (885 Tests, über 1.500 adversariale Transportaufrufe, 0 Beschädigungen). Korrekturen willkommen: einfach ein Issue öffnen.",
 "h2.eff": "Die Kontextrechnung",
 "eff.lead": "Jeder MCP-Server zieht am Kontextfenster eines Agenten, bevor die Arbeit überhaupt beginnt, so wie jede Leuchte im Laden Strom zieht, ob jemand hinsieht oder nicht. Die Word-Spüle hat ihre Rechnung veröffentlicht und gestuftes Laden für v2 versprochen; dieser Server liefert gestuftes Laden vom ersten Tag an. Eine Sitzung startet mit dem Lite-Kern, 24 Werkzeuge. Braucht ein Auftrag mehr, schaltet der Agent das Paket per Name zu, und die Werkzeuge erscheinen mitten in der Sitzung. Der bequeme Weg ist mit Absicht eine Sackgasse: Lite führt keine abgespeckten Platzhalter, und jede Ablehnung für Arbeit außerhalb des Umfangs nennt das exakte Paket und den exakten Aufruf, der es freischaltet. Die Ablehnung ist der Wegweiser.",
 "eff.s1": "Werkzeuge im Lite-Kern",
@@ -1480,8 +1482,8 @@ fr: {
 "h2.cmp": "Face au reste du rayon",
 "cmp.lead": "Les grilles de fonctionnalités flattent tout le monde. Voici plutôt sept choses que vous demanderiez vraiment à un agent, et ce qui se passe ensuite.",
 "cmp.h1": "« Dis, tu pourrais… »",
-"cmp.h3": "Serveur le plus populaire (archivé)",
-"cmp.h4": "Rang COM*",
+"cmp.h3": "GongRzhe (archivé)<span class=\"stars\">1 851 étoiles GitHub&dagger;</span>",
+"cmp.h4": "Rang COM*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "« Dessine-moi un organigramme que je peux modifier ensuite. »",
 "cr1.us": "✔ formes natives groupées aux connecteurs collés, tout diagramme que le SVG sait décrire",
 "cr1.com": "dispositions SmartArt figées, Windows avec PowerPoint en cours d'exécution",
@@ -1502,7 +1504,7 @@ fr: {
 "cr7.q": "« Réponds au commentaire du relecteur. »",
 "cr7.us": "réponses en fil, rendu vérifié dans PowerPoint lui-même",
 "cr7.com": "✘ la réponse n'existe aujourd'hui dans aucun serveur MCP PowerPoint",
-"cmp.note": "Recensement des capacités au 2026-08-31, compilé à partir des dépôts publics, de la documentation et des traqueurs de tickets. n/d : non documenté dans les sources consultées (ce n'est pas une absence affirmée). * Rang COM : les serveurs qui automatisent un PowerPoint en cours d'exécution sous Windows ; capables, mais verrouillés sur Windows et indisponibles sans l'application. Les preuves de test et d'endurance vivent dans le bandeau de caractéristiques tout en haut (885 tests, plus de 1 500 appels de transport adversariaux, 0 corruption). Corrections bienvenues : ouvrez un ticket.",
+"cmp.note": "Recensement des capacités au 2026-08-31, compilé à partir des dépôts publics, de la documentation et des traqueurs de tickets. n/d : non documenté dans les sources consultées (ce n'est pas une absence affirmée). Le serveur le plus populaire est GongRzhe/Office-PowerPoint-MCP-Server, archivé depuis mars 2026. * Rang COM : les serveurs qui automatisent un PowerPoint en cours d'exécution sous Windows (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19) ; capables, mais verrouillés sur Windows et indisponibles sans l'application. &dagger; Nombres d'étoiles relevés via l'API GitHub le 2026-09-04, à titre de contexte : les étoiles disent depuis combien de temps un rayon est visible, pas ce qu'il y a dessus. Le leader à 1 851 étoiles est archivé depuis mars 2026 et ne sait toujours pas retirer une diapositive. Les preuves de test et d'endurance vivent dans le bandeau de caractéristiques tout en haut (885 tests, plus de 1 500 appels de transport adversariaux, 0 corruption). Corrections bienvenues : ouvrez un ticket.",
 "h2.eff": "La facture de contexte",
 "eff.lead": "Chaque serveur MCP tire sur la fenêtre de contexte d'un agent avant même que le travail commence, comme chaque luminaire du magasin tire du courant, que quelqu'un le regarde ou non. L'évier Word a publié sa facture et promis le chargement par paliers pour la v2 ; ce serveur livre le chargement par paliers dès le premier jour. Une session démarre sur le noyau allégé, 24 outils. Quand un travail en demande plus, l'agent active le pack par son nom et les outils apparaissent en pleine session. Le chemin paresseux est une impasse voulue : le noyau allégé ne porte aucun remplaçant dégradé, et tout refus pour un travail hors périmètre nomme le pack exact et l'appel exact qui le déverrouille. Le refus, c'est le panneau indicateur.",
 "eff.s1": "Outils dans le noyau allégé",
@@ -1613,8 +1615,8 @@ es: {
 "h2.cmp": "Frente al resto del pasillo",
 "cmp.lead": "Las tablas de funciones favorecen a todos. Así que aquí va en su lugar: siete cosas que de verdad le pediría a un agente, y lo que pasa después.",
 "cmp.h1": "«Oye, ¿podrías…?»",
-"cmp.h3": "Servidor más popular (archivado)",
-"cmp.h4": "Nivel COM*",
+"cmp.h3": "GongRzhe (archivado)<span class=\"stars\">1.851 estrellas de GitHub&dagger;</span>",
+"cmp.h4": "Nivel COM*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "«Dibújame un diagrama de flujo que pueda editar después.»",
 "cr1.us": "✔ formas nativas agrupadas con conectores pegados, cualquier diagrama que el SVG pueda describir",
 "cr1.com": "diseños SmartArt fijos, Windows con PowerPoint en ejecución",
@@ -1635,7 +1637,7 @@ es: {
 "cr7.q": "«Responde al comentario del revisor.»",
 "cr7.us": "respuestas en hilo, representación verificada en el propio PowerPoint",
 "cr7.com": "✘ responder no existe hoy en ningún servidor MCP de PowerPoint",
-"cmp.note": "Estudio de capacidades a 2026-08-31, compilado de repositorios públicos, documentación y gestores de incidencias. n/d: no documentado en las fuentes consultadas (no es una ausencia afirmada). * Nivel COM: los servidores que automatizan un PowerPoint en ejecución bajo Windows; capaces, pero atados a Windows e inservibles sin la aplicación. La evidencia de pruebas y estrés vive en la franja de especificaciones de arriba (885 pruebas, más de 1.500 llamadas de transporte adversariales, 0 corrupciones). Correcciones bienvenidas: abra un issue.",
+"cmp.note": "Estudio de capacidades a 2026-08-31, compilado de repositorios públicos, documentación y gestores de incidencias. n/d: no documentado en las fuentes consultadas (no es una ausencia afirmada). El servidor más popular es GongRzhe/Office-PowerPoint-MCP-Server, archivado desde marzo de 2026. * Nivel COM: los servidores que automatizan un PowerPoint en ejecución bajo Windows (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19); capaces, pero atados a Windows e inservibles sin la aplicación. &dagger; Recuento de estrellas leído de la API de GitHub el 2026-09-04, a modo de contexto: las estrellas dicen cuánto tiempo lleva un estante a la vista, no lo que hay en él. El líder de 1.851 estrellas está archivado desde marzo de 2026 y sigue sin poder retirar una diapositiva. La evidencia de pruebas y estrés vive en la franja de especificaciones de arriba (885 pruebas, más de 1.500 llamadas de transporte adversariales, 0 corrupciones). Correcciones bienvenidas: abra un issue.",
 "h2.eff": "La factura de contexto",
 "eff.lead": "Todo servidor MCP tira de la ventana de contexto de un agente antes de empezar a trabajar, igual que cada lámpara de la tienda tira de corriente aunque nadie la mire. El fregadero de Word publicó su factura y prometió carga por niveles para la v2; este servidor entrega la carga por niveles desde el primer día. Una sesión arranca con el núcleo ligero, 24 herramientas. Cuando un trabajo pide más, el agente habilita el paquete por su nombre y las herramientas aparecen en plena sesión. El camino perezoso es un callejón sin salida a propósito: el núcleo ligero no lleva sustitutos degradados, y todo rechazo por trabajo fuera de alcance nombra el paquete exacto y la llamada exacta que lo desbloquea. El rechazo es la señal.",
 "eff.s1": "Herramientas en el núcleo ligero",
