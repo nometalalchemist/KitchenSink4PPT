@@ -48,7 +48,7 @@ headless where available. Nothing ever needs a network connection.
 
 ## Tiered loading: start light, grow mid-session
 
-The server starts in lite mode: 23 tools, roughly 4.3k tokens of tool
+The server starts in lite mode: 24 tools, roughly 4.7k tokens of tool
 context, covering reading, slide CRUD, text, hyperlinks, batch editing,
 backups, and diagnostics. The other 114 tools are registered but disabled
 until asked for:
