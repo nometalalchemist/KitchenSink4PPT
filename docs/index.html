@@ -270,6 +270,8 @@ th.us{background:var(--patina)!important;color:var(--paper)}
 .scenario td:first-child{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-size:15px;font-weight:700;min-width:190px}
 .scenario th{text-align:left}
 .scenario .later{color:var(--ink-soft);font-weight:600;font-size:12px}
+/* the field's star counts, sized to sit under a column name without shouting */
+.scenario th .stars{display:block;margin-top:4px;font-size:10px;letter-spacing:.05em;font-weight:500;text-transform:none;opacity:.72}
 
 /* terminal */
 .term{background:var(--ink);color:#e8edf5;border:2px solid var(--ink);box-shadow:var(--shadow);
@@ -350,7 +352,7 @@ footer a{color:var(--patina)}
 <body>
 
 <div class="wrap masthead rev d1">
-  <span data-i18n="m.left"><b>DECOR DEPARTMENT</b> &middot; FINE INSTRUMENTS FOR SLIDES</span>
+  <span data-i18n="m.left"><b>DECOR DEPARTMENT</b> &middot; FINE INSTRUMENTS FOR THE WELL-DRESSED DECK</span>
   <nav class="lang-toggle" id="langToggle" aria-label="Language"></nav>
   <span><span data-i18n="m.catalog">CATALOG № 138</span> · <a href="https://nometalalchemist.github.io/" data-i18n="m.family">FAMILY</a> · <a href="#service" data-i18n="m.service">SERVICE</a> · <a href="https://github.com/nometalalchemist/KitchenSink4PPT">GITHUB</a> · <a href="https://pypi.org/project/kitchensink4ppt/">PYPI</a> · <a href="llms.txt">LLMS.TXT</a></span>
 </div>
@@ -394,17 +396,16 @@ footer a{color:var(--patina)}
     <details class="newfold">
       <summary>
         <span class="tag" data-i18n="new.label">JUST IN</span>
-        <span class="ttl" data-i18n="h2.new">New in this version</span>
-        <span class="hint" data-i18n="new.t">Five things v1.1 changed, if you are already a customer</span>
+        <span class="ttl" data-i18n="h2.new">New on the shelf</span>
+        <span class="hint" data-i18n="new.t">Four things v1.1 changed, if you already shop here</span>
       </summary>
     <div class="newin">
       <p class="sub" data-i18n="new.sub">The whole list, no release notes required.</p>
       <ul>
-        <li data-i18n="new1"><b>Live editing you can leave running.</b> Every call into an open PowerPoint now goes through one queue, so two agents working the same deck cannot interleave their writes, and a dialog sitting there waiting on a human is spotted at the window level instead of quietly freezing the session. (Found the hard way by the Word field sessions.)</li>
-        <li data-i18n="new2"><b>Your alert settings come back.</b> The server silences PowerPoint's prompts while it works, and a leak meant it could leave them silenced afterwards in your own copy of PowerPoint. It now puts your setting back every time.</li>
-        <li data-i18n="new3"><b>Nothing hangs forever.</b> Operations that drive PowerPoint run against a deadline with a kill switch, so a wedged application fails with a message you can act on instead of stalling the conversation.</li>
-        <li data-i18n="new4"><b>Nine packs became six.</b> Small packs charged more attention than they saved, so they moved in with their neighbours: the menu is shorter and every pack earns its line. Old pack names still work.</li>
-        <li data-i18n="new5"><b>The test suite cannot lie about time.</b> Time limits in the suite had gone inert without anyone noticing. The suite now refuses to run at all if they are not being enforced, so a hang can never pass as a slow test again.</li>
+        <li data-i18n="new1"><b>Live editing you can leave running.</b> Every call into an open PowerPoint now waits its turn in one queue, so two agents working the same deck cannot talk over each other, and a dialog box sitting there waiting on a human is spotted at the window level instead of quietly freezing the session. (The Word aisle learned this one the hard way.)</li>
+        <li data-i18n="new2"><b>Your alert settings come back.</b> The server quiets PowerPoint's prompts while it works, and a leak meant it could walk off leaving them quiet in your own copy of PowerPoint. It now puts your setting back on the way out, every time.</li>
+        <li data-i18n="new3"><b>Nine shelves became six.</b> Small packs charged more attention than they saved, so they moved in with their neighbours. The menu is shorter, every pack earns its line, and a session starts leaner. Old pack names still work.</li>
+        <li data-i18n="new4"><b>Ask for three slides, get three slides.</b> A malformed slide list used to survive long enough to open PowerPoint, spend nine seconds doing it, and come back complaining about a slide index that was never a slide at all. The request is now checked before PowerPoint is touched, and the answer names the actual mistake.</li>
       </ul>
     </div>
     </details>
@@ -414,7 +415,7 @@ footer a{color:var(--patina)}
 <section id="headline">
   <div class="wrap">
     <div class="sec-head"><span class="no" data-i18n="no0">DEPT. 00</span><h2 data-i18n="h2.demo">Move the node, the arrows follow</h2></div>
-    <p class="for-lead" data-i18n="demo.lead">Every AI pipeline can put a diagram on a slide. Almost all of them hand you a picture of one: flat pixels, sealed shut. The night before you present, one box needs to move half an inch, and a picture does not care how small the change is. This server draws diagrams the other way: SVG goes in, grouped native PowerPoint shapes come out, with connectors glued to the shapes they join. Drag a node in PowerPoint and the arrows follow. Ask the agent to recolor one box by name and only that box changes. No regeneration round trip, no image API, no PowerPoint install needed to build it.</p>
+    <p class="for-lead" data-i18n="demo.lead">Every AI pipeline can put a diagram on a slide. Almost all of them hand you a picture of one: flat pixels behind glass. The night before you present, one box needs to move half an inch, and a picture does not care how small the change is. This server draws diagrams the other way: SVG goes in, grouped native PowerPoint shapes come out, with connectors glued to the shapes they join. Drag a node in PowerPoint and the arrows follow. Ask the agent to recolor one box by name and only that box changes. No regeneration round trip, no image API, no PowerPoint install needed to build it.</p>
     <div class="demo-grid ticked">
       <div class="demo-panel bad">
         <span class="corner-tag" data-i18n="demo.badtag">FLAT PNG</span>
@@ -468,7 +469,7 @@ footer a{color:var(--patina)}
 
 <section id="tale">
   <div class="wrap">
-    <div class="sec-head"><span class="no" data-i18n="no1">DEPT. 01</span><h2 data-i18n="h2.tale">Why this exists</h2></div>
+    <div class="sec-head"><span class="no" data-i18n="no1">DEPT. 01</span><h2 data-i18n="h2.tale">Why this aisle exists</h2></div>
     <div class="tale" data-label="A CAUTIONARY TALE">
       <p data-i18n="tale.p1">Ask an AI to put an org chart on slide 12. Almost every tool that can draw one hands you a <em>picture</em> of an org chart; the few that draw real boxes only offer fixed layouts, take them or leave them. Then the reorg happens: one name changes, one box moves under a different manager. The box cannot move. It is not a box; it is <em>pixels</em>. Your choices are to regenerate the whole image and hope nothing else shifted, to pay an image service again for the same chart, or to rebuild it by hand, forty minutes of dragging rectangles you did not make.</p>
       <p data-i18n="tale.p2">Shopping around does not save you. The most popular PowerPoint MCP server sits <em>archived</em>: nearly two thousand stars, no successor, and it could add slides but never properly delete, duplicate, or reorder them. The tools that go deeper all need Windows with PowerPoint open before they will do anything at all.</p>
@@ -479,8 +480,8 @@ footer a{color:var(--patina)}
 
 <section id="inventory">
   <div class="wrap">
-    <div class="sec-head"><span class="no" data-i18n="no2">DEPT. 02</span><h2 data-i18n="h2.inv">The inventory, by pack</h2></div>
-    <p class="for-lead" data-i18n="inv.lead">The catalog is organized as capability packs. A session starts from the lite core, 24 tools at about 4.5k tokens, and switches on the pack a job needs with one call. Every department below ships in v1.1. All 138 tools, 159 operations. v1.1 merged the small packs into their neighbours, and the old pack names still work.</p>
+    <div class="sec-head"><span class="no" data-i18n="no2">DEPT. 02</span><h2 data-i18n="h2.inv">The shelves, pack by pack</h2></div>
+    <p class="for-lead" data-i18n="inv.lead">The stock is arranged in capability packs, the way a good shop groups what belongs together. A session opens on the lite core, 24 tools at about 4.5k tokens, and switches on the pack a job needs with one call. Every department below is on the floor today: all 138 tools, 159 operations. v1.1 moved the small packs in with their neighbours, and the old pack names still ring up fine.</p>
     <div class="depts">
       <div class="dept"><h3><span data-i18n="pk1.t">Lite Core</span> <span class="num" data-i18n="pk1.n">PACK 0 · ALWAYS ON</span></h3><p data-i18n="pk1.p">An anchored markdown view of the whole deck, text read and search-and-replace, slide CRUD done right (insert by layout, deep duplicate, delete with cleanup, reorder, hide), batch edits with one save per batch, snapshots and backups, diagnostics, and the enable_tools switchboard.</p><p class="ex" data-i18n="pk1.e">e.g. read the deck as markdown with stable anchors · duplicate the heaviest slide cleanly · apply twenty edits in one atomic batch</p><span class="count" data-i18n="pk1.c">24 TOOLS · ALWAYS ON</span></div>
       <div class="dept"><h3><span data-i18n="pk2.t">Graphics</span> <span class="num" data-i18n="pk2.n">THE STATEMENT PIECE</span></h3><p data-i18n="pk2.p">SVG compiled to grouped native shapes, preset and freeform geometry with gradients and theme-color fills, connectors glued to the shapes they join, edit-in-place by shape identity, group and ungroup, align, distribute, z-order.</p><p class="ex" data-i18n="pk2.e">e.g. turn an SVG diagram into shapes you can drag · restyle one connector by id · align a row of boxes mechanically, not by eye</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
@@ -495,11 +496,11 @@ footer a{color:var(--patina)}
 
 <section id="compare">
   <div class="wrap">
-    <div class="sec-head"><span class="no" data-i18n="no3">DEPT. 03</span><h2 data-i18n="h2.cmp">Against the field</h2></div>
-    <p class="for-lead" data-i18n="cmp.lead">Feature grids flatter everybody. Here is the comparison as seven things you would actually ask an agent for, and what happens next.</p>
+    <div class="sec-head"><span class="no" data-i18n="no3">DEPT. 03</span><h2 data-i18n="h2.cmp">Against the rest of the aisle</h2></div>
+    <p class="for-lead" data-i18n="cmp.lead">Feature grids flatter everybody. Here it is instead as seven things you would actually ask an agent for, and what happens next.</p>
     <div class="ticked"><div class="tablewrap">
       <table class="scenario">
-        <tr><th data-i18n="cmp.h1">"Hey, could you…"</th><th class="us">💡 KitchenSink4PPT</th><th data-i18n="cmp.h3">Most popular server (archived)</th><th data-i18n="cmp.h4">COM tier*</th></tr>
+        <tr><th data-i18n="cmp.h1">"Hey, could you…"</th><th class="us">💡 KitchenSink4PPT</th><th data-i18n="cmp.h3">GongRzhe (archived)<span class="stars">1,851 GitHub stars&dagger;</span></th><th data-i18n="cmp.h4">COM tier*<span class="stars">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span></th></tr>
         <tr><td data-i18n="cr1.q">"Draw me a flowchart I can edit afterward."</td><td class="us yes" data-i18n="cr1.us">✔ grouped native shapes with glued connectors, any diagram SVG can describe</td><td class="nd">n/d</td><td class="part" data-i18n="cr1.com">fixed SmartArt layouts, Windows with PowerPoint running</td></tr>
         <tr><td data-i18n="cr2.q">"Now move that box, keep the arrows attached."</td><td class="us yes" data-i18n="cr2.us">✔ drag it, or have the agent move it by name; the arrows follow</td><td class="no" data-i18n="cr2.pop">✘ nothing to move</td><td class="part" data-i18n="cr2.com">inside SmartArt only</td></tr>
         <tr><td data-i18n="cr3.q">"Merge these two cells in the table on slide 6."</td><td class="us yes" data-i18n="cr3.us">✔ straight in the file, the first server anywhere to do it</td><td class="no">✘</td><td class="yes" data-i18n="cr3.com">✔ with PowerPoint running</td></tr>
@@ -509,14 +510,14 @@ footer a{color:var(--patina)}
         <tr><td data-i18n="cr7.q">"Reply to the reviewer's comment."</td><td class="us yes" data-i18n="cr7.us">threaded replies, verified rendering in PowerPoint itself</td><td class="no">✘</td><td class="no" data-i18n="cr7.com">✘ reply exists in no PowerPoint MCP server today</td></tr>
       </table>
     </div></div>
-    <p class="foot-note" data-i18n="cmp.note">Capability survey as of 2026-08-31, compiled from public repositories, documentation, and issue trackers. n/d: not documented in the sources surveyed (not a claimed absence). * COM tier: the servers that automate a running PowerPoint on Windows; capable, but Windows-locked and unavailable without the application. Test and stress evidence lives in the specs strip up top (885 tests, over 1,500 adversarial transport calls, 0 corruptions). Corrections welcome: open an issue.</p>
+    <p class="foot-note" data-i18n="cmp.note">Capability survey as of 2026-08-31, compiled from public repositories, documentation, and issue trackers. n/d: not documented in the sources surveyed (not a claimed absence). The most popular server is GongRzhe/Office-PowerPoint-MCP-Server, archived since March 2026. * COM tier: the servers that automate a running PowerPoint on Windows (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19); capable, but Windows-locked and unavailable without the application. &dagger; Star counts read from the GitHub API on 2026-09-04, shown for context: stars say how long a shelf has been in view, not what is on it. The 1,851-star leader has been archived since March 2026 and still cannot take a slide back out. Test and stress evidence lives in the specs strip up top (885 tests, over 1,500 adversarial transport calls, 0 corruptions). Corrections welcome: open an issue.</p>
   </div>
 </section>
 
 <section id="efficiency">
   <div class="wrap">
-    <div class="sec-head"><span class="no" data-i18n="no4">DEPT. 04</span><h2 data-i18n="h2.eff">Context efficiency</h2></div>
-    <p class="for-lead" data-i18n="eff.lead">Every MCP server occupies part of an agent's context window before any work starts. The Word sink published its bill and promised tiered loading for v2; this server ships tiered loading on day one. A session starts from the lite core, 24 tools. When a job needs more, the agent enables the pack by name and the tools appear mid-session. The lazy path is a dead end on purpose: lite carries no degraded stand-ins, and any refusal for out-of-scope work names the exact pack and the exact call that unlocks it. The refusal is the signpost.</p>
+    <div class="sec-head"><span class="no" data-i18n="no4">DEPT. 04</span><h2 data-i18n="h2.eff">The context bill</h2></div>
+    <p class="for-lead" data-i18n="eff.lead">Every MCP server draws on an agent's context window before any work starts, the way every fixture on the floor draws current whether anyone is looking at it or not. The Word sink published its bill and promised tiered loading for v2; this server ships tiered loading on day one. A session starts from the lite core, 24 tools. When a job needs more, the agent enables the pack by name and the tools appear mid-session. The lazy path is a dead end on purpose: lite carries no degraded stand-ins, and any refusal for out-of-scope work names the exact pack and the exact call that unlocks it. The refusal is the signpost.</p>
     <div class="specs-strip" style="margin-top:26px">
       <div class="spec"><span class="n">24</span><span class="l" data-i18n="eff.s1">Tools in the lite core</span></div>
       <div class="spec"><span class="n">4.5k</span><span class="l" data-i18n="eff.s2">Tokens, lite core up front</span></div>
@@ -534,7 +535,7 @@ footer a{color:var(--patina)}
 
 <section id="install">
   <div class="wrap">
-    <div class="sec-head"><span class="no" data-i18n="no5">DEPT. 05</span><h2 data-i18n="h2.install">Installation</h2></div>
+    <div class="sec-head"><span class="no" data-i18n="no5">DEPT. 05</span><h2 data-i18n="h2.install">Wiring it in</h2></div>
     <div class="orderform">
       <span class="form-no" data-i18n="inst.form">ORDER FORM № KS4P-1</span>
       <div class="install-grid">
@@ -558,7 +559,7 @@ footer a{color:var(--patina)}
   }
 }</div></div>
       </div>
-      <p class="foot-note" style="margin-top:18px" data-i18n="inst.note">File-based tools, which are the large majority, need no PowerPoint installation and run cross-platform. The export and validation tools (PDF, per-slide PNG, opens-clean check) use a local Microsoft PowerPoint via COM when one is present. Full setup in the <a href="https://github.com/nometalalchemist/KitchenSink4PPT#install">README</a>.</p>
+      <p class="foot-note" style="margin-top:18px" data-i18n="inst.note">File-based tools, which are the large majority, need no PowerPoint installation and run cross-platform. The export and validation tools (PDF, per-slide PNG, opens-clean check) borrow a local Microsoft PowerPoint through COM when one is on the premises. Full setup in the <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.</p>
     </div>
   </div>
 </section>
@@ -604,7 +605,7 @@ footer a{color:var(--patina)}
 
 <section id="family">
   <div class="wrap">
-    <div class="sec-head"><span class="no" data-i18n="no7">DEPT. 07</span><h2 data-i18n="h2.fam">The family</h2></div>
+    <div class="sec-head"><span class="no" data-i18n="no7">DEPT. 07</span><h2 data-i18n="h2.fam">The other aisles</h2></div>
     <div class="service-grid">
       <a class="counter" href="https://nometalalchemist.github.io/KitchenSink4Word/">
         <span class="icon" id="faucetCameo">🚰<span class="cameo-drip"></span></span>
@@ -744,7 +745,7 @@ if (faucet && "IntersectionObserver" in window){
 var I18N = {
 en: {
 "pageTitle": "KitchenSink4PPT: Everything plus the kitchen sink for Microsoft PowerPoint",
-"m.left": "<b>DECOR DEPARTMENT</b> &middot; FINE INSTRUMENTS FOR SLIDES",
+"m.left": "<b>DECOR DEPARTMENT</b> &middot; FINE INSTRUMENTS FOR THE WELL-DRESSED DECK",
 "m.catalog": "CATALOG № 138",
 "m.family": "FAMILY",
 "m.service": "SERVICE",
@@ -761,17 +762,16 @@ en: {
 "btn.source": "Read the Source",
 "hero.invite": "↓ or try it first: there is a diagram below you can drag, and the arrows follow",
 "sw.here": "(you are here)", "sw.store": "The storefront",
-"h2.new": "New in this version", "new.label": "JUST IN",
-"new.t": "Five things this release changed",
+"h2.new": "New on the shelf", "new.label": "JUST IN",
+"new.t": "Four things v1.1 changed, if you already shop here",
 "new.sub": "The whole list, no release notes required.",
-"new1": "<b>Live editing you can leave running.</b> Every call into an open PowerPoint now goes through one queue, so two agents working the same deck cannot interleave their writes, and a dialog sitting there waiting on a human is spotted at the window level instead of quietly freezing the session. (Found the hard way by the Word field sessions.)",
-"new2": "<b>Your alert settings come back.</b> The server silences PowerPoint's prompts while it works, and a leak meant it could leave them silenced afterwards in your own copy of PowerPoint. It now puts your setting back every time.",
-"new3": "<b>Nothing hangs forever.</b> Operations that drive PowerPoint run against a deadline with a kill switch, so a wedged application fails with a message you can act on instead of stalling the conversation.",
-"new4": "<b>Nine packs became six.</b> Small packs charged more attention than they saved, so they moved in with their neighbours: the menu is shorter and every pack earns its line. Old pack names still work.",
-"new5": "<b>The test suite cannot lie about time.</b> Time limits in the suite had gone inert without anyone noticing. The suite now refuses to run at all if they are not being enforced, so a hang can never pass as a slow test again.",
+"new1": "<b>Live editing you can leave running.</b> Every call into an open PowerPoint now waits its turn in one queue, so two agents working the same deck cannot talk over each other, and a dialog box sitting there waiting on a human is spotted at the window level instead of quietly freezing the session. (The Word aisle learned this one the hard way.)",
+"new2": "<b>Your alert settings come back.</b> The server quiets PowerPoint's prompts while it works, and a leak meant it could walk off leaving them quiet in your own copy of PowerPoint. It now puts your setting back on the way out, every time.",
+"new3": "<b>Nine shelves became six.</b> Small packs charged more attention than they saved, so they moved in with their neighbours. The menu is shorter, every pack earns its line, and a session starts leaner. Old pack names still work.",
+"new4": "<b>Ask for three slides, get three slides.</b> A malformed slide list used to survive long enough to open PowerPoint, spend nine seconds doing it, and come back complaining about a slide index that was never a slide at all. The request is now checked before PowerPoint is touched, and the answer names the actual mistake.",
 "no0": "DEPT. 00", "no1": "DEPT. 01", "no2": "DEPT. 02", "no3": "DEPT. 03", "no4": "DEPT. 04", "no5": "DEPT. 05", "no6": "DEPT. 06", "no7": "DEPT. 07",
 "h2.demo": "Move the node, the arrows follow",
-"demo.lead": "Every AI pipeline can put a diagram on a slide. Almost all of them hand you a picture of one: flat pixels, sealed shut. The night before you present, one box needs to move half an inch, and a picture does not care how small the change is. This server draws diagrams the other way: SVG goes in, grouped native PowerPoint shapes come out, with connectors glued to the shapes they join. Drag a node in PowerPoint and the arrows follow. Ask the agent to recolor one box by name and only that box changes. No regeneration round trip, no image API, no PowerPoint install needed to build it.",
+"demo.lead": "Every AI pipeline can put a diagram on a slide. Almost all of them hand you a picture of one: flat pixels behind glass. The night before you present, one box needs to move half an inch, and a picture does not care how small the change is. This server draws diagrams the other way: SVG goes in, grouped native PowerPoint shapes come out, with connectors glued to the shapes they join. Drag a node in PowerPoint and the arrows follow. Ask the agent to recolor one box by name and only that box changes. No regeneration round trip, no image API, no PowerPoint install needed to build it.",
 "demo.badtag": "FLAT PNG",
 "demo.nope": "IT'S A PICTURE",
 "demo.badh": "What the rest of the shelf sells",
@@ -784,13 +784,13 @@ en: {
 "demo.reset": "RESET ⟲",
 "demo.goodp": "A grouped set of real PowerPoint shapes with glued connectors. Nudge the node yourself in ten seconds, or tell the agent to edit exactly one shape by its identity. Everything else stays untouched. Keyboard works too: focus the node and use the arrow keys.",
 "demo.note": "The demo above runs in your browser for the sake of the point; the shipped output is ordinary PowerPoint geometry (preset and freeform shapes, gradients, theme-color fills, straight, elbow, and curved connectors), so it behaves in PowerPoint exactly the way shapes you drew by hand behave.",
-"h2.tale": "Why this exists",
+"h2.tale": "Why this aisle exists",
 "tale.label": "A CAUTIONARY TALE",
 "tale.p1": "Ask an AI to put an org chart on slide 12. Almost every tool that can draw one hands you a <em>picture</em> of an org chart; the few that draw real boxes only offer fixed layouts, take them or leave them. Then the reorg happens: one name changes, one box moves under a different manager. The box cannot move. It is not a box; it is <em>pixels</em>. Your choices are to regenerate the whole image and hope nothing else shifted, to pay an image service again for the same chart, or to rebuild it by hand, forty minutes of dragging rectangles you did not make.",
 "tale.p2": "Shopping around does not save you. The most popular PowerPoint MCP server sits <em>archived</em>: nearly two thousand stars, no successor, and it could add slides but never properly delete, duplicate, or reorder them. The tools that go deeper all need Windows with PowerPoint open before they will do anything at all.",
 "tale.p3": "KitchenSink4PPT draws the chart as <em>real PowerPoint shapes</em>: boxes you can drag, connectors that stay attached when you do, text you can click into. The one-name fix takes ten seconds, by you or by the agent, and the arrows follow.",
-"h2.inv": "The inventory, by pack",
-"inv.lead": "The catalog is organized as capability packs. A session starts from the lite core, 24 tools at about 4.5k tokens, and switches on the pack a job needs with one call. Every department below ships in v1.1. All 138 tools, 159 operations. v1.1 merged the small packs into their neighbours, and the old pack names still work.",
+"h2.inv": "The shelves, pack by pack",
+"inv.lead": "The stock is arranged in capability packs, the way a good shop groups what belongs together. A session opens on the lite core, 24 tools at about 4.5k tokens, and switches on the pack a job needs with one call. Every department below is on the floor today: all 138 tools, 159 operations. v1.1 moved the small packs in with their neighbours, and the old pack names still ring up fine.",
 "pk1.t": "Lite Core", "pk1.n": "PACK 0 · ALWAYS ON",
 "pk1.p": "An anchored markdown view of the whole deck, text read and search-and-replace, slide CRUD done right (insert by layout, deep duplicate, delete with cleanup, reorder, hide), batch edits with one save per batch, snapshots and backups, diagnostics, and the enable_tools switchboard.",
 "pk1.e": "e.g. read the deck as markdown with stable anchors · duplicate the heaviest slide cleanly · apply twenty edits in one atomic batch",
@@ -814,11 +814,11 @@ en: {
 "pk7.t": "Live Editing", "pk7.n": "OPEN DECK? FINE.",
 "pk7.p": "Edit the deck while it is open in the user's PowerPoint: the same tools route automatically, edits stay unsaved until asked, the cursor is never touched, and the undo guarantee is reported honestly. Every call runs through one queue, so agents working the same open deck cannot interleave, and a dialog waiting on a human is caught at the window level. PowerPoint status and a zombie-process check come along.",
 "pk7.e": "e.g. fix a typo in the deck you are presenting from tomorrow · see unsaved edits the file on disk does not have · check whether a stray PowerPoint is still running",
-"h2.cmp": "Against the field",
-"cmp.lead": "Feature grids flatter everybody. Here is the comparison as seven things you would actually ask an agent for, and what happens next.",
+"h2.cmp": "Against the rest of the aisle",
+"cmp.lead": "Feature grids flatter everybody. Here it is instead as seven things you would actually ask an agent for, and what happens next.",
 "cmp.h1": "\"Hey, could you…\"",
-"cmp.h3": "Most popular server (archived)",
-"cmp.h4": "COM tier*",
+"cmp.h3": "GongRzhe (archived)<span class=\"stars\">1,851 GitHub stars&dagger;</span>",
+"cmp.h4": "COM tier*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "\"Draw me a flowchart I can edit afterward.\"",
 "cr1.us": "✔ grouped native shapes with glued connectors, any diagram SVG can describe",
 "cr1.com": "fixed SmartArt layouts, Windows with PowerPoint running",
@@ -839,19 +839,19 @@ en: {
 "cr7.q": "\"Reply to the reviewer's comment.\"",
 "cr7.us": "threaded replies, verified rendering in PowerPoint itself",
 "cr7.com": "✘ reply exists in no PowerPoint MCP server today",
-"cmp.note": "Capability survey as of 2026-08-31, compiled from public repositories, documentation, and issue trackers. n/d: not documented in the sources surveyed (not a claimed absence). * COM tier: the servers that automate a running PowerPoint on Windows; capable, but Windows-locked and unavailable without the application. Test and stress evidence lives in the specs strip up top (885 tests, over 1,500 adversarial transport calls, 0 corruptions). Corrections welcome: open an issue.",
-"h2.eff": "Context efficiency",
-"eff.lead": "Every MCP server occupies part of an agent's context window before any work starts. The Word sink published its bill and promised tiered loading for v2; this server ships tiered loading on day one. A session starts from the lite core, 24 tools. When a job needs more, the agent enables the pack by name and the tools appear mid-session. The lazy path is a dead end on purpose: lite carries no degraded stand-ins, and any refusal for out-of-scope work names the exact pack and the exact call that unlocks it. The refusal is the signpost.",
+"cmp.note": "Capability survey as of 2026-08-31, compiled from public repositories, documentation, and issue trackers. n/d: not documented in the sources surveyed (not a claimed absence). The most popular server is GongRzhe/Office-PowerPoint-MCP-Server, archived since March 2026. * COM tier: the servers that automate a running PowerPoint on Windows (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19); capable, but Windows-locked and unavailable without the application. &dagger; Star counts read from the GitHub API on 2026-09-04, shown for context: stars say how long a shelf has been in view, not what is on it. The 1,851-star leader has been archived since March 2026 and still cannot take a slide back out. Test and stress evidence lives in the specs strip up top (885 tests, over 1,500 adversarial transport calls, 0 corruptions). Corrections welcome: open an issue.",
+"h2.eff": "The context bill",
+"eff.lead": "Every MCP server draws on an agent's context window before any work starts, the way every fixture on the floor draws current whether anyone is looking at it or not. The Word sink published its bill and promised tiered loading for v2; this server ships tiered loading on day one. A session starts from the lite core, 24 tools. When a job needs more, the agent enables the pack by name and the tools appear mid-session. The lazy path is a dead end on purpose: lite carries no degraded stand-ins, and any refusal for out-of-scope work names the exact pack and the exact call that unlocks it. The refusal is the signpost.",
 "eff.s1": "Tools in the lite core",
 "eff.s2": "Tokens, lite core up front",
 "eff.s3": "Call to the whole sink",
 "eff.note": "Power users who want everything loaded from the start can pin it: <b>KS4P_MODE=full</b> in the server environment, or a comma-separated pack list. Administrators can lock the selection with KS4P_PACK_POLICY=locked.",
-"h2.install": "Installation",
+"h2.install": "Wiring it in",
 "inst.form": "ORDER FORM № KS4P-1",
 "inst.s1": "① GET THE FIXTURE",
 "inst.s2": "② WIRE IT UP (Claude Code)",
 "inst.s3": "③ ANY OTHER MCP CLIENT (stdio)",
-"inst.note": "File-based tools, which are the large majority, need no PowerPoint installation and run cross-platform. The export and validation tools (PDF, per-slide PNG, opens-clean check) use a local Microsoft PowerPoint via COM when one is present. Full setup in the <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
+"inst.note": "File-based tools, which are the large majority, need no PowerPoint installation and run cross-platform. The export and validation tools (PDF, per-slide PNG, opens-clean check) borrow a local Microsoft PowerPoint through COM when one is on the premises. Full setup in the <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "h2.svc": "Service department",
 "svc.ticket": "NOW SERVING · TAKE A NUMBER · SAME DESK AS THE WORD SINK, ONE AISLE OVER",
 "svc1.t": "Found a crooked frame?",
@@ -867,7 +867,7 @@ en: {
 "g.t": "Engineered Not to Corrupt",
 "g.p1": "Atomic validated saves. Automatic timestamped backups before every change. Byte-identical passthrough of anything not being edited, so animations, media, and embedded objects pass through untouched. Every release gates on real decks round-tripping byte-clean and opening in PowerPoint without a repair prompt, and on an adversarial round through the raw MCP transport. When a target is ambiguous, the server refuses with candidates rather than guessing; a wrong first match is somebody else's policy.",
 "g.p2": "Provided as-is, without warranty of any kind, per the license; the engineering above is simply how seriously your decks are taken. Keep backups. (It makes them for you.)",
-"h2.fam": "The family",
+"h2.fam": "The other aisles",
 "fam1.p": "The original fixture: everything plus the kitchen sink for Microsoft Word. 189 tools, live editing of open documents, citations, merge-aware table surgery, tracked changes, engineered not to corrupt.",
 "fam1.g": "Visit the plumbing aisle →",
 "fam2.t": "The storefront",
@@ -878,7 +878,7 @@ en: {
 },
 ko: {
 "pageTitle": "KitchenSink4PPT: Microsoft PowerPoint 도구라면 없는 게 없는 MCP 서버",
-"m.left": "<b>데코 부문</b> &middot; 슬라이드를 위한 정밀 기구점",
+"m.left": "<b>데코 부문</b> &middot; 잘 차려입은 덱을 위한 정밀 기구점",
 "m.catalog": "카탈로그 № 138",
 "m.family": "제품군",
 "m.service": "서비스",
@@ -895,17 +895,16 @@ ko: {
 "btn.source": "소스 읽어보기",
 "hero.invite": "↓ 먼저 써 보셔도 됩니다: 아래에 직접 드래그할 수 있는 다이어그램이 있고, 화살표가 따라옵니다",
 "sw.here": "(현재 페이지)", "sw.store": "스토어",
-"h2.new": "이번 버전의 새 기능", "new.label": "신규 입고",
-"new.t": "이번 릴리스가 바꾼 다섯 가지",
+"h2.new": "선반에 새로 올라온 것", "new.label": "신규 입고",
+"new.t": "이미 단골이시라면, v1.1이 바꾼 네 가지",
 "new.sub": "릴리스 노트를 읽을 필요 없이, 이게 전부입니다.",
-"new1": "<b>켜 둔 채로 맡길 수 있는 라이브 편집.</b> 열려 있는 PowerPoint로 들어가는 모든 호출이 이제 하나의 큐를 지나가므로, 같은 문서를 다루는 두 에이전트가 서로의 쓰기에 끼어들 수 없습니다. 사람을 기다리며 떠 있는 대화상자도 창 수준에서 잡아내기 때문에 세션이 조용히 멈추는 일이 없습니다. (Word 현장 세션에서 호되게 배운 내용입니다.)",
-"new2": "<b>알림 설정을 원래대로 돌려놓습니다.</b> 서버는 작업하는 동안 PowerPoint의 알림을 꺼 두는데, 누수가 있어 작업이 끝난 뒤에도 사용자의 PowerPoint에서 알림이 꺼진 채로 남을 수 있었습니다. 이제는 매번 설정을 되돌려 놓습니다.",
-"new3": "<b>무한정 멈춰 있는 일은 없습니다.</b> PowerPoint를 움직이는 작업에는 마감 시간과 강제 종료 장치가 붙어 있어서, 응답이 막힌 애플리케이션은 대화를 붙잡아 두는 대신 조치할 수 있는 메시지와 함께 실패합니다.",
-"new4": "<b>아홉 개이던 팩이 여섯 개가 되었습니다.</b> 작은 팩은 아껴 주는 것보다 더 많은 주의를 요구했기에 이웃 팩으로 합쳤습니다. 메뉴는 짧아지고 남은 팩은 저마다 제 몫을 합니다. 기존 팩 이름도 그대로 동작합니다.",
-"new5": "<b>테스트 스위트가 시간에 대해 거짓말할 수 없습니다.</b> 스위트의 시간 제한이 아무도 모르는 사이에 무력화되어 있었습니다. 이제는 제한이 실제로 적용되지 않으면 스위트가 아예 실행을 거부하므로, 멈춘 테스트가 느린 테스트로 위장할 수 없습니다.",
+"new1": "<b>켜 둔 채로 맡길 수 있는 라이브 편집.</b> 열려 있는 PowerPoint로 들어가는 모든 호출이 이제 하나의 줄에서 차례를 기다리므로, 같은 덱을 다루는 두 에이전트가 서로 말을 가로챌 수 없습니다. 사람을 기다리며 떠 있는 대화상자도 창 수준에서 잡아내기 때문에 세션이 조용히 멈추는 일이 없습니다. (옆 통로 Word 매장이 호되게 배운 내용입니다.)",
+"new2": "<b>알림 설정을 원래대로 돌려놓습니다.</b> 서버는 작업하는 동안 PowerPoint의 알림을 꺼 두는데, 누수가 있어 일을 마치고 나간 뒤에도 사용자의 PowerPoint에서 알림이 꺼진 채로 남을 수 있었습니다. 이제는 나가는 길에 매번 설정을 되돌려 놓습니다.",
+"new3": "<b>선반 아홉 개가 여섯 개가 되었습니다.</b> 작은 팩은 아껴 주는 것보다 더 많은 주의를 요구했기에 이웃 팩으로 살림을 합쳤습니다. 메뉴는 짧아지고, 남은 팩은 저마다 제 몫을 하며, 세션은 더 가볍게 시작합니다. 기존 팩 이름도 그대로 동작합니다.",
+"new4": "<b>슬라이드 세 장을 부탁하면 세 장이 나옵니다.</b> 형식이 잘못된 슬라이드 목록이 그대로 통과해 PowerPoint를 여는 데 9초를 쓴 뒤, 애초에 슬라이드도 아니었던 색인을 두고 불평하며 돌아오곤 했습니다. 이제는 PowerPoint를 건드리기 전에 요청을 확인하고, 무엇이 잘못됐는지 정확히 짚어 줍니다.",
 "no0": "부문 00", "no1": "부문 01", "no2": "부문 02", "no3": "부문 03", "no4": "부문 04", "no5": "부문 05", "no6": "부문 06", "no7": "부문 07",
 "h2.demo": "노드를 옮기면 화살표가 따라옵니다",
-"demo.lead": "슬라이드에 다이어그램을 넣을 수 있는 AI 파이프라인은 얼마든지 있습니다. 그런데 거의 전부가 다이어그램의 '그림'을 건네줍니다: 납작한 픽셀, 밀봉된 이미지. 발표 전날 밤 상자 하나를 반 인치만 옮겨야 하는데, 그림은 그 변경이 아무리 작아도 상관하지 않습니다. 이 서버는 반대 방향으로 그립니다: SVG가 들어가면 그룹화된 네이티브 PowerPoint 도형이 나오고, 연결선은 잇는 도형에 붙어 있습니다. PowerPoint에서 노드를 드래그하면 화살표가 따라오고, 에이전트에게 상자 하나를 이름으로 지정해 색을 바꾸라고 하면 그 상자만 바뀝니다. 재생성 왕복도, 이미지 API도, 만들 때 PowerPoint 설치도 필요 없습니다.",
+"demo.lead": "슬라이드에 다이어그램을 넣을 수 있는 AI 파이프라인은 얼마든지 있습니다. 그런데 거의 전부가 다이어그램의 '그림'을 건네줍니다: 납작한 픽셀, 유리 안에 걸린 그림. 발표 전날 밤 상자 하나를 반 인치만 옮겨야 하는데, 그림은 그 변경이 아무리 작아도 상관하지 않습니다. 이 서버는 반대 방향으로 그립니다: SVG가 들어가면 그룹화된 네이티브 PowerPoint 도형이 나오고, 연결선은 잇는 도형에 붙어 있습니다. PowerPoint에서 노드를 드래그하면 화살표가 따라오고, 에이전트에게 상자 하나를 이름으로 지정해 색을 바꾸라고 하면 그 상자만 바뀝니다. 재생성 왕복도, 이미지 API도, 만들 때 PowerPoint 설치도 필요 없습니다.",
 "demo.badtag": "납작한 PNG",
 "demo.nope": "이건 그림입니다",
 "demo.badh": "다른 진열대가 파는 것",
@@ -918,13 +917,13 @@ ko: {
 "demo.reset": "되돌리기 ⟲",
 "demo.goodp": "붙어 있는 연결선을 갖춘 진짜 PowerPoint 도형 그룹입니다. 10초면 직접 노드를 옮길 수 있고, 에이전트에게 도형 하나를 정확히 지정해 고치라고 할 수도 있습니다. 나머지는 전부 그대로 남습니다. 키보드도 됩니다: 노드에 초점을 두고 화살표 키를 쓰세요.",
 "demo.note": "위 데모는 요점을 보여 주기 위해 브라우저에서 돌아갑니다. 실제 출력물은 평범한 PowerPoint 도형입니다(프리셋과 자유형 도형, 그라데이션, 테마 색 채우기, 직선·꺾인선·곡선 연결선). 그래서 PowerPoint 안에서 손으로 그린 도형과 똑같이 동작합니다.",
-"h2.tale": "왜 만들었나",
+"h2.tale": "이 통로가 생긴 이유",
 "tale.label": "교훈이 있는 이야기",
 "tale.p1": "AI에게 12번 슬라이드에 조직도를 넣어 달라고 해 보세요. 조직도를 그릴 줄 아는 도구 대부분은 조직도의 <em>그림</em>을 건네주고, 진짜 상자를 그리는 몇 안 되는 도구는 고정 레이아웃만 내밉니다. 싫으면 말고 식입니다. 그러다 조직 개편이 닥칩니다: 이름 하나가 바뀌고, 상자 하나가 다른 관리자 밑으로 이동합니다. 그런데 그 상자는 움직이지 않습니다. 상자가 아니라 <em>픽셀</em>이니까요. 남은 선택지는 이미지 전체를 다시 생성하며 다른 게 안 틀어졌기를 바라거나, 같은 차트에 이미지 서비스 요금을 또 내거나, 내가 만들지도 않은 사각형을 40분 동안 끌며 손으로 다시 짓는 것뿐입니다.",
 "tale.p2": "다른 가게를 돌아봐도 소용없습니다. 가장 인기 있는 PowerPoint MCP 서버는 <em>보관 처리</em>된 채입니다: 별이 2천 개 가까이 달렸는데 후속작이 없고, 슬라이드를 추가할 줄만 알았지 제대로 삭제하거나 복제하거나 순서를 바꾸지는 못했습니다. 더 깊이 들어가는 도구들은 하나같이 PowerPoint가 열린 Windows가 있어야 그제야 무엇이든 합니다.",
 "tale.p3": "KitchenSink4PPT는 그 조직도를 <em>진짜 PowerPoint 도형</em>으로 그립니다: 드래그할 수 있는 상자, 드래그해도 붙어 있는 연결선, 클릭해서 고칠 수 있는 텍스트. 이름 하나 고치는 일은 여러분이 하든 에이전트가 하든 10초면 끝나고, 화살표는 따라옵니다.",
-"h2.inv": "재고 목록, 팩별로",
-"inv.lead": "카탈로그는 기능 팩으로 구성되어 있습니다. 세션은 라이트 코어(도구 24종, 약 4.5k 토큰)로 시작하고, 작업에 필요한 팩은 호출 한 번으로 켭니다. 아래 모든 부문은 v1.1에 실려 나갑니다. 도구 138종, 작업 159가지 전부입니다. v1.1에서 작은 팩들은 이웃 팩에 합쳤고, 기존 팩 이름도 그대로 동작합니다.",
+"h2.inv": "선반 둘러보기, 팩별로",
+"inv.lead": "재고는 기능 팩으로 정리되어 있습니다. 좋은 가게가 어울리는 물건끼리 모아 두는 방식 그대로입니다. 세션은 라이트 코어(도구 24종, 약 4.5k 토큰)로 문을 열고, 작업에 필요한 팩은 호출 한 번으로 켭니다. 아래 부문은 오늘 전부 매장에 나와 있습니다. 도구 138종, 작업 159가지 전부입니다. v1.1에서 작은 팩들은 이웃 팩으로 살림을 합쳤고, 기존 팩 이름도 계산대에서 그대로 통합니다.",
 "pk1.t": "라이트 코어", "pk1.n": "팩 0 · 상시 켜짐",
 "pk1.p": "앵커가 달린 마크다운으로 보는 전체 슬라이드 뷰, 텍스트 읽기와 찾아 바꾸기, 제대로 만든 슬라이드 CRUD(레이아웃 지정 삽입, 딥 복제, 정리까지 하는 삭제, 순서 변경, 숨기기), 배치당 저장 한 번의 일괄 편집, 스냅샷과 백업, 진단, 그리고 enable_tools 배전반.",
 "pk1.e": "예: 안정된 앵커로 슬라이드 전체를 마크다운으로 읽기 · 가장 무거운 슬라이드를 깔끔하게 복제 · 편집 스무 건을 원자적 배치 하나로 적용",
@@ -948,11 +947,11 @@ ko: {
 "pk7.t": "라이브 편집", "pk7.n": "열려 있어도 됩니다",
 "pk7.p": "사용자의 PowerPoint에 열려 있는 슬라이드를 그대로 편집합니다: 같은 도구가 자동으로 라우팅되고, 편집은 요청 전까지 저장되지 않은 상태로 남으며, 커서는 절대 건드리지 않고, 실행 취소 보증은 정직하게 보고됩니다. 모든 호출은 하나의 큐를 지나가므로 같은 문서를 다루는 에이전트들이 서로 끼어들 수 없고, 사람을 기다리는 대화상자는 창 수준에서 잡아냅니다. PowerPoint 상태 확인과 좀비 프로세스 점검도 함께 들어 있습니다.",
 "pk7.e": "예: 내일 발표할 슬라이드의 오타를 바로 수정 · 디스크의 파일에는 없는 미저장 편집 확인 · 떠도는 PowerPoint 프로세스가 남아 있는지 확인",
-"h2.cmp": "타사 비교",
-"cmp.lead": "기능 비교표는 모두를 좋게 보이게 만듭니다. 그래서 비교를 실제로 에이전트에게 시킬 법한 일곱 가지 부탁과 그다음에 벌어지는 일로 바꿔 보았습니다.",
+"h2.cmp": "같은 통로의 다른 물건과 비교",
+"cmp.lead": "기능 비교표는 모두를 좋게 보이게 만듭니다. 그래서 실제로 에이전트에게 시킬 법한 일곱 가지 부탁과, 그다음에 벌어지는 일로 대신 보여 드립니다.",
 "cmp.h1": "“저기, 혹시…”",
-"cmp.h3": "최다 인기 서버 (보관됨)",
-"cmp.h4": "COM 계열*",
+"cmp.h3": "GongRzhe (보관됨)<span class=\"stars\">GitHub 스타 1,851&dagger;</span>",
+"cmp.h4": "COM 계열*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "“나중에 편집할 수 있는 순서도 하나 그려 줘.”",
 "cr1.us": "✔ 붙은 연결선을 갖춘 그룹 네이티브 도형, SVG로 그릴 수 있는 다이어그램이면 무엇이든",
 "cr1.com": "고정 SmartArt 레이아웃, PowerPoint가 실행 중인 Windows 필요",
@@ -973,19 +972,19 @@ ko: {
 "cr7.q": "“검토자 메모에 답글 달아 줘.”",
 "cr7.us": "스레드형 답글, PowerPoint 본체에서 렌더링 검증 완료",
 "cr7.com": "✘ 답글 기능은 오늘날 어떤 PowerPoint MCP 서버에도 없음",
-"cmp.note": "2026-08-31 기준 기능 조사. 공개 저장소, 문서, 이슈 트래커에서 취합했습니다. n/d: 조사한 자료에서 확인되지 않음(없다는 주장이 아닙니다). * COM 계열: Windows에서 실행 중인 PowerPoint를 자동화하는 서버들로, 유능하지만 Windows에 묶여 있고 애플리케이션 없이는 쓸 수 없습니다. 테스트와 스트레스 근거는 상단 사양 띠에 있습니다(테스트 885건, 적대적 전송 호출 1,500건 이상, 손상 0건). 정정은 환영합니다. 이슈를 열어 주세요.",
-"h2.eff": "컨텍스트 효율",
-"eff.lead": "모든 MCP 서버는 일을 시작하기도 전에 에이전트의 컨텍스트 창 일부를 차지합니다. Word 싱크대는 청구서를 공개하고 v2에서 계층형 로딩을 약속했는데, 이 서버는 계층형 로딩을 첫날부터 싣고 나왔습니다. 세션은 24개 도구의 라이트 코어로 시작하고, 작업에 더 필요하면 에이전트가 팩을 이름으로 켜서 도구가 세션 도중에 나타납니다. 게으른 경로가 막다른 길인 것은 일부러 그런 것입니다: 라이트에는 성능 낮춘 대역이 없고, 범위 밖 작업에 대한 거부는 정확한 팩 이름과 그것을 여는 정확한 호출을 알려 줍니다. 거부가 곧 이정표입니다.",
+"cmp.note": "2026-08-31 기준 기능 조사. 공개 저장소, 문서, 이슈 트래커에서 취합했습니다. n/d: 조사한 자료에서 확인되지 않음(없다는 주장이 아닙니다). 최다 인기 서버는 GongRzhe/Office-PowerPoint-MCP-Server이며 2026년 3월부터 보관 상태입니다. * COM 계열: Windows에서 실행 중인 PowerPoint를 자동화하는 서버들(Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19)로, 유능하지만 Windows에 묶여 있고 애플리케이션 없이는 쓸 수 없습니다. &dagger; 스타 수는 2026-09-04에 GitHub API로 읽은 값이며 참고용입니다. 스타는 그 선반이 얼마나 오래 눈에 띄었는지를 보여줄 뿐, 그 위에 무엇이 놓였는지는 말해 주지 않습니다. 스타 1,851개의 선두 제품은 2026년 3월부터 보관 상태이고, 지금도 슬라이드를 도로 빼내지 못합니다. 테스트와 스트레스 근거는 상단 사양 띠에 있습니다(테스트 885건, 적대적 전송 호출 1,500건 이상, 손상 0건). 정정은 환영합니다. 이슈를 열어 주세요.",
+"h2.eff": "컨텍스트 청구서",
+"eff.lead": "모든 MCP 서버는 일을 시작하기도 전에 에이전트의 컨텍스트 창을 끌어다 씁니다. 매장에 켜 둔 조명이 아무도 보지 않아도 전기를 먹는 것과 같습니다. Word 싱크대는 청구서를 공개하고 v2에서 계층형 로딩을 약속했는데, 이 서버는 계층형 로딩을 첫날부터 싣고 나왔습니다. 세션은 24개 도구의 라이트 코어로 시작하고, 작업에 더 필요하면 에이전트가 팩을 이름으로 켜서 도구가 세션 도중에 나타납니다. 게으른 경로가 막다른 길인 것은 일부러 그런 것입니다: 라이트에는 성능 낮춘 대역이 없고, 범위 밖 작업에 대한 거부는 정확한 팩 이름과 그것을 여는 정확한 호출을 알려 줍니다. 거부가 곧 이정표입니다.",
 "eff.s1": "라이트 코어의 도구 수",
 "eff.s2": "토큰, 라이트 코어 선로드",
 "eff.s3": "싱크대 전체까지 호출 수",
 "eff.note": "처음부터 전부 로드하고 싶은 파워 유저는 고정할 수 있습니다: 서버 환경 변수에 <b>KS4P_MODE=full</b>, 또는 쉼표로 구분한 팩 목록. 관리자는 KS4P_PACK_POLICY=locked로 선택을 잠글 수 있습니다.",
-"h2.install": "설치",
+"h2.install": "설치와 배선",
 "inst.form": "주문서 № KS4P-1",
 "inst.s1": "① 기구 받기",
 "inst.s2": "② 배선 연결 (Claude Code)",
 "inst.s3": "③ 다른 모든 MCP 클라이언트 (stdio)",
-"inst.note": "대다수를 차지하는 파일 기반 도구는 PowerPoint 설치가 필요 없고 크로스 플랫폼으로 돌아갑니다. 내보내기와 검증 도구(PDF, 슬라이드별 PNG, 깨끗하게 열리는지 확인)는 로컬 Microsoft PowerPoint가 있을 때 COM으로 그것을 사용합니다. 전체 설정은 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>에 있습니다.",
+"inst.note": "대다수를 차지하는 파일 기반 도구는 PowerPoint 설치가 필요 없고 크로스 플랫폼으로 돌아갑니다. 내보내기와 검증 도구(PDF, 슬라이드별 PNG, 깨끗하게 열리는지 확인)는 로컬 Microsoft PowerPoint가 집에 있을 때 COM으로 그것을 빌려 씁니다. 전체 설정은 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>에 있습니다.",
 "h2.svc": "서비스 창구",
 "svc.ticket": "지금 접수 중 · 번호표를 뽑으세요 · Word 싱크대와 같은 창구, 한 통로 옆",
 "svc1.t": "액자가 삐뚤어졌습니까?",
@@ -1001,7 +1000,7 @@ ko: {
 "g.t": "손상시키지 않도록 설계",
 "g.p1": "원자적 검증 저장. 모든 변경 전 타임스탬프 자동 백업. 편집하지 않는 부분은 바이트 단위 그대로 통과하므로 애니메이션, 미디어, 포함 개체는 손대지 않고 지나갑니다. 모든 릴리스는 실제 프레젠테이션이 바이트 단위로 깨끗하게 왕복하고 복구 알림 없이 PowerPoint에서 열리는지, 그리고 날것의 MCP 전송을 통한 적대적 라운드를 통과하는지로 관문을 세웁니다. 대상이 모호하면 서버는 추측하는 대신 후보를 제시하며 거부합니다. 엉뚱한 첫 번째 일치를 고르는 것은 다른 가게의 방침입니다.",
 "g.p2": "라이선스에 따라 어떤 종류의 보증도 없이 있는 그대로 제공됩니다. 위의 공학적 장치들은 여러분의 프레젠테이션을 얼마나 진지하게 다루는지를 보여줄 뿐입니다. 백업을 유지하세요. (백업은 이 서버가 대신 만들어 줍니다.)",
-"h2.fam": "제품군",
+"h2.fam": "다른 통로들",
 "fam1.p": "원조 설비: Microsoft Word 도구라면 없는 게 없습니다. 도구 189종, 열린 문서의 라이브 편집, 인용, 병합 인식 표 수술, 추적 변경, 손상시키지 않도록 설계.",
 "fam1.g": "배관 코너 방문하기 →",
 "fam2.t": "본점",
@@ -1012,7 +1011,7 @@ ko: {
 },
 ja: {
 "pageTitle": "KitchenSink4PPT: Microsoft PowerPoint のための、何でも揃う MCP サーバー",
-"m.left": "<b>装飾部門</b> &middot; スライドのための精密器具",
+"m.left": "<b>装飾部門</b> &middot; 着こなしの整ったデッキのための精密器具",
 "m.catalog": "カタログ № 138",
 "m.family": "ファミリー",
 "m.service": "サービス",
@@ -1029,17 +1028,16 @@ ja: {
 "btn.source": "ソースを読む",
 "hero.invite": "↓ まず試してみてください:下にドラッグできる図があり、矢印がついてきます",
 "sw.here": "(現在のページ)", "sw.store": "ストアトップ",
-"h2.new": "このバージョンの新機能", "new.label": "新入荷",
-"new.t": "このリリースで変わった5つのこと",
+"h2.new": "棚に並んだ新入荷", "new.label": "新入荷",
+"new.t": "すでにご贔屓なら、v1.1 が変えた4つのこと",
 "new.sub": "リリースノートを読まなくても、これで全部です。",
-"new1": "<b>動かしっぱなしにできるライブ編集。</b> 開いている PowerPoint への呼び出しはすべて一つの列を通るようになり、同じデッキを扱う二つのエージェントが書き込みを混ぜてしまうことがなくなりました。人の操作を待って出ているダイアログもウィンドウの層で見つけるので、セッションが黙って固まることもありません。(Word の実地セッションで痛い目を見て分かったことです。)",
-"new2": "<b>警告の設定が元に戻ります。</b> サーバーは作業中 PowerPoint の警告を止めますが、漏れがあり、作業後もお使いの PowerPoint で止まったままになることがありました。今は毎回きちんと元の設定に戻します。",
-"new3": "<b>いつまでも固まりません。</b> PowerPoint を動かす操作には期限と強制終了の仕掛けが付いていて、応答しなくなったアプリは会話を止めたままにせず、対処できるメッセージを添えて失敗します。",
-"new4": "<b>9つのパックが6つになりました。</b> 小さいパックは節約する以上に注意を要求していたので、隣のパックに引っ越しました。メニューは短くなり、残ったパックはそれぞれ役割を果たします。以前のパック名もそのまま使えます。",
-"new5": "<b>テストが時間について嘘をつけません。</b> スイートの時間制限が、誰も気づかないうちに効かなくなっていました。今は制限が実際に効いていなければスイート自体が起動を拒むので、ハングが遅いテストのふりをすることはもうできません。",
+"new1": "<b>動かしっぱなしにできるライブ編集。</b> 開いている PowerPoint への呼び出しはすべて一つの列で順番を待つようになり、同じデッキを扱う二つのエージェントが互いの書き込みに割り込むことはありません。人の操作を待って出ているダイアログもウィンドウの層で見つけるので、セッションが黙って固まることもありません。(隣の通路の Word 売り場が痛い目を見て学んだことです。)",
+"new2": "<b>警告の設定が元に戻ります。</b> サーバーは作業中 PowerPoint の警告を止めますが、漏れがあり、仕事を終えて帰った後もお使いの PowerPoint で止まったままになることがありました。今は帰り際に毎回きちんと元の設定へ戻します。",
+"new3": "<b>棚が9つから6つになりました。</b> 小さいパックは節約する以上に注意を要求していたので、隣のパックに引っ越しました。メニューは短くなり、残ったパックはそれぞれ役割を果たし、セッションはより身軽に始まります。以前のパック名もそのまま使えます。",
+"new4": "<b>3枚頼めば、3枚返ってきます。</b> 形式の崩れたスライド指定がそのまま通り、PowerPoint を開くのに9秒かけたあげく、そもそもスライドでもない番号について文句を返してくることがありました。今は PowerPoint に触れる前に依頼を確かめ、どこが間違っているかをそのまま告げます。",
 "no0": "第00部", "no1": "第01部", "no2": "第02部", "no3": "第03部", "no4": "第04部", "no5": "第05部", "no6": "第06部", "no7": "第07部",
 "h2.demo": "ノードを動かせば、矢印がついてくる",
-"demo.lead": "スライドに図を載せられる AI パイプラインなら、いくらでもあります。しかしそのほとんどが渡してくるのは図の「画像」です:平らなピクセル、封をされたまま。発表前夜、箱をひとつ半インチ動かしたいのに、画像は変更がどれほど小さかろうとお構いなしです。このサーバーは逆の描き方をします:SVG を入れると、グループ化されたネイティブ PowerPoint 図形が出てきて、コネクタは結んだ図形に接着されています。PowerPoint でノードをドラッグすれば矢印がついてくる。エージェントに箱ひとつを名前で指定して色替えを頼めば、その箱だけが変わる。再生成の往復も、画像 API も、作るための PowerPoint インストールも要りません。",
+"demo.lead": "スライドに図を載せられる AI パイプラインなら、いくらでもあります。しかしそのほとんどが渡してくるのは図の「画像」です:平らなピクセル、額の硝子の向こう。発表前夜、箱をひとつ半インチ動かしたいのに、画像は変更がどれほど小さかろうとお構いなしです。このサーバーは逆の描き方をします:SVG を入れると、グループ化されたネイティブ PowerPoint 図形が出てきて、コネクタは結んだ図形に接着されています。PowerPoint でノードをドラッグすれば矢印がついてくる。エージェントに箱ひとつを名前で指定して色替えを頼めば、その箱だけが変わる。再生成の往復も、画像 API も、作るための PowerPoint インストールも要りません。",
 "demo.badtag": "ただの PNG",
 "demo.nope": "これは画像です",
 "demo.badh": "よその棚が売っているもの",
@@ -1052,13 +1050,13 @@ ja: {
 "demo.reset": "リセット ⟲",
 "demo.goodp": "接着されたコネクタを持つ、本物の PowerPoint 図形のグループです。10秒で自分でノードを動かすもよし、エージェントに図形ひとつを ID で指定して直させるもよし。ほかはすべてそのまま残ります。キーボードでも操作できます:ノードにフォーカスして矢印キーをどうぞ。",
 "demo.note": "上のデモは要点を示すためにブラウザで動いています。実際の出力は普通の PowerPoint ジオメトリ(プリセット図形とフリーフォーム、グラデーション、テーマカラー塗り、直線・カギ線・曲線コネクタ)なので、PowerPoint の中では手で描いた図形とまったく同じように振る舞います。",
-"h2.tale": "なぜ作ったか",
+"h2.tale": "この売り場ができた理由",
 "tale.label": "教訓ばなし",
 "tale.p1": "AI に「12枚目のスライドに組織図を」と頼んでみてください。組織図を描けるツールのほぼすべてが渡してくるのは組織図の<em>画像</em>です。本物の箱を描く数少ないツールも、固定レイアウトのみ、嫌なら結構という姿勢です。そこへ組織改編がやってきます:名前がひとつ変わり、箱がひとつ別の上司の下へ移る。ところがその箱は動きません。箱ではなく<em>ピクセル</em>だからです。残された道は、画像全体を再生成して他が崩れていないことを祈るか、同じ図のために画像サービスにもう一度課金するか、自分が作ってもいない長方形を40分ドラッグして手で組み直すかです。",
 "tale.p2": "他を探しても救われません。いちばん人気の PowerPoint MCP サーバーは<em>アーカイブ済み</em>のまま:スター2千個近く、後継なし、スライドを追加はできても、削除・複製・並べ替えはまともにできませんでした。より深くまで踏み込むツールは、どれも PowerPoint を開いた Windows がなければ、そもそも何ひとつ動きません。",
 "tale.p3": "KitchenSink4PPT はその図を<em>本物の PowerPoint 図形</em>として描きます:ドラッグできる箱、動かしてもくっついたままのコネクタ、クリックして直せるテキスト。名前ひとつの修正は、あなたがやってもエージェントがやっても10秒。そして矢印はついてきます。",
-"h2.inv": "在庫一覧、パック別",
-"inv.lead": "カタログは機能パックとして構成されています。セッションはライトコア(24ツール、約4.5kトークン)から始まり、仕事に必要なパックは呼び出し1回でオンにします。以下の各部門はすべて v1.1 で出荷。全138ツール、159操作です。 v1.1 では小さなパックを隣のパックに統合しました。以前のパック名もそのまま使えます。",
+"h2.inv": "棚めぐり、パック別",
+"inv.lead": "在庫は機能パックごとに並べてあります。相性のいいものを一緒に置く、いい店のやり方です。セッションはライトコア(24ツール、約4.5kトークン)で店開きし、仕事に必要なパックは呼び出し1回でオンにします。以下の各部門は今日すべて売り場に出ています。全138ツール、159操作。v1.1 では小さなパックを隣のパックへ引っ越させましたが、以前のパック名もレジでそのまま通ります。",
 "pk1.t": "ライトコア", "pk1.n": "パック0 · 常時オン",
 "pk1.p": "アンカー付きマークダウンで見るデッキ全体ビュー、テキスト読み取りと検索置換、まともに作られたスライド CRUD(レイアウト指定の挿入、ディープ複製、後始末付き削除、並べ替え、非表示)、バッチごと保存1回の一括編集、スナップショットとバックアップ、診断、そして enable_tools の配電盤。",
 "pk1.e": "例:安定アンカー付きマークダウンでデッキを読む · いちばん重いスライドをきれいに複製 · 20件の編集をアトミックな1バッチで適用",
@@ -1082,11 +1080,11 @@ ja: {
 "pk7.t": "ライブ編集", "pk7.n": "開いたままでも結構",
 "pk7.p": "ユーザーの PowerPoint で開いたままのデッキを編集:同じツールが自動でルーティングされ、編集は頼まれるまで未保存のまま、カーソルには一切触れず、元に戻す保証は正直に報告されます。 すべての呼び出しは一つの列を通るので、同じデッキを扱うエージェントどうしが割り込むことはなく、人を待っているダイアログはウィンドウの層で検知します。PowerPoint の状態確認とゾンビプロセスの点検も付いています。",
 "pk7.e": "例:明日発表するデッキの誤字をその場で修正 · ディスク上のファイルにはない未保存の編集を確認 · 居残っている PowerPoint がないか確認",
-"h2.cmp": "他社比較",
-"cmp.lead": "機能マトリクスは誰でも良く見せます。そこで比較を、実際にエージェントへ頼みそうな7つのお願いと、その後に起きることで示します。",
+"h2.cmp": "売り場のほかの品と比べて",
+"cmp.lead": "機能マトリクスは誰でも良く見せます。ですので代わりに、実際にエージェントへ頼みそうな7つのお願いと、その後に起きることで並べます。",
 "cmp.h1": "「ねえ、ちょっと…」",
-"cmp.h3": "最人気サーバー(アーカイブ済み)",
-"cmp.h4": "COM 系*",
+"cmp.h3": "GongRzhe(アーカイブ済み)<span class=\"stars\">GitHub スター 1,851&dagger;</span>",
+"cmp.h4": "COM 系*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "「あとで編集できるフローチャートを描いて。」",
 "cr1.us": "✔ 接着コネクタ付きのグループ化ネイティブ図形、SVG で描ける図なら何でも",
 "cr1.com": "固定 SmartArt レイアウト、PowerPoint 起動中の Windows が必要",
@@ -1107,19 +1105,19 @@ ja: {
 "cr7.q": "「校閲者のコメントに返信して。」",
 "cr7.us": "スレッド返信、PowerPoint 本体での描画を検証済み",
 "cr7.com": "✘ 返信は今日どの PowerPoint MCP サーバーにも存在しない",
-"cmp.note": "2026-08-31 時点の機能調査。公開リポジトリ、ドキュメント、Issue トラッカーから集約しました。n/d:調査した資料では確認できず(欠如の断定ではありません)。* COM 系:Windows 上で起動中の PowerPoint を自動化するサーバー群。有能ですが Windows に縛られ、アプリケーションなしでは使えません。テストと負荷の証跡は上部のスペック帯に(テスト885件、敵対的トランスポート呼び出し1,500件超、破損0件)。訂正歓迎、Issue をどうぞ。",
-"h2.eff": "コンテキスト効率",
-"eff.lead": "どの MCP サーバーも、仕事を始める前からエージェントのコンテキストウィンドウの一部を占めます。Word の流しは請求書を公開し、v2 での段階式読み込みを約束しました。このサーバーは段階式読み込みを初日から積んでいます。セッションは24ツールのライトコアから始まり、仕事に足りなければエージェントがパックを名前で有効化し、ツールはセッションの途中で現れます。怠惰な道がわざと行き止まりなのです:ライトには劣化版の代役はなく、範囲外の仕事への拒否は、正確なパック名とそれを解錠する正確な呼び出しを告げます。拒否こそが道しるべです。",
+"cmp.note": "2026-08-31 時点の機能調査。公開リポジトリ、ドキュメント、Issue トラッカーから集約しました。n/d:調査した資料では確認できず(欠如の断定ではありません)。最人気サーバーは GongRzhe/Office-PowerPoint-MCP-Server で、2026年3月からアーカイブ済みです。* COM 系:Windows 上で起動中の PowerPoint を自動化するサーバー群(Ayushmaniar/powerpoint-mcp 113、ykuwai/ppt-mcp 58、trsdn/mcp-server-ppt 36、sbroenne/mcp-server-powerpoint 19)。有能ですが Windows に縛られ、アプリケーションなしでは使えません。&dagger; スター数は 2026-09-04 に GitHub API から取得した参考値です。スターはその棚がどれだけ長く目に触れてきたかを示すもので、棚に何が載っているかを示すものではありません。スター1,851の売れ筋は2026年3月からアーカイブ済みで、いまだにスライドを取り下げることができません。テストと負荷の証跡は上部のスペック帯に(テスト885件、敵対的トランスポート呼び出し1,500件超、破損0件)。訂正歓迎、Issue をどうぞ。",
+"h2.eff": "コンテキストの請求書",
+"eff.lead": "どの MCP サーバーも、仕事を始める前からエージェントのコンテキストウィンドウを食います。売り場の照明が、誰も見ていなくても電気を使うのと同じです。Word の流しは請求書を公開し、v2 での段階式読み込みを約束しました。このサーバーは段階式読み込みを初日から積んでいます。セッションは24ツールのライトコアから始まり、仕事に足りなければエージェントがパックを名前で有効化し、ツールはセッションの途中で現れます。怠惰な道がわざと行き止まりなのです:ライトには劣化版の代役はなく、範囲外の仕事への拒否は、正確なパック名とそれを解錠する正確な呼び出しを告げます。拒否こそが道しるべです。",
 "eff.s1": "ライトコアのツール数",
 "eff.s2": "トークン(ライトコア先読み)",
 "eff.s3": "流し一式までの呼び出し",
 "eff.note": "最初から全部読み込みたいパワーユーザーは固定できます:サーバー環境に <b>KS4P_MODE=full</b>、またはカンマ区切りのパック一覧。管理者は KS4P_PACK_POLICY=locked で選択をロックできます。",
-"h2.install": "設置方法",
+"h2.install": "取り付けと配線",
 "inst.form": "注文書 № KS4P-1",
 "inst.s1": "① 器具を入手",
 "inst.s2": "② 配線をつなぐ (Claude Code)",
 "inst.s3": "③ その他の MCP クライアント (stdio)",
-"inst.note": "大多数を占めるファイルベースのツールに PowerPoint のインストールは不要で、クロスプラットフォームで動きます。書き出しと検証のツール(PDF、スライド別 PNG、きれいに開けるかの確認)は、ローカルの Microsoft PowerPoint がある場合に COM 経由でそれを使います。詳しい設定は <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a> へ。",
+"inst.note": "大多数を占めるファイルベースのツールに PowerPoint のインストールは不要で、クロスプラットフォームで動きます。書き出しと検証のツール(PDF、スライド別 PNG、きれいに開けるかの確認)は、ローカルの Microsoft PowerPoint が店にある場合に COM 経由で借りて使います。詳しい設定は <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a> へ。",
 "h2.svc": "サービス窓口",
 "svc.ticket": "ただいま受付中 · 番号札をどうぞ · Word の流しと同じ窓口、一列隣",
 "svc1.t": "額が傾いていますか?",
@@ -1135,7 +1133,7 @@ ja: {
 "g.t": "壊さないための設計",
 "g.p1": "アトミックな検証付き保存。すべての変更前にタイムスタンプ付き自動バックアップ。編集しない部分はバイト単位でそのまま通過するので、アニメーション、メディア、埋め込みオブジェクトには手を触れません。どのリリースも、実物のデッキがバイト単位できれいに往復し、修復ダイアログなしで PowerPoint で開くこと、そして生の MCP トランスポートを通した敵対的ラウンドを、関門にしています。対象が曖昧なら、サーバーは推測せず候補を示して拒否します。間違った最初の一致を選ぶのは、よそ様の方針です。",
 "g.p2": "ライセンスのとおり、現状有姿・無保証で提供されます。上記の工学は、あなたのスライド資料をどれだけ真剣に扱っているかを示すものにすぎません。バックアップは取っておいてください。(バックアップはこのサーバーが作ってくれます。)",
-"h2.fam": "ファミリー",
+"h2.fam": "ほかの売り場",
 "fam1.p": "元祖の器具:Microsoft Word のためなら何でも揃う。189 ツール、開いた文書のライブ編集、引用、結合を認識する表の外科手術、変更履歴、壊さないための設計。",
 "fam1.g": "配管コーナーへ →",
 "fam2.t": "本店",
@@ -1146,7 +1144,7 @@ ja: {
 },
 zh: {
 "pageTitle": "KitchenSink4PPT: 为 Microsoft PowerPoint 而备,应有尽有的 MCP 服务器",
-"m.left": "<b>装饰部</b> &middot; 幻灯片精密器具行",
+"m.left": "<b>装饰部</b> &middot; 为体面的幻灯片而设的精密器具行",
 "m.catalog": "目录 № 138",
 "m.family": "家族",
 "m.service": "服务",
@@ -1163,17 +1161,16 @@ zh: {
 "btn.source": "阅读源码",
 "hero.invite": "↓ 或者先试试:下面有一张可以拖动的图,箭头会跟着走",
 "sw.here": "(当前页面)", "sw.store": "商店首页",
-"h2.new": "本版本新增", "new.label": "新到货",
-"new.t": "这一版改变的五件事",
+"h2.new": "新上架", "new.label": "新到货",
+"new.t": "如果你已经是老主顾:v1.1 改了四件事",
 "new.sub": "不用翻发布说明,就这些。",
-"new1": "<b>可以放着跑的实时编辑。</b> 现在进入已打开 PowerPoint 的每一次调用都走同一条队列,两个代理同时改一份文件也不会把写入搅在一起;等着人点的对话框会在窗口层面被发现,不会让会话悄悄卡死。(这是 Word 的实地会话用惨痛代价换来的。)",
-"new2": "<b>你的提示设置会还原。</b> 服务器工作时会关掉 PowerPoint 的提示,但曾有一处泄漏,可能在收工后把你自己那份 PowerPoint 的提示一直关着。现在每次都会把设置放回去。",
-"new3": "<b>不会无限期卡住。</b> 驱动 PowerPoint 的操作都带着期限和强制终止开关,卡住的程序会带着一条你能据以处理的消息失败,而不是把对话一直拖着。",
-"new4": "<b>九个包并成了六个。</b> 小包占用的注意力比它省下的还多,于是搬进了邻居家:菜单更短,每个包都对得起自己那一行。旧的包名依然可用。",
-"new5": "<b>测试套件不能在时间上撒谎。</b> 套件里的时间限制在没人察觉的情况下失效了。现在只要限制没有真正生效,套件就直接拒绝运行,卡死再也装不成跑得慢。",
+"new1": "<b>可以放着跑的实时编辑。</b> 现在进入已打开 PowerPoint 的每一次调用都在同一条队伍里排队,两个代理同改一份文件也不会抢着说话;等着人点的对话框会在窗口层面被发现,不会让会话悄悄卡死。(这是隔壁 Word 那条通道用惨痛代价换来的。)",
+"new2": "<b>你的提示设置会还原。</b> 服务器工作时会关掉 PowerPoint 的提示,但曾有一处泄漏,可能收工走人之后还把你自己那份 PowerPoint 的提示一直关着。现在每次出门前都会把设置放回去。",
+"new3": "<b>九个货架并成了六个。</b> 小包占用的注意力比它省下的还多,于是搬进了邻居家。菜单更短,每个包都对得起自己那一行,会话开场也更轻。旧的包名依然可用。",
+"new4": "<b>要三张幻灯片,就给三张。</b> 格式不对的幻灯片清单以前能一路蒙混过关,花九秒钟把 PowerPoint 打开,再回来抱怨一个根本不是幻灯片的编号。现在请求在碰 PowerPoint 之前就先核对,回话会直接点明错在哪里。",
 "no0": "第00部", "no1": "第01部", "no2": "第02部", "no3": "第03部", "no4": "第04部", "no5": "第05部", "no6": "第06部", "no7": "第07部",
 "h2.demo": "移动节点,箭头跟着走",
-"demo.lead": "能往幻灯片里放图表的 AI 流水线遍地都是,可几乎全都递给你一张图表的“图片”:扁平的像素,封得死死的。汇报前夜,一个框要挪半英寸,而图片不在乎改动有多小。这台服务器反着来:SVG 进,分组的原生 PowerPoint 图形出,连接线粘在它们所连的图形上。在 PowerPoint 里拖动节点,箭头跟着走;让智能体按名字给某个框改色,就只有那个框会变。没有重新生成的往返,不用图片 API,构建时也无需安装 PowerPoint。",
+"demo.lead": "能往幻灯片里放图表的 AI 流水线遍地都是,可几乎全都递给你一张图表的“图片”:扁平的像素,裱在玻璃后面。汇报前夜,一个框要挪半英寸,而图片不在乎改动有多小。这台服务器反着来:SVG 进,分组的原生 PowerPoint 图形出,连接线粘在它们所连的图形上。在 PowerPoint 里拖动节点,箭头跟着走;让智能体按名字给某个框改色,就只有那个框会变。没有重新生成的往返,不用图片 API,构建时也无需安装 PowerPoint。",
 "demo.badtag": "扁平 PNG",
 "demo.nope": "这是一张图片",
 "demo.badh": "别家货架卖的东西",
@@ -1186,13 +1183,13 @@ zh: {
 "demo.reset": "复位 ⟲",
 "demo.goodp": "一组带粘附连接线的真 PowerPoint 图形。十秒钟自己挪一下节点,或者让智能体按身份只改那一个图形,其余一概不动。键盘也行:聚焦节点,用方向键。",
 "demo.note": "上面的演示为了说明问题跑在浏览器里;实际交付的是普通的 PowerPoint 几何图形(预设与自由形状、渐变、主题色填充、直线、肘形、曲线连接线),所以在 PowerPoint 里的表现和你亲手画的图形一模一样。",
-"h2.tale": "为什么会有它",
+"h2.tale": "为什么会有这条通道",
 "tale.label": "一则前车之鉴",
 "tale.p1": "让 AI 在第 12 页放一张组织架构图。会画的工具几乎都递给你一张架构图的<em>图片</em>;少数画真框的,也只给固定版式,要么接受要么走人。然后重组来了:一个名字变了,一个框要挪到另一位主管底下。那个框却动不了。它不是框,是<em>像素</em>。你的选择只剩:重新生成整张图并祈祷别处没挪位,为同一张图再付一次图片服务的钱,或者手工重建,四十分钟拖拽那些根本不是你画的矩形。",
 "tale.p2": "货比三家也救不了你。最受欢迎的 PowerPoint MCP 服务器躺在<em>归档</em>状态:近两千颗星,没有后继者,而且它只会往里加幻灯片,从来不能正经地删除、复制或重排。功能更深的那些工具,全都得先有开着 PowerPoint 的 Windows 才肯干活。",
 "tale.p3": "KitchenSink4PPT 把图画成<em>真正的 PowerPoint 图形</em>:拖得动的框,拖动时仍然连着的连接线,点进去就能改的文字。改一个名字,十秒钟,你来或智能体来都行,箭头跟着走。",
-"h2.inv": "库存清单,按包分",
-"inv.lead": "目录按能力包组织。会话从精简内核起步(24 件工具,约 4.5k token),活儿需要哪个包,一次调用就点亮。下面每个部门都随 v1.1 出货。共 138 件工具、159 项操作。 v1.1 把小包并进了相邻的包,旧的包名依然可用。",
+"h2.inv": "逐架看货,按包分",
+"inv.lead": "货品按能力包摆放,就像像样的铺子会把配得上的东西放在一处。会话以精简内核(24 件工具,约 4.5k token)开张,活儿需要哪个包,一次调用就点亮。下面每个部门今天都在卖场里:共 138 件工具、159 项操作。v1.1 把小包并进了相邻的包,旧的包名在柜台上照样管用。",
 "pk1.t": "精简内核", "pk1.n": "包 0 · 常开",
 "pk1.p": "带稳定锚点的整套幻灯片 markdown 视图、文本读取与查找替换、做对了的幻灯片 CRUD(按版式插入、深度复制、带清理的删除、重排、隐藏)、每批只存一次的批量编辑、快照与备份、诊断,以及 enable_tools 配电板。",
 "pk1.e": "例:用稳定锚点把整套幻灯片读成 markdown · 干净地复制最重的那页 · 二十处修改一个原子批次搞定",
@@ -1216,11 +1213,11 @@ zh: {
 "pk7.t": "实时编辑", "pk7.n": "文件开着?没事。",
 "pk7.p": "在用户的 PowerPoint 里开着照样编辑:同一批工具自动改道,改动在你开口之前保持未保存,光标绝不被碰,撤销保证如实报告。 所有调用都走同一条队列,同时动一份文件的多个代理不会互相插队,等着人点的对话框会在窗口层面被发现。另外还附带 PowerPoint 状态查询和僵尸进程检查。",
 "pk7.e": "例:改掉明天要讲的幻灯片里的错别字 · 查看磁盘文件里还没有的未保存改动 · 查一查是不是还有 PowerPoint 没退干净",
-"h2.cmp": "同行对比",
-"cmp.lead": "功能对比表人人都好看。所以这份对比换个写法:七件你真会开口让智能体做的事,以及接下来发生什么。",
+"h2.cmp": "跟同一通道的其他货比一比",
+"cmp.lead": "功能对比表人人都好看。所以这里换个摆法:七件你真会开口让智能体做的事,以及接下来发生什么。",
 "cmp.h1": "“嘿,能不能…”",
-"cmp.h3": "最流行的服务器(已归档)",
-"cmp.h4": "COM 阵营*",
+"cmp.h3": "GongRzhe(已归档)<span class=\"stars\">GitHub 星标 1,851&dagger;</span>",
+"cmp.h4": "COM 阵营*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "“给我画张事后还能编辑的流程图。”",
 "cr1.us": "✔ 分组原生图形加粘附连接线,SVG 画得出的图都行",
 "cr1.com": "固定 SmartArt 版式,需要运行着 PowerPoint 的 Windows",
@@ -1241,19 +1238,19 @@ zh: {
 "cr7.q": "“回复审阅人的批注。”",
 "cr7.us": "多层回复,渲染已在 PowerPoint 本尊里验证",
 "cr7.com": "✘ 回复功能今天不存在于任何 PowerPoint MCP 服务器",
-"cmp.note": "能力调查,截至 2026-08-31,汇总自公开仓库、文档与 issue 跟踪器。n/d:在所查资料中未见记载(并非断言其没有)。* COM 阵营:在 Windows 上自动化运行中 PowerPoint 的那些服务器;有本事,但被锁在 Windows 上,没有应用就没法用。测试与压力证据在顶部规格条里(885 项测试,1,500 余次对抗性传输调用,0 次损坏)。欢迎指正,请开 issue。",
-"h2.eff": "上下文效率",
-"eff.lead": "每个 MCP 服务器都在干活之前就占用智能体的一部分上下文窗口。Word 水槽公开了账单,并承诺 v2 分层加载;这台服务器第一天就带着分层加载出货。会话从24 件工具的精简内核起步,活儿需要更多时,智能体按名字启用能力包,工具在会话中途出现。偷懒的路是故意堵死的:精简内核不放降级的替身,超范围工作的拒绝会点名确切的包和解锁它的确切调用。拒绝本身就是路标。",
+"cmp.note": "能力调查,截至 2026-08-31,汇总自公开仓库、文档与 issue 跟踪器。n/d:在所查资料中未见记载(并非断言其没有)。最流行的服务器是 GongRzhe/Office-PowerPoint-MCP-Server,自 2026 年 3 月起已归档。* COM 阵营:在 Windows 上自动化运行中 PowerPoint 的那些服务器(Ayushmaniar/powerpoint-mcp 113、ykuwai/ppt-mcp 58、trsdn/mcp-server-ppt 36、sbroenne/mcp-server-powerpoint 19);有本事,但被锁在 Windows 上,没有应用就没法用。&dagger; 星标数于 2026-09-04 通过 GitHub API 读取,仅供参考:星标说明一个货架被人看了多久,而不是架上摆着什么。那位 1,851 星的领头货自 2026 年 3 月起归档,至今仍然没法把一张幻灯片撤下来。测试与压力证据在顶部规格条里(885 项测试,1,500 余次对抗性传输调用,0 次损坏)。欢迎指正,请开 issue。",
+"h2.eff": "上下文账单",
+"eff.lead": "每个 MCP 服务器都在干活之前就吃掉智能体的一部分上下文窗口,就像卖场里的灯,没人看也照样耗电。Word 水槽公开了账单,并承诺 v2 分层加载;这台服务器第一天就带着分层加载出货。会话从24 件工具的精简内核起步,活儿需要更多时,智能体按名字启用能力包,工具在会话中途出现。偷懒的路是故意堵死的:精简内核不放降级的替身,超范围工作的拒绝会点名确切的包和解锁它的确切调用。拒绝本身就是路标。",
 "eff.s1": "精简内核的工具数",
 "eff.s2": "token,精简内核预载",
 "eff.s3": "到整台水槽的调用数",
 "eff.note": "想一开始就全部载入的重度用户可以钉死它:在服务器环境里设 <b>KS4P_MODE=full</b>,或给出逗号分隔的包列表。管理员可用 KS4P_PACK_POLICY=locked 锁定选择。",
-"h2.install": "安装",
+"h2.install": "装上,接好",
 "inst.form": "订购单 № KS4P-1",
 "inst.s1": "① 领取器具",
 "inst.s2": "② 接好线路(Claude Code)",
 "inst.s3": "③ 任何其他 MCP 客户端(stdio)",
-"inst.note": "占大多数的基于文件的工具无需安装 PowerPoint,并且跨平台运行。导出与校验工具(PDF、逐页 PNG、干净打开检查)在本机装有 Microsoft PowerPoint 时通过 COM 使用它。完整设置见 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>。",
+"inst.note": "占大多数的基于文件的工具无需安装 PowerPoint,并且跨平台运行。导出与校验工具(PDF、逐页 PNG、干净打开检查)在本机备有 Microsoft PowerPoint 时,通过 COM 借来一用。完整设置见 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>。",
 "h2.svc": "服务柜台",
 "svc.ticket": "正在叫号 · 请取号 · 与 Word 水槽同一服务台,隔一条过道",
 "svc1.t": "画框挂歪了?",
@@ -1269,7 +1266,7 @@ zh: {
 "g.t": "为“不损坏”而设计",
 "g.p1": "原子化的校验保存。每次改动前自动生成带时间戳的备份。未被编辑的内容逐字节原样通过,动画、媒体、嵌入对象一概不动。每个版本发布都要过关:真实的演示文稿逐字节干净往返、在 PowerPoint 里打开没有修复提示,还要跑一轮走原始 MCP 传输的对抗测试。目标含糊时,服务器不猜,而是列出候选并拒绝;拿错第一个匹配是别家的政策。",
 "g.p2": "依许可证按现状提供,不附带任何形式的担保。上述工程设计,只是说明你的演示文稿被多么认真地对待。请保留备份。(它会替你做备份。)",
-"h2.fam": "全家福",
+"h2.fam": "其他通道",
 "fam1.p": "元老设备:为 Microsoft Word 而备,应有尽有。189 件工具,打开的文档实时编辑,引文,识别合并的表格手术,修订,为“不损坏”而设计。",
 "fam1.g": "去水暖货架逛逛 →",
 "fam2.t": "总店门面",
@@ -1280,7 +1277,7 @@ zh: {
 },
 de: {
 "pageTitle": "KitchenSink4PPT: Microsoft PowerPoint mit allem Drum und Dran",
-"m.left": "<b>ABTEILUNG DEKO</b> &middot; FEINE INSTRUMENTE FÜR FOLIEN",
+"m.left": "<b>ABTEILUNG DEKO</b> &middot; FEINE INSTRUMENTE FÜR GUT GEKLEIDETE FOLIEN",
 "m.catalog": "KATALOG № 138",
 "m.family": "FAMILIE",
 "m.service": "SERVICE",
@@ -1297,17 +1294,16 @@ de: {
 "btn.source": "Quelltext lesen",
 "hero.invite": "↓ oder erst ausprobieren: unten ist ein Diagramm zum Ziehen, und die Pfeile folgen",
 "sw.here": "(Sie sind hier)", "sw.store": "Zum Laden",
-"h2.new": "Neu in dieser Version", "new.label": "NEU EINGETROFFEN",
-"new.t": "Fünf Dinge, die dieses Release geändert hat",
+"h2.new": "Neu im Regal", "new.label": "NEU EINGETROFFEN",
+"new.t": "Vier Dinge, die v1.1 geändert hat, für Stammkunden",
 "new.sub": "Die ganze Liste, ganz ohne Release Notes.",
-"new1": "<b>Live-Bearbeitung, die man laufen lassen kann.</b> Jeder Aufruf in ein offenes PowerPoint läuft jetzt durch eine einzige Warteschlange, sodass zwei Agenten am selben Foliensatz ihre Schreibvorgänge nicht vermischen können, und ein Dialog, der auf einen Menschen wartet, wird auf Fensterebene erkannt, statt die Sitzung still einfrieren zu lassen. (Die Word-Feldsitzungen haben das auf die harte Tour gelernt.)",
-"new2": "<b>Ihre Hinweiseinstellung kommt zurück.</b> Der Server schaltet die Meldungen von PowerPoint während der Arbeit stumm, und ein Leck konnte sie danach auch in Ihrem eigenen PowerPoint stumm lassen. Jetzt wird Ihre Einstellung jedes Mal wiederhergestellt.",
-"new3": "<b>Nichts hängt endlos.</b> Vorgänge, die PowerPoint steuern, laufen gegen eine Frist mit Notschalter: Eine festgefahrene Anwendung scheitert mit einer Meldung, mit der Sie etwas anfangen können, statt das Gespräch aufzuhalten.",
-"new4": "<b>Aus neun Paketen wurden sechs.</b> Kleine Pakete kosteten mehr Aufmerksamkeit, als sie sparten, und sind bei ihren Nachbarn eingezogen: Die Auswahl ist kürzer, und jedes Paket verdient seine Zeile. Alte Paketnamen funktionieren weiterhin.",
-"new5": "<b>Die Testsuite kann bei der Zeit nicht mehr schwindeln.</b> Die Zeitlimits der Suite waren unbemerkt wirkungslos geworden. Jetzt verweigert die Suite den Start, wenn sie nicht durchgesetzt werden, damit ein Hänger nie wieder als langsamer Test durchgeht.",
+"new1": "<b>Live-Bearbeitung, die man laufen lassen kann.</b> Jeder Aufruf in ein offenes PowerPoint wartet jetzt in einer einzigen Schlange, sodass zwei Agenten am selben Foliensatz einander nicht ins Wort fallen, und ein Dialogfenster, das auf einen Menschen wartet, wird auf Fensterebene erkannt, statt die Sitzung still einfrieren zu lassen. (Der Word-Gang hat das auf die harte Tour gelernt.)",
+"new2": "<b>Ihre Hinweiseinstellung kommt zurück.</b> Der Server schaltet die Meldungen von PowerPoint während der Arbeit stumm, und ein Leck konnte sie nach Feierabend auch in Ihrem eigenen PowerPoint stumm lassen. Jetzt stellt er Ihre Einstellung beim Hinausgehen jedes Mal wieder her.",
+"new3": "<b>Aus neun Regalen wurden sechs.</b> Kleine Pakete kosteten mehr Aufmerksamkeit, als sie sparten, und sind bei ihren Nachbarn eingezogen. Die Auswahl ist kürzer, jedes Paket verdient seine Zeile, und eine Sitzung startet schlanker. Alte Paketnamen funktionieren weiterhin.",
+"new4": "<b>Drei Folien bestellt, drei Folien geliefert.</b> Eine fehlerhafte Folienliste kam früher weit genug, um PowerPoint zu öffnen, neun Sekunden dafür zu brauchen und sich dann über einen Folienindex zu beschweren, der nie eine Folie war. Die Anfrage wird jetzt geprüft, bevor PowerPoint überhaupt angefasst wird, und die Antwort benennt den tatsächlichen Fehler.",
 "no0": "ABT. 00", "no1": "ABT. 01", "no2": "ABT. 02", "no3": "ABT. 03", "no4": "ABT. 04", "no5": "ABT. 05", "no6": "ABT. 06", "no7": "ABT. 07",
 "h2.demo": "Den Knoten verschieben, die Pfeile folgen",
-"demo.lead": "Jede KI-Pipeline kann ein Diagramm auf eine Folie setzen. Fast alle liefern dabei nur ein Bild davon: flache Pixel, fest versiegelt. Am Abend vor der Präsentation muss ein Kasten einen Zentimeter wandern, und einem Bild ist egal, wie klein die Änderung ist. Dieser Server zeichnet andersherum: SVG geht hinein, gruppierte native PowerPoint-Formen kommen heraus, mit Verbindern, die an den Formen kleben, die sie verbinden. Ziehen Sie einen Knoten in PowerPoint, und die Pfeile folgen. Bitten Sie den Agenten, einen Kasten per Name umzufärben, und nur dieser Kasten ändert sich. Keine Neuerzeugungs-Schleife, keine Bild-API, kein installiertes PowerPoint nötig, um es zu bauen.",
+"demo.lead": "Jede KI-Pipeline kann ein Diagramm auf eine Folie setzen. Fast alle liefern dabei nur ein Bild davon: flache Pixel hinter Glas. Am Abend vor der Präsentation muss ein Kasten einen Zentimeter wandern, und einem Bild ist egal, wie klein die Änderung ist. Dieser Server zeichnet andersherum: SVG geht hinein, gruppierte native PowerPoint-Formen kommen heraus, mit Verbindern, die an den Formen kleben, die sie verbinden. Ziehen Sie einen Knoten in PowerPoint, und die Pfeile folgen. Bitten Sie den Agenten, einen Kasten per Name umzufärben, und nur dieser Kasten ändert sich. Keine Neuerzeugungs-Schleife, keine Bild-API, kein installiertes PowerPoint nötig, um es zu bauen.",
 "demo.badtag": "FLACHES PNG",
 "demo.nope": "ES IST EIN BILD",
 "demo.badh": "Was der Rest des Regals verkauft",
@@ -1320,13 +1316,13 @@ de: {
 "demo.reset": "ZURÜCK ⟲",
 "demo.goodp": "Eine gruppierte Menge echter PowerPoint-Formen mit angeklebten Verbindern. Verschieben Sie den Knoten in zehn Sekunden selbst, oder lassen Sie den Agenten genau eine Form über ihre Identität bearbeiten. Alles andere bleibt unangetastet. Tastatur geht auch: Knoten fokussieren und Pfeiltasten nutzen.",
 "demo.note": "Die Demo oben läuft der Anschaulichkeit halber im Browser; die ausgelieferte Ausgabe ist gewöhnliche PowerPoint-Geometrie (Preset- und Freiformen, Verläufe, Themenfarben-Füllungen, gerade, gewinkelte und gekrümmte Verbinder). In PowerPoint verhält sie sich also exakt wie von Hand gezeichnete Formen.",
-"h2.tale": "Warum es das gibt",
+"h2.tale": "Warum es diesen Gang gibt",
 "tale.label": "EIN WARNENDES BEISPIEL",
 "tale.p1": "Bitten Sie eine KI, ein Organigramm auf Folie 12 zu setzen. Fast jedes Werkzeug, das eines zeichnen kann, reicht Ihnen ein <em>Bild</em> davon; die wenigen, die echte Kästen zeichnen, bieten nur feste Layouts, nehmen oder lassen. Dann kommt die Umstrukturierung: ein Name ändert sich, ein Kasten wandert unter eine andere Führungskraft. Der Kasten kann nicht wandern. Er ist kein Kasten; er ist <em>Pixel</em>. Ihre Optionen: das ganze Bild neu erzeugen und hoffen, dass sonst nichts verrutscht ist, für dasselbe Diagramm erneut einen Bilderdienst bezahlen, oder es von Hand nachbauen, vierzig Minuten Rechtecke ziehen, die Sie nie erstellt haben.",
 "tale.p2": "Sich umzusehen rettet Sie nicht. Der beliebteste PowerPoint-MCP-Server liegt <em>archiviert</em> da: knapp zweitausend Sterne, kein Nachfolger, und er konnte Folien hinzufügen, aber nie richtig löschen, duplizieren oder umsortieren. Die Werkzeuge, die tiefer gehen, brauchen allesamt Windows mit geöffnetem PowerPoint, bevor sie überhaupt irgendetwas tun.",
 "tale.p3": "KitchenSink4PPT zeichnet das Diagramm als <em>echte PowerPoint-Formen</em>: Kästen, die Sie ziehen können, Verbinder, die dabei verbunden bleiben, Text, in den Sie hineinklicken können. Die Ein-Namen-Korrektur dauert zehn Sekunden, durch Sie oder durch den Agenten, und die Pfeile folgen.",
-"h2.inv": "Das Inventar, nach Paketen",
-"inv.lead": "Der Katalog ist in Fähigkeitspakete gegliedert. Eine Sitzung startet mit dem Lite-Kern, 24 Werkzeuge bei etwa 4,5k Token, und schaltet das Paket, das ein Auftrag braucht, mit einem Aufruf zu. Jede Abteilung unten liefert in v1.1 aus. Alle 138 Werkzeuge, 159 Operationen. In v1.1 sind die kleinen Pakete in ihre Nachbarn gewandert; die alten Paketnamen funktionieren weiterhin.",
+"h2.inv": "Die Regale, Paket für Paket",
+"inv.lead": "Die Ware ist in Fähigkeitspaketen sortiert, so wie ein guter Laden zusammenstellt, was zusammengehört. Eine Sitzung öffnet mit dem Lite-Kern, 24 Werkzeuge bei etwa 4,5k Token, und schaltet das Paket, das ein Auftrag braucht, mit einem Aufruf zu. Jede Abteilung unten steht heute im Laden: alle 138 Werkzeuge, 159 Operationen. In v1.1 sind die kleinen Pakete bei ihren Nachbarn eingezogen, und die alten Paketnamen gehen an der Kasse weiterhin durch.",
 "pk1.t": "Lite-Kern", "pk1.n": "PAKET 0 · IMMER AN",
 "pk1.p": "Eine verankerte Markdown-Sicht auf den ganzen Foliensatz, Textlesen und Suchen/Ersetzen, Folien-CRUD, richtig gemacht (Einfügen nach Layout, tiefes Duplizieren, Löschen mit Aufräumen, Umsortieren, Ausblenden), Stapelbearbeitung mit einem Speichern pro Stapel, Snapshots und Backups, Diagnostik und die enable_tools-Schalttafel.",
 "pk1.e": "z. B. den Foliensatz als Markdown mit stabilen Ankern lesen · die schwerste Folie sauber duplizieren · zwanzig Änderungen in einem atomaren Stapel anwenden",
@@ -1350,11 +1346,11 @@ de: {
 "pk7.t": "Live-Bearbeitung", "pk7.n": "OFFENER FOLIENSATZ? GUT.",
 "pk7.p": "Den Foliensatz bearbeiten, während er im PowerPoint des Nutzers geöffnet ist: dieselben Werkzeuge routen automatisch, Änderungen bleiben ungespeichert, bis man es verlangt, der Cursor bleibt unberührt, und die Rückgängig-Garantie wird ehrlich gemeldet. Jeder Aufruf läuft durch eine einzige Warteschlange, sodass Agenten am selben offenen Foliensatz sich nicht ins Wort fallen, und ein Dialog, der auf einen Menschen wartet, wird auf Fensterebene erkannt. PowerPoint-Status und eine Zombie-Prozess-Prüfung gehören dazu.",
 "pk7.e": "z. B. einen Tippfehler im Foliensatz für morgen beheben · ungespeicherte Änderungen sehen, die die Datei auf der Platte nicht hat · prüfen, ob noch ein verirrtes PowerPoint läuft",
-"h2.cmp": "Gegen die Konkurrenz",
-"cmp.lead": "Feature-Tabellen schmeicheln jedem. Hier ist der Vergleich als sieben Dinge, um die man einen Agenten wirklich bitten würde, und was dann passiert.",
+"h2.cmp": "Gegen den Rest des Gangs",
+"cmp.lead": "Feature-Tabellen schmeicheln jedem. Deshalb hier stattdessen sieben Dinge, um die man einen Agenten wirklich bitten würde, und was dann passiert.",
 "cmp.h1": "„Du, könntest du…“",
-"cmp.h3": "Beliebtester Server (archiviert)",
-"cmp.h4": "COM-Riege*",
+"cmp.h3": "GongRzhe (archiviert)<span class=\"stars\">1.851 GitHub-Sterne&dagger;</span>",
+"cmp.h4": "COM-Riege*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "„Zeichne mir ein Flussdiagramm, das ich danach bearbeiten kann.“",
 "cr1.us": "✔ gruppierte native Formen mit angeklebten Verbindern, jedes Diagramm, das SVG beschreiben kann",
 "cr1.com": "feste SmartArt-Layouts, Windows mit laufendem PowerPoint",
@@ -1375,19 +1371,19 @@ de: {
 "cr7.q": "„Antworte auf den Kommentar des Prüfers.“",
 "cr7.us": "Antworten im Thread, Darstellung in PowerPoint selbst verifiziert",
 "cr7.com": "✘ Antworten gibt es heute in keinem PowerPoint-MCP-Server",
-"cmp.note": "Fähigkeitserhebung, Stand 2026-08-31, zusammengetragen aus öffentlichen Repositories, Dokumentation und Issue-Trackern. n/d: in den gesichteten Quellen nicht dokumentiert (keine behauptete Abwesenheit). * COM-Riege: die Server, die ein laufendes PowerPoint unter Windows automatisieren; fähig, aber Windows-gebunden und ohne die Anwendung nicht verfügbar. Test- und Stressbelege stehen oben im Spezifikationsstreifen (885 Tests, über 1.500 adversariale Transportaufrufe, 0 Beschädigungen). Korrekturen willkommen: einfach ein Issue öffnen.",
-"h2.eff": "Kontext-Effizienz",
-"eff.lead": "Jeder MCP-Server belegt einen Teil des Kontextfensters eines Agenten, bevor die Arbeit überhaupt beginnt. Die Word-Spüle hat ihre Rechnung veröffentlicht und gestuftes Laden für v2 versprochen; dieser Server liefert gestuftes Laden vom ersten Tag an. Eine Sitzung startet mit dem Lite-Kern, 24 Werkzeuge. Braucht ein Auftrag mehr, schaltet der Agent das Paket per Name zu, und die Werkzeuge erscheinen mitten in der Sitzung. Der bequeme Weg ist mit Absicht eine Sackgasse: Lite führt keine abgespeckten Platzhalter, und jede Ablehnung für Arbeit außerhalb des Umfangs nennt das exakte Paket und den exakten Aufruf, der es freischaltet. Die Ablehnung ist der Wegweiser.",
+"cmp.note": "Fähigkeitserhebung, Stand 2026-08-31, zusammengetragen aus öffentlichen Repositories, Dokumentation und Issue-Trackern. n/d: in den gesichteten Quellen nicht dokumentiert (keine behauptete Abwesenheit). Der beliebteste Server ist GongRzhe/Office-PowerPoint-MCP-Server, seit März 2026 archiviert. * COM-Riege: die Server, die ein laufendes PowerPoint unter Windows automatisieren (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19); fähig, aber Windows-gebunden und ohne die Anwendung nicht verfügbar. &dagger; Sternzahlen am 2026-09-04 über die GitHub-API gelesen, zur Einordnung: Sterne sagen, wie lange ein Regal schon zu sehen ist, nicht was darin steht. Der Spitzenreiter mit 1.851 Sternen ist seit März 2026 archiviert und bekommt eine Folie noch immer nicht wieder heraus. Test- und Stressbelege stehen oben im Spezifikationsstreifen (885 Tests, über 1.500 adversariale Transportaufrufe, 0 Beschädigungen). Korrekturen willkommen: einfach ein Issue öffnen.",
+"h2.eff": "Die Kontextrechnung",
+"eff.lead": "Jeder MCP-Server zieht am Kontextfenster eines Agenten, bevor die Arbeit überhaupt beginnt, so wie jede Leuchte im Laden Strom zieht, ob jemand hinsieht oder nicht. Die Word-Spüle hat ihre Rechnung veröffentlicht und gestuftes Laden für v2 versprochen; dieser Server liefert gestuftes Laden vom ersten Tag an. Eine Sitzung startet mit dem Lite-Kern, 24 Werkzeuge. Braucht ein Auftrag mehr, schaltet der Agent das Paket per Name zu, und die Werkzeuge erscheinen mitten in der Sitzung. Der bequeme Weg ist mit Absicht eine Sackgasse: Lite führt keine abgespeckten Platzhalter, und jede Ablehnung für Arbeit außerhalb des Umfangs nennt das exakte Paket und den exakten Aufruf, der es freischaltet. Die Ablehnung ist der Wegweiser.",
 "eff.s1": "Werkzeuge im Lite-Kern",
 "eff.s2": "Token, Lite-Kern im Voraus",
 "eff.s3": "Aufruf bis zur ganzen Spüle",
 "eff.note": "Poweruser, die von Anfang an alles geladen haben wollen, können es festnageln: <b>KS4P_MODE=full</b> in der Serverumgebung, oder eine kommagetrennte Paketliste. Administratoren sperren die Auswahl mit KS4P_PACK_POLICY=locked.",
-"h2.install": "Installation",
+"h2.install": "Montage und Anschluss",
 "inst.form": "BESTELLSCHEIN № KS4P-1",
 "inst.s1": "① DIE ARMATUR BESORGEN",
 "inst.s2": "② VERKABELN (Claude Code)",
 "inst.s3": "③ JEDER ANDERE MCP-CLIENT (stdio)",
-"inst.note": "Dateibasierte Werkzeuge, die große Mehrheit, brauchen kein installiertes PowerPoint und laufen plattformübergreifend. Die Export- und Prüfwerkzeuge (PDF, PNG je Folie, Öffnet-sauber-Prüfung) nutzen per COM ein lokales Microsoft PowerPoint, wenn eines vorhanden ist. Vollständige Einrichtung im <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
+"inst.note": "Dateibasierte Werkzeuge, die große Mehrheit, brauchen kein installiertes PowerPoint und laufen plattformübergreifend. Die Export- und Prüfwerkzeuge (PDF, PNG je Folie, Öffnet-sauber-Prüfung) leihen sich per COM ein lokales Microsoft PowerPoint, wenn eines im Haus ist. Vollständige Einrichtung im <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "h2.svc": "Serviceabteilung",
 "svc.ticket": "JETZT BEDIENUNG · NUMMER ZIEHEN · GLEICHER SCHALTER WIE DIE WORD-SPÜLE, EINEN GANG WEITER",
 "svc1.t": "Ein schiefer Bilderrahmen?",
@@ -1403,7 +1399,7 @@ de: {
 "g.t": "Konstruiert mit dem Ziel, nichts zu beschädigen",
 "g.p1": "Atomares, validiertes Speichern. Automatische Backups mit Zeitstempel vor jeder Änderung. Byte-identische Durchleitung von allem, was nicht bearbeitet wird, sodass Animationen, Medien und eingebettete Objekte unangetastet passieren. Jedes Release muss durchs Tor: echte Foliensätze, die byte-sauber hin- und zurücklaufen und in PowerPoint ohne Reparaturdialog öffnen, plus eine adversariale Runde durch den rohen MCP-Transport. Ist ein Ziel mehrdeutig, verweigert der Server mit Kandidaten, statt zu raten; den falschen ersten Treffer zu nehmen ist die Politik von anderen.",
 "g.p2": "Bereitgestellt wie besehen, ohne Gewährleistung jeglicher Art, gemäß Lizenz; die obige Ingenieursarbeit zeigt lediglich, wie ernst Ihre Foliensätze genommen werden. Behalten Sie Backups. (Es legt sie für Sie an.)",
-"h2.fam": "Die Familie",
+"h2.fam": "Die anderen Gänge",
 "fam1.p": "Die Original-Armatur: Microsoft Word mit allem Drum und Dran. 189 Werkzeuge, Live-Bearbeitung offener Dokumente, Zitate, verbund-bewusste Tabellenchirurgie, nachverfolgte Änderungen, konstruiert mit dem Ziel, nichts zu beschädigen.",
 "fam1.g": "Zum Sanitärgang →",
 "fam2.t": "Das Ladengeschäft",
@@ -1414,7 +1410,7 @@ de: {
 },
 fr: {
 "pageTitle": "KitchenSink4PPT : absolument tout pour Microsoft PowerPoint, jusqu'au moindre détail",
-"m.left": "<b>RAYON DÉCORATION</b> &middot; INSTRUMENTS DE PRÉCISION POUR DIAPOSITIVES",
+"m.left": "<b>RAYON DÉCORATION</b> &middot; INSTRUMENTS DE PRÉCISION POUR DIAPOSITIVES BIEN HABILLÉES",
 "m.catalog": "CATALOGUE № 138",
 "m.family": "FAMILLE",
 "m.service": "SERVICE",
@@ -1431,17 +1427,16 @@ fr: {
 "btn.source": "Lire la source",
 "hero.invite": "↓ ou essayez d'abord : il y a plus bas un diagramme à faire glisser, et les flèches suivent",
 "sw.here": "(vous êtes ici)", "sw.store": "La boutique",
-"h2.new": "Nouveautés de cette version", "new.label": "ARRIVAGE",
-"new.t": "Cinq choses que cette version change",
+"h2.new": "Nouveautés en rayon", "new.label": "ARRIVAGE",
+"new.t": "Quatre choses que la v1.1 change, pour les habitués",
 "new.sub": "La liste complète, sans passer par les notes de version.",
-"new1": "<b>De l'édition en direct que l'on peut laisser tourner.</b> Chaque appel vers un PowerPoint ouvert passe désormais par une seule file, si bien que deux agents sur le même jeu ne peuvent pas entremêler leurs écritures, et une boîte de dialogue qui attend un humain est repérée au niveau de la fenêtre au lieu de figer la session en silence. (Les sessions de terrain sur Word l'ont appris à la dure.)",
-"new2": "<b>Vos réglages d'alerte reviennent.</b> Le serveur coupe les invites de PowerPoint pendant qu'il travaille, et une fuite pouvait les laisser coupées ensuite dans votre propre PowerPoint. Votre réglage est maintenant rétabli à chaque fois.",
-"new3": "<b>Plus rien ne reste bloqué.</b> Les opérations qui pilotent PowerPoint courent contre une échéance assortie d'un coupe-circuit : une application coincée échoue avec un message exploitable au lieu de retenir la conversation.",
-"new4": "<b>Neuf packs sont devenus six.</b> Les petits packs coûtaient plus d'attention qu'ils n'en faisaient gagner, alors ils ont emménagé chez leurs voisins : le menu est plus court et chaque pack mérite sa ligne. Les anciens noms de packs fonctionnent toujours.",
-"new5": "<b>La suite de tests ne peut plus mentir sur le temps.</b> Les limites de temps de la suite étaient devenues inopérantes sans que personne le remarque. La suite refuse désormais de démarrer si elles ne sont pas appliquées, pour qu'un blocage ne passe plus jamais pour un test lent.",
+"new1": "<b>De l'édition en direct que l'on peut laisser tourner.</b> Chaque appel vers un PowerPoint ouvert attend son tour dans une seule file, si bien que deux agents sur le même jeu ne se coupent plus la parole, et une boîte de dialogue qui attend un humain est repérée au niveau de la fenêtre au lieu de figer la session en silence. (Le rayon Word l'a appris à la dure.)",
+"new2": "<b>Vos réglages d'alerte reviennent.</b> Le serveur coupe les invites de PowerPoint pendant qu'il travaille, et une fuite pouvait les laisser coupées après son départ, dans votre propre PowerPoint. Il remet maintenant votre réglage en partant, à chaque fois.",
+"new3": "<b>Neuf rayonnages sont devenus six.</b> Les petits packs coûtaient plus d'attention qu'ils n'en faisaient gagner, alors ils ont emménagé chez leurs voisins. Le menu est plus court, chaque pack mérite sa ligne, et une session démarre plus légère. Les anciens noms de packs fonctionnent toujours.",
+"new4": "<b>Trois diapositives demandées, trois diapositives rendues.</b> Une liste de diapositives mal formée passait autrefois assez loin pour ouvrir PowerPoint, y consacrer neuf secondes, puis revenir se plaindre d'un indice qui n'avait jamais été une diapositive. La demande est maintenant vérifiée avant que PowerPoint ne soit touché, et la réponse nomme la vraie erreur.",
 "no0": "RAYON 00", "no1": "RAYON 01", "no2": "RAYON 02", "no3": "RAYON 03", "no4": "RAYON 04", "no5": "RAYON 05", "no6": "RAYON 06", "no7": "RAYON 07",
 "h2.demo": "Déplacez le nœud, les flèches suivent",
-"demo.lead": "Toutes les chaînes IA savent poser un diagramme sur une diapositive. Presque toutes vous en remettent une image : des pixels plats, scellés. La veille de la présentation, une boîte doit bouger d'un demi-centimètre, et une image se moque de la taille du changement. Ce serveur dessine dans l'autre sens : le SVG entre, des formes PowerPoint natives groupées sortent, avec des connecteurs collés aux formes qu'ils relient. Faites glisser un nœud dans PowerPoint et les flèches suivent. Demandez à l'agent de recolorer une boîte par son nom et seule cette boîte change. Pas d'aller-retour de régénération, pas d'API d'images, pas de PowerPoint installé pour la construire.",
+"demo.lead": "Toutes les chaînes IA savent poser un diagramme sur une diapositive. Presque toutes vous en remettent une image : des pixels plats, sous verre. La veille de la présentation, une boîte doit bouger d'un demi-centimètre, et une image se moque de la taille du changement. Ce serveur dessine dans l'autre sens : le SVG entre, des formes PowerPoint natives groupées sortent, avec des connecteurs collés aux formes qu'ils relient. Faites glisser un nœud dans PowerPoint et les flèches suivent. Demandez à l'agent de recolorer une boîte par son nom et seule cette boîte change. Pas d'aller-retour de régénération, pas d'API d'images, pas de PowerPoint installé pour la construire.",
 "demo.badtag": "PNG PLAT",
 "demo.nope": "C'EST UNE IMAGE",
 "demo.badh": "Ce que vend le reste du rayon",
@@ -1454,13 +1449,13 @@ fr: {
 "demo.reset": "RÉINIT. ⟲",
 "demo.goodp": "Un groupe de vraies formes PowerPoint aux connecteurs collés. Déplacez le nœud vous-même en dix secondes, ou demandez à l'agent de modifier exactement une forme par son identité. Tout le reste demeure intact. Le clavier marche aussi : donnez le focus au nœud et utilisez les flèches.",
 "demo.note": "La démo ci-dessus tourne dans votre navigateur pour la démonstration ; la sortie livrée est de la géométrie PowerPoint ordinaire (formes prédéfinies et libres, dégradés, remplissages aux couleurs du thème, connecteurs droits, coudés et courbes), et se comporte donc dans PowerPoint exactement comme des formes dessinées à la main.",
-"h2.tale": "Pourquoi ça existe",
+"h2.tale": "Pourquoi ce rayon existe",
 "tale.label": "UN CONTE ÉDIFIANT",
 "tale.p1": "Demandez à une IA de mettre un organigramme sur la diapositive 12. Presque tous les outils capables d'en dessiner un vous remettent une <em>image</em> d'organigramme ; les rares qui tracent de vraies boîtes n'offrent que des dispositions figées, à prendre ou à laisser. Puis la réorganisation arrive : un nom change, une boîte passe sous un autre responsable. La boîte ne peut pas bouger. Ce n'est pas une boîte ; ce sont des <em>pixels</em>. Vos options : régénérer l'image entière en espérant que rien d'autre n'a bougé, repayer un service d'images pour le même schéma, ou tout reconstruire à la main, quarante minutes à faire glisser des rectangles que vous n'avez pas créés.",
 "tale.p2": "Faire le tour des boutiques ne vous sauvera pas. Le serveur MCP PowerPoint le plus populaire dort <em>archivé</em> : près de deux mille étoiles, aucun successeur, et il savait ajouter des diapositives mais jamais correctement les supprimer, les dupliquer ou les réordonner. Les outils qui vont plus loin exigent tous Windows avec PowerPoint ouvert avant de faire quoi que ce soit.",
 "tale.p3": "KitchenSink4PPT dessine le schéma comme de <em>vraies formes PowerPoint</em> : des boîtes que l'on fait glisser, des connecteurs qui restent attachés pendant ce temps, du texte où l'on peut cliquer. La correction du nom prend dix secondes, par vous ou par l'agent, et les flèches suivent.",
-"h2.inv": "L'inventaire, par packs",
-"inv.lead": "Le catalogue est organisé en packs de capacités. Une session démarre sur le noyau allégé, 24 outils pour environ 4,5k tokens, et active le pack qu'un travail demande en un appel. Chaque rayon ci-dessous est livré en v1.1. Les 138 outils, 159 opérations. En v1.1, les petits packs ont rejoint leurs voisins, et les anciens noms de packs fonctionnent toujours.",
+"h2.inv": "Les rayonnages, pack par pack",
+"inv.lead": "Le stock est rangé en packs de capacités, comme une bonne boutique regroupe ce qui va ensemble. Une session ouvre sur le noyau allégé, 24 outils pour environ 4,5k tokens, et active le pack qu'un travail demande en un appel. Chaque rayon ci-dessous est en boutique aujourd'hui : les 138 outils, 159 opérations. La v1.1 a fait emménager les petits packs chez leurs voisins, et les anciens noms de packs passent toujours en caisse.",
 "pk1.t": "Noyau allégé", "pk1.n": "PACK 0 · TOUJOURS ACTIF",
 "pk1.p": "Une vue markdown ancrée de tout le jeu de diapositives, lecture de texte et rechercher-remplacer, un CRUD de diapositives bien fait (insertion par disposition, duplication profonde, suppression avec nettoyage, réordonnancement, masquage), éditions par lots avec un seul enregistrement par lot, instantanés et sauvegardes, diagnostics, et le standard enable_tools.",
 "pk1.e": "p. ex. lire le jeu en markdown avec des ancres stables · dupliquer proprement la diapositive la plus lourde · appliquer vingt modifications en un lot atomique",
@@ -1484,11 +1479,11 @@ fr: {
 "pk7.t": "Édition en direct", "pk7.n": "JEU OUVERT ? TRÈS BIEN.",
 "pk7.p": "Modifier le jeu pendant qu'il est ouvert dans le PowerPoint de l'utilisateur : les mêmes outils se routent automatiquement, les modifications restent non enregistrées jusqu'à la demande, le curseur n'est jamais touché, et la garantie d'annulation est rapportée honnêtement. Chaque appel passe par une seule file, si bien que des agents travaillant le même jeu ouvert ne peuvent pas s'entremêler, et une boîte de dialogue qui attend un humain est repérée au niveau de la fenêtre. L'état de PowerPoint et une vérification des processus fantômes sont inclus.",
 "pk7.e": "p. ex. corriger une coquille dans le jeu que vous présentez demain · voir des modifications non enregistrées que le fichier sur disque n'a pas · vérifier qu'aucun PowerPoint égaré ne tourne encore",
-"h2.cmp": "Face à la concurrence",
-"cmp.lead": "Les grilles de fonctionnalités flattent tout le monde. Voici la comparaison sous forme de sept choses que vous demanderiez vraiment à un agent, et ce qui se passe ensuite.",
+"h2.cmp": "Face au reste du rayon",
+"cmp.lead": "Les grilles de fonctionnalités flattent tout le monde. Voici plutôt sept choses que vous demanderiez vraiment à un agent, et ce qui se passe ensuite.",
 "cmp.h1": "« Dis, tu pourrais… »",
-"cmp.h3": "Serveur le plus populaire (archivé)",
-"cmp.h4": "Rang COM*",
+"cmp.h3": "GongRzhe (archivé)<span class=\"stars\">1 851 étoiles GitHub&dagger;</span>",
+"cmp.h4": "Rang COM*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "« Dessine-moi un organigramme que je peux modifier ensuite. »",
 "cr1.us": "✔ formes natives groupées aux connecteurs collés, tout diagramme que le SVG sait décrire",
 "cr1.com": "dispositions SmartArt figées, Windows avec PowerPoint en cours d'exécution",
@@ -1509,19 +1504,19 @@ fr: {
 "cr7.q": "« Réponds au commentaire du relecteur. »",
 "cr7.us": "réponses en fil, rendu vérifié dans PowerPoint lui-même",
 "cr7.com": "✘ la réponse n'existe aujourd'hui dans aucun serveur MCP PowerPoint",
-"cmp.note": "Recensement des capacités au 2026-08-31, compilé à partir des dépôts publics, de la documentation et des traqueurs de tickets. n/d : non documenté dans les sources consultées (ce n'est pas une absence affirmée). * Rang COM : les serveurs qui automatisent un PowerPoint en cours d'exécution sous Windows ; capables, mais verrouillés sur Windows et indisponibles sans l'application. Les preuves de test et d'endurance vivent dans le bandeau de caractéristiques tout en haut (885 tests, plus de 1 500 appels de transport adversariaux, 0 corruption). Corrections bienvenues : ouvrez un ticket.",
-"h2.eff": "Efficacité de contexte",
-"eff.lead": "Chaque serveur MCP occupe une partie de la fenêtre de contexte d'un agent avant même que le travail commence. L'évier Word a publié sa facture et promis le chargement par paliers pour la v2 ; ce serveur livre le chargement par paliers dès le premier jour. Une session démarre sur le noyau allégé, 24 outils. Quand un travail en demande plus, l'agent active le pack par son nom et les outils apparaissent en pleine session. Le chemin paresseux est une impasse voulue : le noyau allégé ne porte aucun remplaçant dégradé, et tout refus pour un travail hors périmètre nomme le pack exact et l'appel exact qui le déverrouille. Le refus, c'est le panneau indicateur.",
+"cmp.note": "Recensement des capacités au 2026-08-31, compilé à partir des dépôts publics, de la documentation et des traqueurs de tickets. n/d : non documenté dans les sources consultées (ce n'est pas une absence affirmée). Le serveur le plus populaire est GongRzhe/Office-PowerPoint-MCP-Server, archivé depuis mars 2026. * Rang COM : les serveurs qui automatisent un PowerPoint en cours d'exécution sous Windows (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19) ; capables, mais verrouillés sur Windows et indisponibles sans l'application. &dagger; Nombres d'étoiles relevés via l'API GitHub le 2026-09-04, à titre de contexte : les étoiles disent depuis combien de temps un rayon est visible, pas ce qu'il y a dessus. Le leader à 1 851 étoiles est archivé depuis mars 2026 et ne sait toujours pas retirer une diapositive. Les preuves de test et d'endurance vivent dans le bandeau de caractéristiques tout en haut (885 tests, plus de 1 500 appels de transport adversariaux, 0 corruption). Corrections bienvenues : ouvrez un ticket.",
+"h2.eff": "La facture de contexte",
+"eff.lead": "Chaque serveur MCP tire sur la fenêtre de contexte d'un agent avant même que le travail commence, comme chaque luminaire du magasin tire du courant, que quelqu'un le regarde ou non. L'évier Word a publié sa facture et promis le chargement par paliers pour la v2 ; ce serveur livre le chargement par paliers dès le premier jour. Une session démarre sur le noyau allégé, 24 outils. Quand un travail en demande plus, l'agent active le pack par son nom et les outils apparaissent en pleine session. Le chemin paresseux est une impasse voulue : le noyau allégé ne porte aucun remplaçant dégradé, et tout refus pour un travail hors périmètre nomme le pack exact et l'appel exact qui le déverrouille. Le refus, c'est le panneau indicateur.",
 "eff.s1": "Outils dans le noyau allégé",
 "eff.s2": "Tokens, noyau allégé chargé d'avance",
 "eff.s3": "Appel jusqu'à l'évier complet",
 "eff.note": "Les utilisateurs avancés qui veulent tout charger dès le départ peuvent l'épingler : <b>KS4P_MODE=full</b> dans l'environnement du serveur, ou une liste de packs séparés par des virgules. Les administrateurs peuvent verrouiller la sélection avec KS4P_PACK_POLICY=locked.",
-"h2.install": "Installation",
+"h2.install": "Montage et raccordement",
 "inst.form": "BON DE COMMANDE № KS4P-1",
 "inst.s1": "① SE PROCURER LA ROBINETTERIE",
 "inst.s2": "② FAIRE LE BRANCHEMENT (Claude Code)",
 "inst.s3": "③ TOUT AUTRE CLIENT MCP (stdio)",
-"inst.note": "Les outils sur fichier, la grande majorité, ne demandent aucune installation de PowerPoint et tournent sur toutes les plateformes. Les outils d'export et de validation (PDF, PNG par diapositive, contrôle d'ouverture propre) utilisent un Microsoft PowerPoint local via COM quand il y en a un. Configuration complète dans le <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
+"inst.note": "Les outils sur fichier, la grande majorité, ne demandent aucune installation de PowerPoint et tournent sur toutes les plateformes. Les outils d'export et de validation (PDF, PNG par diapositive, contrôle d'ouverture propre) empruntent un Microsoft PowerPoint local via COM quand il y en a un dans la maison. Configuration complète dans le <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "h2.svc": "Service après-vente",
 "svc.ticket": "ON VOUS SERT · PRENEZ UN NUMÉRO · MÊME COMPTOIR QUE L'ÉVIER WORD, UNE ALLÉE PLUS LOIN",
 "svc1.t": "Un cadre de travers ?",
@@ -1537,7 +1532,7 @@ fr: {
 "g.t": "Conçu pour ne pas corrompre",
 "g.p1": "Enregistrements atomiques validés. Sauvegardes automatiques horodatées avant chaque modification. Passage à l'identique, octet pour octet, de tout ce qui n'est pas modifié : animations, médias et objets incorporés traversent intacts. Chaque version passe un portique : de vrais jeux de diapositives qui font l'aller-retour octet pour octet et s'ouvrent dans PowerPoint sans invite de réparation, plus une manche adversariale à travers le transport MCP brut. Quand une cible est ambiguë, le serveur refuse en montrant les candidats plutôt que de deviner ; prendre la mauvaise première correspondance, c'est la politique des autres.",
 "g.p2": "Fourni tel quel, sans garantie d'aucune sorte, conformément à la licence ; l'ingénierie ci-dessus dit simplement avec quel sérieux vos jeux de diapositives sont traités. Gardez des sauvegardes. (Il les fait pour vous.)",
-"h2.fam": "La famille",
+"h2.fam": "Les autres rayons",
 "fam1.p": "La robinetterie d'origine : absolument tout pour Microsoft Word, jusqu'au moindre détail. 189 outils, édition en direct des documents ouverts, citations, chirurgie de tableaux tenant compte des fusions, suivi des modifications, conçu pour ne pas corrompre.",
 "fam1.g": "Visiter le rayon plomberie →",
 "fam2.t": "La devanture",
@@ -1548,7 +1543,7 @@ fr: {
 },
 es: {
 "pageTitle": "KitchenSink4PPT: de todo para Microsoft PowerPoint, hasta lo que no imaginas",
-"m.left": "<b>DEPARTAMENTO DE DECORACIÓN</b> &middot; INSTRUMENTOS FINOS PARA DIAPOSITIVAS",
+"m.left": "<b>DEPARTAMENTO DE DECORACIÓN</b> &middot; INSTRUMENTOS FINOS PARA DIAPOSITIVAS BIEN VESTIDAS",
 "m.catalog": "CATÁLOGO № 138",
 "m.family": "FAMILIA",
 "m.service": "SERVICIO",
@@ -1565,17 +1560,16 @@ es: {
 "btn.source": "Leer el código",
 "hero.invite": "↓ o pruébelo primero: abajo hay un diagrama que puede arrastrar, y las flechas lo siguen",
 "sw.here": "(está aquí)", "sw.store": "La tienda",
-"h2.new": "Novedades de esta versión", "new.label": "RECIÉN LLEGADO",
-"new.t": "Cinco cosas que cambia esta versión",
+"h2.new": "Recién puesto en el estante", "new.label": "RECIÉN LLEGADO",
+"new.t": "Cuatro cosas que cambia la v1.1, si ya es cliente de la casa",
 "new.sub": "La lista entera, sin tener que leer las notas de la versión.",
-"new1": "<b>Edición en vivo que puede dejar funcionando.</b> Cada llamada a un PowerPoint abierto pasa ahora por una sola cola, de modo que dos agentes sobre la misma presentación no pueden entrelazar sus escrituras, y un cuadro de diálogo que espera a una persona se detecta a nivel de ventana en lugar de congelar la sesión en silencio. (Las sesiones de campo de Word lo aprendieron por las malas.)",
-"new2": "<b>Sus avisos vuelven a como estaban.</b> El servidor silencia los mensajes de PowerPoint mientras trabaja, y una fuga podía dejarlos silenciados después en su propio PowerPoint. Ahora restaura su ajuste siempre.",
-"new3": "<b>Nada se queda colgado para siempre.</b> Las operaciones que gobiernan PowerPoint corren contra un plazo con interruptor de emergencia: una aplicación atascada falla con un mensaje accionable en lugar de retener la conversación.",
-"new4": "<b>Nueve paquetes pasaron a ser seis.</b> Los paquetes pequeños cobraban más atención de la que ahorraban, así que se mudaron con sus vecinos: el menú es más corto y cada paquete se gana su línea. Los nombres antiguos siguen funcionando.",
-"new5": "<b>La suite de pruebas ya no puede mentir sobre el tiempo.</b> Los límites de tiempo de la suite se habían vuelto inertes sin que nadie lo notara. Ahora la suite se niega a arrancar si no se están aplicando, para que un cuelgue no vuelva a pasar por una prueba lenta.",
+"new1": "<b>Edición en vivo que puede dejar funcionando.</b> Cada llamada a un PowerPoint abierto espera su turno en una sola cola, de modo que dos agentes sobre la misma presentación no se pisan la palabra, y un cuadro de diálogo que espera a una persona se detecta a nivel de ventana en lugar de congelar la sesión en silencio. (El pasillo de Word lo aprendió por las malas.)",
+"new2": "<b>Sus avisos vuelven a como estaban.</b> El servidor silencia los mensajes de PowerPoint mientras trabaja, y una fuga podía dejarlos silenciados después, en su propio PowerPoint. Ahora restaura su ajuste al salir, siempre.",
+"new3": "<b>Nueve estantes pasaron a ser seis.</b> Los paquetes pequeños cobraban más atención de la que ahorraban, así que se mudaron con sus vecinos. El menú es más corto, cada paquete se gana su línea y la sesión arranca más ligera. Los nombres antiguos siguen funcionando.",
+"new4": "<b>Pida tres diapositivas y recibirá tres.</b> Una lista de diapositivas mal formada llegaba antes hasta abrir PowerPoint, gastaba nueve segundos en ello y volvía quejándose de un índice que nunca fue una diapositiva. Ahora la petición se comprueba antes de tocar PowerPoint, y la respuesta nombra el error real.",
 "no0": "DEPTO. 00", "no1": "DEPTO. 01", "no2": "DEPTO. 02", "no3": "DEPTO. 03", "no4": "DEPTO. 04", "no5": "DEPTO. 05", "no6": "DEPTO. 06", "no7": "DEPTO. 07",
 "h2.demo": "Mueva el nodo y las flechas lo siguen",
-"demo.lead": "Cualquier canalización de IA puede poner un diagrama en una diapositiva. Casi todas le entregan una imagen del diagrama: píxeles planos, sellados. La noche antes de presentar, una caja tiene que moverse medio centímetro, y a una imagen no le importa lo pequeño que sea el cambio. Este servidor dibuja al revés: entra SVG, salen formas nativas de PowerPoint agrupadas, con conectores pegados a las formas que unen. Arrastre un nodo en PowerPoint y las flechas lo siguen. Pida al agente recolorear una caja por su nombre y solo esa caja cambia. Sin viajes de regeneración, sin API de imágenes, sin PowerPoint instalado para construirlo.",
+"demo.lead": "Cualquier canalización de IA puede poner un diagrama en una diapositiva. Casi todas le entregan una imagen del diagrama: píxeles planos tras el cristal. La noche antes de presentar, una caja tiene que moverse medio centímetro, y a una imagen no le importa lo pequeño que sea el cambio. Este servidor dibuja al revés: entra SVG, salen formas nativas de PowerPoint agrupadas, con conectores pegados a las formas que unen. Arrastre un nodo en PowerPoint y las flechas lo siguen. Pida al agente recolorear una caja por su nombre y solo esa caja cambia. Sin viajes de regeneración, sin API de imágenes, sin PowerPoint instalado para construirlo.",
 "demo.badtag": "PNG PLANO",
 "demo.nope": "ES UNA IMAGEN",
 "demo.badh": "Lo que vende el resto del estante",
@@ -1588,13 +1582,13 @@ es: {
 "demo.reset": "REINICIAR ⟲",
 "demo.goodp": "Un grupo de formas reales de PowerPoint con conectores pegados. Mueva el nodo usted mismo en diez segundos, o pida al agente editar exactamente una forma por su identidad. Todo lo demás queda intacto. El teclado también funciona: enfoque el nodo y use las flechas.",
 "demo.note": "La demostración de arriba corre en su navegador para ilustrar el punto; la salida entregada es geometría corriente de PowerPoint (formas predefinidas y libres, degradados, rellenos con colores del tema, conectores rectos, acodados y curvos), así que en PowerPoint se comporta exactamente como las formas que usted dibuja a mano.",
-"h2.tale": "Por qué existe",
+"h2.tale": "Por qué existe este pasillo",
 "tale.label": "UN CUENTO CON MORALEJA",
 "tale.p1": "Pida a una IA que ponga un organigrama en la diapositiva 12. Casi todas las herramientas capaces de dibujarlo le entregan una <em>imagen</em> de un organigrama; las pocas que dibujan cajas reales solo ofrecen diseños fijos, lo toma o lo deja. Entonces llega la reorganización: cambia un nombre, una caja pasa a depender de otro jefe. La caja no puede moverse. No es una caja; son <em>píxeles</em>. Sus opciones: regenerar la imagen entera y confiar en que nada más se haya movido, volver a pagar un servicio de imágenes por el mismo organigrama, o reconstruirlo a mano, cuarenta minutos arrastrando rectángulos que usted no creó.",
 "tale.p2": "Ir de tiendas no le salva. El servidor MCP de PowerPoint más popular está <em>archivado</em>: casi dos mil estrellas, sin sucesor, y sabía añadir diapositivas pero nunca pudo borrarlas, duplicarlas ni reordenarlas como es debido. Las herramientas que llegan más hondo exigen todas Windows con PowerPoint abierto antes de hacer nada.",
 "tale.p3": "KitchenSink4PPT dibuja el organigrama como <em>formas reales de PowerPoint</em>: cajas que puede arrastrar, conectores que siguen unidos mientras lo hace, texto en el que puede hacer clic. El arreglo de un nombre tarda diez segundos, lo haga usted o el agente, y las flechas lo siguen.",
-"h2.inv": "El inventario, por paquetes",
-"inv.lead": "El catálogo se organiza en paquetes de capacidades. Una sesión arranca con el núcleo ligero, 24 herramientas en unos 4,5k tokens, y enciende el paquete que un trabajo necesita con una llamada. Cada departamento de abajo se entrega en la v1.1. Las 138 herramientas, 159 operaciones. En la v1.1 los paquetes pequeños se fusionaron con sus vecinos, y los nombres antiguos siguen funcionando.",
+"h2.inv": "Los estantes, paquete a paquete",
+"inv.lead": "La mercancía está ordenada en paquetes de capacidades, como una buena tienda agrupa lo que va junto. Una sesión abre con el núcleo ligero, 24 herramientas en unos 4,5k tokens, y enciende el paquete que un trabajo necesita con una llamada. Cada departamento de abajo está hoy en la sala: las 138 herramientas, 159 operaciones. La v1.1 mudó los paquetes pequeños con sus vecinos, y los nombres antiguos siguen pasando por caja.",
 "pk1.t": "Núcleo ligero", "pk1.n": "PAQUETE 0 · SIEMPRE ACTIVO",
 "pk1.p": "Una vista markdown anclada de toda la presentación, lectura de texto y buscar y reemplazar, CRUD de diapositivas bien hecho (insertar por diseño, duplicado profundo, borrado con limpieza, reordenar, ocultar), ediciones por lotes con un guardado por lote, instantáneas y copias de seguridad, diagnósticos, y el cuadro de mandos enable_tools.",
 "pk1.e": "p. ej. leer la presentación como markdown con anclas estables · duplicar limpiamente la diapositiva más pesada · aplicar veinte ediciones en un lote atómico",
@@ -1618,11 +1612,11 @@ es: {
 "pk7.t": "Edición en vivo", "pk7.n": "¿ABIERTA? DA IGUAL.",
 "pk7.p": "Editar la presentación mientras está abierta en el PowerPoint del usuario: las mismas herramientas se enrutan solas, las ediciones quedan sin guardar hasta que se pida, el cursor nunca se toca y la garantía de deshacer se informa con honestidad. Cada llamada pasa por una sola cola, de modo que varios agentes sobre la misma presentación abierta no pueden entrelazarse, y un cuadro de diálogo que espera a una persona se detecta a nivel de ventana. Se incluyen el estado de PowerPoint y una comprobación de procesos zombis.",
 "pk7.e": "p. ej. corregir una errata en la presentación de mañana · ver ediciones sin guardar que el archivo en disco no tiene · comprobar si queda algún PowerPoint suelto en ejecución",
-"h2.cmp": "Frente a la competencia",
-"cmp.lead": "Las tablas de funciones favorecen a todos. Aquí va la comparación como siete cosas que de verdad le pediría a un agente, y lo que pasa después.",
+"h2.cmp": "Frente al resto del pasillo",
+"cmp.lead": "Las tablas de funciones favorecen a todos. Así que aquí va en su lugar: siete cosas que de verdad le pediría a un agente, y lo que pasa después.",
 "cmp.h1": "«Oye, ¿podrías…?»",
-"cmp.h3": "Servidor más popular (archivado)",
-"cmp.h4": "Nivel COM*",
+"cmp.h3": "GongRzhe (archivado)<span class=\"stars\">1.851 estrellas de GitHub&dagger;</span>",
+"cmp.h4": "Nivel COM*<span class=\"stars\">Ayushmaniar 113 &middot; ykuwai 58&dagger;</span>",
 "cr1.q": "«Dibújame un diagrama de flujo que pueda editar después.»",
 "cr1.us": "✔ formas nativas agrupadas con conectores pegados, cualquier diagrama que el SVG pueda describir",
 "cr1.com": "diseños SmartArt fijos, Windows con PowerPoint en ejecución",
@@ -1643,19 +1637,19 @@ es: {
 "cr7.q": "«Responde al comentario del revisor.»",
 "cr7.us": "respuestas en hilo, representación verificada en el propio PowerPoint",
 "cr7.com": "✘ responder no existe hoy en ningún servidor MCP de PowerPoint",
-"cmp.note": "Estudio de capacidades a 2026-08-31, compilado de repositorios públicos, documentación y gestores de incidencias. n/d: no documentado en las fuentes consultadas (no es una ausencia afirmada). * Nivel COM: los servidores que automatizan un PowerPoint en ejecución bajo Windows; capaces, pero atados a Windows e inservibles sin la aplicación. La evidencia de pruebas y estrés vive en la franja de especificaciones de arriba (885 pruebas, más de 1.500 llamadas de transporte adversariales, 0 corrupciones). Correcciones bienvenidas: abra un issue.",
-"h2.eff": "Eficiencia de contexto",
-"eff.lead": "Todo servidor MCP ocupa parte de la ventana de contexto de un agente antes de empezar a trabajar. El fregadero de Word publicó su factura y prometió carga por niveles para la v2; este servidor entrega la carga por niveles desde el primer día. Una sesión arranca con el núcleo ligero, 24 herramientas. Cuando un trabajo pide más, el agente habilita el paquete por su nombre y las herramientas aparecen en plena sesión. El camino perezoso es un callejón sin salida a propósito: el núcleo ligero no lleva sustitutos degradados, y todo rechazo por trabajo fuera de alcance nombra el paquete exacto y la llamada exacta que lo desbloquea. El rechazo es la señal.",
+"cmp.note": "Estudio de capacidades a 2026-08-31, compilado de repositorios públicos, documentación y gestores de incidencias. n/d: no documentado en las fuentes consultadas (no es una ausencia afirmada). El servidor más popular es GongRzhe/Office-PowerPoint-MCP-Server, archivado desde marzo de 2026. * Nivel COM: los servidores que automatizan un PowerPoint en ejecución bajo Windows (Ayushmaniar/powerpoint-mcp 113, ykuwai/ppt-mcp 58, trsdn/mcp-server-ppt 36, sbroenne/mcp-server-powerpoint 19); capaces, pero atados a Windows e inservibles sin la aplicación. &dagger; Recuento de estrellas leído de la API de GitHub el 2026-09-04, a modo de contexto: las estrellas dicen cuánto tiempo lleva un estante a la vista, no lo que hay en él. El líder de 1.851 estrellas está archivado desde marzo de 2026 y sigue sin poder retirar una diapositiva. La evidencia de pruebas y estrés vive en la franja de especificaciones de arriba (885 pruebas, más de 1.500 llamadas de transporte adversariales, 0 corrupciones). Correcciones bienvenidas: abra un issue.",
+"h2.eff": "La factura de contexto",
+"eff.lead": "Todo servidor MCP tira de la ventana de contexto de un agente antes de empezar a trabajar, igual que cada lámpara de la tienda tira de corriente aunque nadie la mire. El fregadero de Word publicó su factura y prometió carga por niveles para la v2; este servidor entrega la carga por niveles desde el primer día. Una sesión arranca con el núcleo ligero, 24 herramientas. Cuando un trabajo pide más, el agente habilita el paquete por su nombre y las herramientas aparecen en plena sesión. El camino perezoso es un callejón sin salida a propósito: el núcleo ligero no lleva sustitutos degradados, y todo rechazo por trabajo fuera de alcance nombra el paquete exacto y la llamada exacta que lo desbloquea. El rechazo es la señal.",
 "eff.s1": "Herramientas en el núcleo ligero",
 "eff.s2": "Tokens, núcleo ligero por adelantado",
 "eff.s3": "Llamada hasta el fregadero entero",
 "eff.note": "Los usuarios avanzados que quieran todo cargado desde el principio pueden fijarlo: <b>KS4P_MODE=full</b> en el entorno del servidor, o una lista de paquetes separada por comas. Los administradores pueden bloquear la selección con KS4P_PACK_POLICY=locked.",
-"h2.install": "Instalación",
+"h2.install": "Montaje y conexión",
 "inst.form": "HOJA DE PEDIDO № KS4P-1",
 "inst.s1": "① CONSIGA LA GRIFERÍA",
 "inst.s2": "② CONECTE EL CABLEADO (Claude Code)",
 "inst.s3": "③ CUALQUIER OTRO CLIENTE MCP (stdio)",
-"inst.note": "Las herramientas basadas en archivo, la gran mayoría, no necesitan PowerPoint instalado y corren en cualquier plataforma. Las herramientas de exportación y validación (PDF, PNG por diapositiva, comprobación de apertura limpia) usan un Microsoft PowerPoint local vía COM cuando lo hay. Configuración completa en el <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
+"inst.note": "Las herramientas basadas en archivo, la gran mayoría, no necesitan PowerPoint instalado y corren en cualquier plataforma. Las herramientas de exportación y validación (PDF, PNG por diapositiva, comprobación de apertura limpia) toman prestado un Microsoft PowerPoint local vía COM cuando hay uno en la casa. Configuración completa en el <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "h2.svc": "Departamento de servicio",
 "svc.ticket": "AHORA ATENDIENDO · TOME UN NÚMERO · EL MISMO MOSTRADOR QUE EL FREGADERO DE WORD, UN PASILLO MÁS ALLÁ",
 "svc1.t": "¿Un cuadro torcido?",
@@ -1671,7 +1665,7 @@ es: {
 "g.t": "Diseñado para no corromper",
 "g.p1": "Guardados atómicos validados. Copias de seguridad automáticas con marca de tiempo antes de cada cambio. Paso idéntico byte a byte de todo lo que no se edita, así que animaciones, medios y objetos incrustados pasan intactos. Cada versión pasa su control: presentaciones reales que van y vuelven limpias byte a byte y abren en PowerPoint sin aviso de reparación, más una ronda adversarial a través del transporte MCP en crudo. Cuando un objetivo es ambiguo, el servidor rehúsa mostrando candidatos en vez de adivinar; quedarse con la primera coincidencia errónea es política de otros.",
 "g.p2": "Se ofrece tal cual, sin garantía de ningún tipo, según la licencia: la ingeniería anterior solo muestra con cuánta seriedad se tratan sus presentaciones. Conserve copias de seguridad. (Él las hace por usted.)",
-"h2.fam": "La familia",
+"h2.fam": "Los otros pasillos",
 "fam1.p": "El accesorio original: de todo para Microsoft Word, hasta lo que no imaginas. 189 herramientas, edición en vivo de documentos abiertos, citas, cirugía de tablas consciente de las combinaciones, cambios rastreados, diseñado para no corromper.",
 "fam1.g": "Visite el pasillo de fontanería →",
 "fam2.t": "La tienda",
