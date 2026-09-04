@@ -232,6 +232,19 @@ def _run_bounded(name: str, timeout: float, fn):
     so the COM call errors out and the lock is released (PowerPointBlocked).
     When the stalled call was working against the USER's PowerPoint no
     process is touched at all; the error says so and the caller decides."""
+    # Preserve the bridge's documented side effect: before v1.1 every public
+    # operation ran ON THE CALLING THREAD and left that thread's COM
+    # apartment initialized (this module initializes freely and never
+    # uninitializes, by design). Moving the body to a worker thread moved
+    # the CoInitialize with it, so callers that went on to make their own
+    # COM calls afterwards started failing with "CoInitialize has not been
+    # called" (caught by test_av's media scenario, 2026-09-04). Initialize
+    # the caller's apartment too, so the contract survives the port.
+    with contextlib.suppress(Exception):
+        import pythoncom
+
+        pythoncom.CoInitialize()
+
     result: dict = {}
     lock_acquired = threading.Event()
     done = threading.Event()

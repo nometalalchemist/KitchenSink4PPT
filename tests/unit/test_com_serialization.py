@@ -379,6 +379,34 @@ def test_session_records_pid_only_when_it_launched_powerpoint(monkeypatch):
     assert tid not in bridge._SELF_LAUNCHED_PIDS  # cleared on exit
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Win32 only")
+def test_run_bounded_initializes_the_callers_com_apartment():
+    """Regression (2026-09-04): the bridge initializes COM and never
+    uninitializes, and callers relied on a bridge call leaving THEIR
+    thread's apartment alive so their own Dispatch would work afterwards.
+    Moving operation bodies onto a worker thread moved the CoInitialize
+    with them and broke that contract. _run_bounded must initialize the
+    calling thread too."""
+    try:
+        import pythoncom
+    except ImportError:  # pragma: no cover
+        pytest.skip("pywin32 not installed")
+
+    # Tear the calling thread's apartment down to whatever depth it holds,
+    # so the test starts from a genuinely uninitialized thread.
+    for _ in range(20):
+        try:
+            pythoncom.CoUninitialize()
+        except Exception:
+            break
+
+    bridge._run_bounded("apartment-probe", 10, lambda: None)
+
+    # If the apartment were dead this raises "CoInitialize has not been
+    # called"; a successful call proves the contract is restored.
+    pythoncom.CreateBindCtx(0)
+
+
 # ------------------- field-test finding: slides= type validation (F1)
 
 

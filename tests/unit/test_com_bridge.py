@@ -29,6 +29,8 @@ from pathlib import Path
 
 import pytest
 
+import com_test_gate as _com_test_gate
+
 from kitchensink4ppt.core.errors import PptMcpError
 from kitchensink4ppt.ops import export as export_ops
 
@@ -70,12 +72,11 @@ def _com_gate():
         pytest.skip("pywin32 not installed")
     if not HAS_POWERPOINT:
         pytest.skip("PowerPoint is not installed on this machine")
-    if _powerpnt_running():
-        pytest.skip(
-            "SKIPPED-USER-POWERPOINT-OPEN: POWERPNT.EXE is running (the "
-            "user's instance; PowerPoint is a singleton COM server, so the "
-            "test would attach to it). COM coverage did NOT run."
-        )
+    reason = _com_test_gate.powerpoint_blocks_com_tests(
+        bridge.powerpnt_count
+    )
+    if reason:
+        pytest.skip(reason)
 
 
 # One scenario per subprocess: the script below is the entire COM round for

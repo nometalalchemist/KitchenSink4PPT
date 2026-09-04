@@ -28,6 +28,8 @@ from pathlib import Path
 
 import pytest
 
+import com_test_gate as _com_test_gate
+
 from kitchensink4ppt.com import live, live_ops
 from kitchensink4ppt.core.errors import (
     PowerPointBusy,
@@ -64,12 +66,11 @@ def _com_gate():
         pytest.skip("pywin32 not installed")
     if not HAS_POWERPOINT:
         pytest.skip("PowerPoint is not installed on this machine")
-    if bridge.powerpnt_count() > 0:
-        pytest.skip(
-            "SKIPPED-USER-POWERPOINT-OPEN: POWERPNT.EXE is running (the "
-            "user's instance; the live fixture would share the singleton). "
-            "Live COM coverage did NOT run."
-        )
+    reason = _com_test_gate.powerpoint_blocks_com_tests(
+        bridge.powerpnt_count
+    )
+    if reason:
+        pytest.skip(reason)
 
 
 # ===================================================== in-process: plumbing
