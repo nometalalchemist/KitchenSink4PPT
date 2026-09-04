@@ -42,7 +42,8 @@ from ..core.errors import (
     PptMcpError,
     ProtectedViewRefused,
 )
-from .bridge import powerpnt_count
+from . import serial as _serial
+from .bridge import powerpnt_count, powerpnt_pids
 
 # HRESULTs (as signed ints, the way pywin32 surfaces them) — COM-level, not
 # app-level; the table and classification port verbatim from KS4W live.py.
@@ -385,8 +386,22 @@ def _check_protection(pres, path: str, session: LiveSession):
 
 @contextlib.contextmanager
 def live_session(path: str, tool_name: str, *, mutating: bool = True):
-    """attach → resolve → probe → protection check → undo boundary →
-    yield → LIFO state restore, per call. Nothing is cached across calls."""
+    """attach -> resolve -> probe -> protection check -> undo boundary ->
+    yield -> LIFO state restore, per call. Nothing is cached across calls.
+
+    v1.1: the entire session runs under the process-wide COM lock, so
+    exactly one tool call reaches the user's PowerPoint at a time. Every
+    live tool funnels through here, which makes this the live layer's
+    single serialization chokepoint. PowerPoint being a singleton means
+    concurrent live calls would otherwise land on ONE application object
+    with no isolation whatsoever."""
+    with _serial.com_operation(f"live:{tool_name}"):
+        with _live_session_locked(path, tool_name, mutating=mutating) as s:
+            yield s
+
+
+@contextlib.contextmanager
+def _live_session_locked(path: str, tool_name: str, *, mutating: bool = True):
     pythoncom, pywintypes, win32com = _com_modules()
     _ensure_com(pythoncom)
     app = pres = None
