@@ -2,7 +2,7 @@
 
 > Everything plus the kitchen sink for Microsoft PowerPoint: the KitchenSink-family .pptx MCP server. 138 tools organized as capability packs with tiered loading from day one. Headline capability: native tweakable graphics, meaning SVG converted to grouped native PowerPoint shapes with glued connectors, editable afterward by shape identity (move the node, the arrows follow). Also the first file-based structural table operations in any PowerPoint MCP server (merge cells, insert/delete rows and columns), slide CRUD done right (insert, deep duplicate, delete with cleanup, reorder, hide), create-from-template with theme-color-referenced fills, and render-to-verify export. Engineered not to corrupt: atomic validated saves, automatic backups before every mutation, byte-identical passthrough of untouched parts, published adversarial test evidence.
 
-This file describes v1.0.
+This file describes v1.1.
 Platform: file-based tools (the large majority) are cross-platform and need no PowerPoint installation; the export and validation tools (PDF, per-slide PNG, opens-clean check) use a local Microsoft PowerPoint via COM on Windows when present.
 MCP transport: stdio.
 
@@ -16,7 +16,7 @@ MCP transport: stdio.
 
 ## Tiered loading (day one, not a roadmap item)
 
-Sessions start in a lite core of about 20 tools (roughly 3,000-5,000 tokens). Packs are enabled mid-session with `enable_tools(["pack-name"])`; the server emits tools/list_changed and reports the token cost added. The lite core contains no degraded stand-ins for pack capabilities, and any refusal for out-of-scope work names the exact pack and the exact enable_tools call that unlocks it.
+Sessions start in a lite core of 24 tools (about 4,500 tokens; the full surface is about 27,300). Packs are enabled mid-session with `enable_tools(["pack-name"])`; the server emits tools/list_changed and reports the token cost added. The lite core contains no degraded stand-ins for pack capabilities, and any refusal for out-of-scope work names the exact pack and the exact enable_tools call that unlocks it.
 
 Environment pins for clients without list_changed support, or for power users:
 - `KS4P_MODE=lite` (default) | `KS4P_MODE=full` | `KS4P_MODE=graphics,design` (comma-separated pack list)
@@ -39,7 +39,7 @@ design:
 assembly-export:
 `set_notes`/`get_notes` (speaker notes), `manage_section`, `set_footer` and slide numbers, `hide_slide`, `export_pdf` (COM), `export_slide_image` (per-slide PNG, the render-to-verify primitive), `validate` (opens-clean plus overflow report), `extract_text`
 
-All ten packs ship populated in v1.0: lite (24), graphics (24), tables-charts (19), design (25), assembly-export (23), transitions-animations (5), review (7), sweeps (6), com (2), com-live (3). Sweeps covers deck-wide font/color/language/logo operations and compress; review includes threaded comment replies and structural deck compare; com-live edits decks open in PowerPoint via live=auto routing.
+Six packs plus the lite core, all populated in v1.1: lite (24 tools, ~4.5k tokens), graphics (24, ~6.2k), tables-charts (19, ~4.0k), design (25, ~4.8k), assembly-export (28, ~4.9k), review-sweeps (13, ~2.3k), com (5, ~0.5k). assembly-export also carries slide transitions and bounded entrance animations. review-sweeps covers threaded comments, structural deck compare, and the deck-wide font/color/language/logo sweeps plus compress. com is Windows only: PowerPoint status, zombie check, and editing decks open in PowerPoint via live=auto routing. v1.1 consolidated nine packs into six; the v1.0 names transitions-animations, review, sweeps, and com-live still resolve to their new homes in enable_tools, disable_tools, and KS4P_MODE.
 
 ## Recommended workflows
 

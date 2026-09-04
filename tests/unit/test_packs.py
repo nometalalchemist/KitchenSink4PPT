@@ -154,3 +154,55 @@ def test_pack_costs_positive():
     for pack, entry in menu.items():
         assert entry["approx_tokens"] > 0
         assert entry["tools"], f"pack {pack} has no tools"
+
+
+# ------------------------------------------------- v1.1 pack consolidation
+
+# The author's cost rule: a pack has to earn its own menu line. Anything
+# under ~1.5k tokens belongs inside a neighbour, unless it is gated on an
+# environment the file packs do not share (the COM tier, Windows only).
+_ENV_GATED = {"com"}
+
+
+def test_every_pack_clears_the_cost_floor():
+    for pack, entry in packs.menu().items():
+        if pack in _ENV_GATED:
+            continue
+        assert entry["approx_tokens"] >= 1500, (
+            f"pack {pack} bills ~{entry['approx_tokens']} tokens; sub-1.5k "
+            "packs fold into a neighbour or lite"
+        )
+
+
+def test_com_tier_is_one_pack():
+    """com and com-live merged: two environment-gated packs was one too
+    many, and both need the same PowerPoint install to do anything."""
+    assert "com-live" not in packs.pack_names()
+    tools = set(packs.tool_names()["com"])
+    assert {"powerpoint_status", "zombie_check"} <= tools
+    assert {"live_save", "live_scroll_to", "live_status"} <= tools
+
+
+@pytest.mark.parametrize(
+    "old,new",
+    [
+        ("transitions-animations", "assembly-export"),
+        ("review", "review-sweeps"),
+        ("sweeps", "review-sweeps"),
+        ("com-live", "com"),
+    ],
+)
+def test_v1_0_pack_names_still_resolve(old, new):
+    """A cached recipe or an old KS4P_MODE string must not brick a session
+    over a rename."""
+    r = packs.enable([old])
+    assert r["enabled"] == [new]
+    d = packs.disable([old])
+    assert d["disabled"] == [new]
+
+
+def test_old_name_in_startup_mode(monkeypatch):
+    monkeypatch.setenv("KS4P_MODE", "com-live")
+    packs.apply_startup_mode()
+    tools = server.mcp._tool_manager._tools
+    assert all(tools[n].enabled for n in packs.tool_names()["com"])

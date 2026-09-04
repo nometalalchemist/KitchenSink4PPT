@@ -93,8 +93,8 @@ mcp = FastMCP(
         "every mutation; dual-mode tools with live='auto' edit decks open in "
         "the user's PowerPoint. Starts in lite mode; enable_tools switches "
         "on the graphics, tables-charts, design, assembly-export, "
-        "transitions-animations, review, sweeps, com, and com-live packs "
-        "mid-session. get_workflows has recipes; get_presentation_view + "
+        "review-sweeps, and com packs mid-session. get_workflows has "
+        "recipes; get_presentation_view + "
         "apply_edits is the cheap batch-editing loop."
     ),
 )
@@ -884,10 +884,10 @@ def get_workflows(task: str | None = None) -> dict:
     needs and the exact tool order: build-a-diagram, one-call-diagram,
     equation-authoring (graphics), build-a-table-report (tables-charts),
     template-deck-setup, master-restyle, accessibility-pass (design),
-    render-and-review, cross-deck-assembly, deck-merge (assembly-export),
-    batch-edit-from-view (lite, the cheap loop), animate-a-build
-    (transitions-animations), review-cycle (review), rebrand-pipeline
-    (sweeps + design), live-session (com-live). Call with no task for the
+    render-and-review, cross-deck-assembly, deck-merge, animate-a-build
+    (assembly-export), batch-edit-from-view (lite, the cheap loop),
+    review-cycle (review-sweeps), rebrand-pipeline (review-sweeps +
+    design), live-session (com). Call with no task for the
     index, with a task name for full steps. Read the matching recipe
     before your first deck edit of a session; it prevents most wrong-tool
     detours."""
@@ -910,12 +910,13 @@ def enable_tools(packs: list[str]) -> dict:
     'assembly-export' (notes, sections, footers, PDF/PNG/handout export,
     validation, text extraction, cross-deck copy, deck merge/split,
     agenda slides, statistics, document properties, anonymize, custom
-    shows); 'transitions-animations' (transitions, entrance animations,
-    click builds); 'review' (threaded comments plus compare_decks);
-    'sweeps' (deck-wide font/color/language/logo sweeps, compress);
-    'com' (PowerPoint status, zombie check); 'com-live' (edit the deck
-    OPEN in PowerPoint); 'everything' (all). Idempotent; reports approx
-    token cost added and the active surface. disable_tools reverses."""
+    shows, slide transitions and entrance animations); 'review-sweeps'
+    (threaded comments, compare_decks, deck-wide font/color/language/logo
+    sweeps, compress); 'com' (PowerPoint status, zombie check, and
+    editing the deck OPEN in PowerPoint); 'everything' (all). The v1.0
+    names transitions-animations, review, sweeps, and com-live still
+    resolve to their new homes. Idempotent; reports approx token cost
+    added and the active surface. disable_tools reverses."""
     return _packs.enable(packs)
 
 
@@ -3107,7 +3108,7 @@ def export_handout(
 # ================================================== TRANSITIONS-ANIMATIONS
 
 
-@_tool("transitions-animations")
+@_tool("assembly-export")
 def set_transition(
     file_path: str,
     kind: str,
@@ -3137,7 +3138,7 @@ def set_transition(
     )
 
 
-@_tool("transitions-animations")
+@_tool("assembly-export")
 def get_transitions(file_path: str) -> dict:
     """Per-slide transition state for the whole deck: kind (the raw
     element name for effects outside the write set, e.g. morph),
@@ -3148,7 +3149,7 @@ def get_transitions(file_path: str) -> dict:
     return _an.get_transitions(_load(file_path))
 
 
-@_tool("transitions-animations")
+@_tool("assembly-export")
 def add_entrance_animation(
     file_path: str,
     slide: Any,
@@ -3178,7 +3179,7 @@ def add_entrance_animation(
     )
 
 
-@_tool("transitions-animations")
+@_tool("assembly-export")
 def list_animations(file_path: str, slide: Any) -> dict:
     """Honest read of one slide's animation state: main-sequence effects
     in play order (effect, target shape id, paragraph range, trigger,
@@ -3189,7 +3190,7 @@ def list_animations(file_path: str, slide: Any) -> dict:
     return _an.list_animations(_load(file_path), slide)
 
 
-@_tool("transitions-animations")
+@_tool("assembly-export")
 def clear_animations(
     file_path: str, slide: Any, shape: int | None = None, backup: bool = True
 ) -> dict:
@@ -3209,7 +3210,7 @@ def clear_animations(
 # =================================================================== REVIEW
 
 
-@_tool("review")
+@_tool("review-sweeps")
 def add_comment(
     file_path: str,
     slide: Any,
@@ -3234,7 +3235,7 @@ def add_comment(
     )
 
 
-@_tool("review")
+@_tool("review-sweeps")
 def reply_to_comment(
     file_path: str,
     slide: Any,
@@ -3258,7 +3259,7 @@ def reply_to_comment(
     )
 
 
-@_tool("review")
+@_tool("review-sweeps")
 def list_comments(file_path: str, scope: Any = None) -> dict:
     """Every comment in scope (None = all slides), from BOTH systems:
     modern threaded comments with replies nested under their thread root
@@ -3269,7 +3270,7 @@ def list_comments(file_path: str, scope: Any = None) -> dict:
     return _cm.list_comments(_load(file_path), scope)
 
 
-@_tool("review")
+@_tool("review-sweeps")
 def resolve_comment(
     file_path: str,
     slide: Any,
@@ -3293,7 +3294,7 @@ def resolve_comment(
     )
 
 
-@_tool("review")
+@_tool("review-sweeps")
 def delete_comment(
     file_path: str,
     slide: Any,
@@ -3316,7 +3317,7 @@ def delete_comment(
     )
 
 
-@_tool("review")
+@_tool("review-sweeps")
 def comment_report(file_path: str) -> dict:
     """Review-workflow rollup of the whole deck: every thread grouped by
     slide with authors, dates, resolved state, and nested replies, plus a
@@ -3327,7 +3328,7 @@ def comment_report(file_path: str) -> dict:
     return _cm.comment_report(_load(file_path))
 
 
-@_tool("review")
+@_tool("review-sweeps")
 def compare_decks(file_path_a: str, file_path_b: str) -> dict:
     """Structural diff of two presentations, built for DTG-versioned
     copies of one deck: slides aligned by durable slide id, then exact
@@ -3345,7 +3346,7 @@ def compare_decks(file_path_a: str, file_path_b: str) -> dict:
 # =================================================================== SWEEPS
 
 
-@_tool("sweeps")
+@_tool("review-sweeps")
 def font_inventory(file_path: str, scope: str = "all") -> dict:
     """READ-ONLY deck-wide typeface census: every font in use with counts
     and per-bucket placement (slides, layouts, masters, notes, charts),
@@ -3358,7 +3359,7 @@ def font_inventory(file_path: str, scope: str = "all") -> dict:
     return _swp.font_inventory(_load(file_path), scope)
 
 
-@_tool("sweeps")
+@_tool("review-sweeps")
 def replace_fonts(
     file_path: str,
     mapping: dict,
@@ -3383,7 +3384,7 @@ def replace_fonts(
     )
 
 
-@_tool("sweeps")
+@_tool("review-sweeps")
 def replace_colors(
     file_path: str,
     mapping: dict,
@@ -3408,7 +3409,7 @@ def replace_colors(
     )
 
 
-@_tool("sweeps")
+@_tool("review-sweeps")
 def set_language(
     file_path: str,
     lang: str,
@@ -3431,7 +3432,7 @@ def set_language(
     )
 
 
-@_tool("sweeps")
+@_tool("review-sweeps")
 def replace_image_everywhere(
     file_path: str,
     old_image: str,
@@ -3456,7 +3457,7 @@ def replace_image_everywhere(
     )
 
 
-@_tool("sweeps")
+@_tool("review-sweeps")
 def compress_deck(
     file_path: str,
     max_dpi: int = 150,
@@ -3519,7 +3520,7 @@ def zombie_check() -> dict:
 # ================================================================= COM-LIVE
 
 
-@_tool("com-live")
+@_tool("com")
 def live_save(file_path: str) -> dict:
     """Save the presentation open in the user's PowerPoint (the file must
     be open there). The ONE live tool that writes the user's file, and
@@ -3530,7 +3531,7 @@ def live_save(file_path: str) -> dict:
     return {"ok": True, **_lo.live_save(file_path)}
 
 
-@_tool("com-live")
+@_tool("com")
 def live_scroll_to(file_path: str, slide: Any) -> dict:
     """Scroll the open presentation's own window to a slide (0-based
     index or {"slide_id": N}) so the user can watch live edits land. The
@@ -3541,7 +3542,7 @@ def live_scroll_to(file_path: str, slide: Any) -> dict:
     return {"ok": True, **_lo.live_scroll_to(file_path, slide)}
 
 
-@_tool("com-live")
+@_tool("com")
 def live_status() -> dict:
     """Responsiveness probe plus per-presentation state of the user's
     running PowerPoint: interactive readiness (a helper-thread probe that
