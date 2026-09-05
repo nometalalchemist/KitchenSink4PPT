@@ -114,6 +114,7 @@ _CODE_MAP: tuple[tuple[type[BaseException], str], ...] = (
     (_err.ProtectedViewRefused, "PROTECTED_VIEW"),
     (_err.PowerPointNotRunning, "APP_NOT_RUNNING"),
     (_err.DocumentNotOpenInPowerPoint, "APP_NOT_RUNNING"),
+    (_err.LiveLockTimeout, "APP_BUSY"),
     (_err.PowerPointBusy, "APP_BUSY"),
     (_err.PowerPointBlocked, "APP_BLOCKED"),
     (_err.PowerPointDisconnected, "CONFLICT"),

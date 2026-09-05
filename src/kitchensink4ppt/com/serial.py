@@ -20,13 +20,17 @@ Coverage contract: every COM entry point acquires the lock —
 The lock is an RLock: nested acquisitions on one thread are legal (a
 bridge helper called under an already-held lock must not deadlock).
 
-Scope honesty: the lock serializes THIS server process. Two separate
-kitchensink4ppt processes automating the same PowerPoint are not
-serialized, and on a singleton that is a real hole (each MCP client
-normally spawns its own server, so the covered case is the reported one:
-several agents of ONE session sharing one server). Status reporting
-(lock_snapshot) lets powerpoint_status and live_status tell callers
-honestly when a call would queue.
+Scope honesty: this lock serializes THIS server process only, and on a
+singleton that was a real hole. The 2026-09-05 concurrency matrix
+measured the size of it on the Word sibling: two server processes against
+one application overlapped in 49 of 50 operation pairs and corrupted a
+resolve-then-write sequence while reporting success to both callers.
+Cross-PROCESS serialization is a separate, file-based lock in
+com/xproc.py, which every live session now holds on top of this one. Keep
+the two distinct: this one is cheap, in-memory, and covers threads; that
+one is a lockfile and covers the machine. Status reporting (lock_snapshot,
+plus xproc.holder_info) lets powerpoint_status and live_status tell
+callers honestly when a call would queue and on whom.
 """
 
 from __future__ import annotations
