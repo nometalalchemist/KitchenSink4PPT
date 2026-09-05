@@ -40,6 +40,7 @@ from . import __version__
 
 from . import packs as _packs
 from .core import errors as _err
+from .core import update_check as _upd
 from .core.package import PptxPackage
 from .core.safesave import MutationLockTimeout
 from .core.sandbox import SandboxViolation, check_path
@@ -884,6 +885,11 @@ def diagnose(file_path: str | None = None) -> dict:
     opens-clean check in PowerPoint."""
     out = _dg.diagnose(file_path)
     out["surface"] = _packs.surface_report()
+    # The server's one and only update surface: a cached line, added when a
+    # newer stable release exists. Reads no network and never raises.
+    notice = _upd.update_notice()
+    if notice:
+        out["update"] = notice
     return out
 
 
@@ -3566,6 +3572,12 @@ def live_status() -> dict:
 
 def main() -> None:
     _packs.apply_startup_mode()  # KS4P_MODE; stdio stays clean, no prints
+    # Fire and forget: a daemon thread asks PyPI whether a newer release
+    # exists (at most every 14 days, off entirely under
+    # KS4P_NO_UPDATE_CHECK). Nothing waits on it, nothing it does can delay
+    # or break serving, and the answer only ever appears as one line in
+    # diagnose.
+    _upd.start_background_check()
     mcp.run()
 
 

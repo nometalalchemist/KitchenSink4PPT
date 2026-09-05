@@ -69,6 +69,16 @@ Environment pins for hosts and power users:
 | `KS4P_MODE` | startup surface: `lite` (default), `full`, or a pack list like `graphics,com` |
 | `KS4P_PACK_POLICY` | `auto` (default) or `locked` (enable_tools refuses; surface fixed at startup) |
 | `KS4P_ALLOWED_ROOTS` | opt-in path sandbox; tools refuse to touch files outside these roots |
+| `KS4P_NO_UPDATE_CHECK` | `1` or `true` turns the update check off completely: no network call, no cache file |
+
+The server checks PyPI, the package index it was installed from, at most once
+every 14 days to see whether a newer version exists; the check sends nothing
+but a standard HTTP request for that package's public JSON, and setting
+`KS4P_NO_UPDATE_CHECK=1` turns it off entirely. It runs on a background thread
+at startup, so it never delays a call, and it fails silently: a timeout or an
+offline machine leaves no error anywhere. When a newer release exists,
+`diagnose` adds one line saying so. That is the only place it ever appears,
+and the server never downloads or installs anything on its own.
 
 ## Pack inventory (138 tools total)
 

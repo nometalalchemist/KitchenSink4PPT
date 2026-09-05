@@ -15,6 +15,7 @@ dependencies = [
     "fastmcp>=2.14,<3",  # Tool.enable()/disable() queue tools/list_changed (tiered loading relies on it; verified on 2.14.7)
     "lxml",
     "regex",
+    "packaging",  # version comparison for the startup update check
     "svgelements>=1.9",
     "latex2mathml>=3.81",   # LaTeX -> MathML (equations pipeline, same as word-mcp)
     "mathml2omml>=0.0.2",   # MathML -> OMML (equations pipeline, same as word-mcp)
