@@ -415,8 +415,9 @@ def apply_edits(
     """Batch editor: many edits, one lock, one backup, one atomic save.
     Each edit is {"op": name, ...params} addressed by a view "anchor" (from
     get_presentation_view) or explicit {"slide", "shape"/"table"} keys. Ops:
-    set_text, set_shape, set_table_cells, search_and_replace,
-    set_placeholder_text, format_text, delete_shape. Every location is
+    set_text, set_shape (graphics pack), set_table_cells (tables-charts
+    pack), search_and_replace, set_placeholder_text, format_text
+    (graphics pack), delete_shape (graphics pack). Every location is
     resolved BEFORE anything mutates; any stale anchor refuses the whole
     batch listing every failed index, and result.changed maps op index to
     outcome. These ops EDIT existing content; nothing here inserts shapes,
@@ -449,8 +450,8 @@ def get_text(
     for all slides, a 0-based index, {"slide_id": N}, or a list;
     include_notes=True appends speaker notes. Rendered-appearance checks
     live in the assembly-export pack. live='auto' edits the open PowerPoint
-    copy when the file is locked by it (edits stay UNSAVED until
-    live_save); 'force' targets the open session; 'off' refuses locked
+    copy when the file is locked by it (UNSAVED until live_save, com
+    pack); 'force' targets the open session; 'off' refuses locked
     files. For edit anchors, use get_presentation_view."""
     return _route_live(
         live,
@@ -473,8 +474,9 @@ def find_text(
 ) -> dict:
     """Search the deck's text. Returns every match with slide index, shape
     id, paragraph index, and character offsets, exactly the addresses
-    format_text and apply_edits consume. regex=True treats query as a
-    regular expression (guarded against catastrophic backtracking). Matches
+    format_text (graphics pack) and apply_edits consume. regex=True treats
+    query as a regular expression (guarded against catastrophic
+    backtracking). Matches
     text as displayed, not raw XML, so search for & rather than &amp;.
     Formatting-aware replacement lives in the graphics pack:
     enable_tools(packs=['graphics']). Use this to locate text; to read it
@@ -552,8 +554,8 @@ def insert_slide(
     position: 0-based final index, default end. Whole decks start via
     create_presentation (design pack). Saves atomically with two-slot
     backup; backup=False skips rotation. live='auto' edits the open
-    PowerPoint copy when the file is locked by it (edits stay UNSAVED
-    until live_save); 'force' targets the open session; 'off' refuses
+    PowerPoint copy when the file is locked by it (UNSAVED until
+    live_save, com pack); 'force' targets the open session; 'off' refuses
     locked files."""
     return _route_live(
         live,
@@ -577,7 +579,7 @@ def delete_slide(
     0-based index or {"slide_id": N}. Prefer set_slide_hidden (design pack)
     when it might come back. Saves atomically with two-slot backup;
     backup=False skips rotation. live='auto' edits the open PowerPoint copy
-    when the file is locked by it (edits stay UNSAVED until live_save);
+    when the file is locked by it (UNSAVED until live_save, com pack);
     'force' targets the open session; 'off' refuses locked files."""
     return _route_live(
         live,
@@ -698,7 +700,7 @@ def get_slide_info(file_path: str, slide: Any, live: str = "auto") -> dict:
     every editing tool takes; edit what it lists via the graphics pack.
     slide: 0-based index or {"slide_id": N}. All slides:
     get_presentation_view. live='auto' edits the open PowerPoint copy when
-    the file is locked by it (edits stay UNSAVED until live_save); 'force'
+    the file is locked by it (UNSAVED until live_save, com pack); 'force'
     targets the open session; 'off' refuses locked files."""
     return _route_live(
         live,
