@@ -1,0 +1,67 @@
+{
+  "manifest_version": "0.3",
+  "name": "kitchensink4ppt",
+  "display_name": "KitchenSink4PPT",
+  "description": "Everything plus the kitchen sink for Microsoft PowerPoint. 138 tools across decks, shapes, tables, charts, themes, and export, plus live in-PowerPoint editing.",
+  "long_description": "A Model Context Protocol server for Microsoft PowerPoint decks. 138 tools covering deck creation, slides and layouts, text and placeholders, shapes and glued connectors, an SVG compiler that lands native editable PowerPoint shapes, one-call diagram generators, tables, native charts, themes and brand extraction, masters and layouts, accessibility audit and repair, speaker notes, sections, transitions and animations, threaded comments, deck-wide sweeps, PDF and image export, path sandboxing, and deck diagnostics. Tools load in tiers: a 24 tool lite surface opens the session at about 4,700 tokens, and packs are enabled on demand. Live mode edits a deck open in PowerPoint in place; live mode requires Windows with PowerPoint installed. The file-based majority of the toolset works on any .pptx file without PowerPoint running. Launching this bundle requires uv (the uvx command) on your machine; the server itself is fetched from PyPI on first launch. Tip: in Claude Desktop's Tool permissions, set the Read-only tools group to Always Allow: those tools cannot change anything, and it stops most permission prompts.",
+  "version": "1.1.1",
+  "author": {
+    "name": "nometalalchemist"
+  },
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nometalalchemist/KitchenSink4PPT"
+  },
+  "homepage": "https://nometalalchemist.github.io/KitchenSink4PPT/",
+  "icon": "icon.png",
+  "keywords": [
+    "powerpoint",
+    "pptx",
+    "presentations",
+    "slides",
+    "office",
+    "charts",
+    "shapes"
+  ],
+  "server": {
+    "type": "binary",
+    "entry_point": "",
+    "mcp_config": {
+      "command": "uvx",
+      "args": [
+        "kitchensink4ppt==1.1.1"
+      ],
+      "env": {
+        "KS4P_ALL_TOOLS": "${user_config.all_tools}",
+        "KS4P_LOCK_TOOLS": "${user_config.lock_tools}"
+      }
+    }
+  },
+  "user_config": {
+    "all_tools": {
+      "type": "boolean",
+      "title": "Load every tool at startup",
+      "description": "On: all 138 tools are loaded when a chat starts, which uses about 27,400 tokens of the conversation before you type anything. Off (recommended): the chat starts with the 24 everyday tools and Claude switches the rest on by itself when a task needs them.",
+      "default": false,
+      "required": false
+    },
+    "lock_tools": {
+      "type": "boolean",
+      "title": "Lock the tool set at startup",
+      "description": "On: whatever tools are loaded when the chat opens are the only tools it can use, and Claude cannot add more. Off (recommended): Claude can switch extra tools on mid-chat when a task calls for them, such as charts or PDF export.",
+      "default": false,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "runtimes": {
+      "python": ">=3.12"
+    }
+  }
+}

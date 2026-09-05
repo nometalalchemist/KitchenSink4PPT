@@ -68,7 +68,19 @@ Environment pins for hosts and power users:
 |---|---|
 | `KS4P_MODE` | startup surface: `lite` (default), `full`, or a pack list like `graphics,com` |
 | `KS4P_PACK_POLICY` | `auto` (default) or `locked` (enable_tools refuses; surface fixed at startup) |
+| `KS4P_ALL_TOOLS` | `true` loads every pack at startup; `false` or empty keeps lite. `KS4P_MODE` wins when set |
+| `KS4P_LOCK_TOOLS` | `true` fixes the surface at startup; `false` or empty leaves it adjustable. `KS4P_PACK_POLICY` wins when set |
 | `KS4P_ALLOWED_ROOTS` | opt-in path sandbox; tools refuse to touch files outside these roots |
+
+The last two are the checkboxes the `.mcpb` bundle shows in Claude Desktop:
+"Load every tool at startup" and "Lock the tool set at startup". Both take
+`true` or `false`, treat an empty value as off, and refuse to start on
+anything else rather than guessing. The server writes one line to stderr at
+startup naming what decided the surface.
+
+Tip: in Claude Desktop's Tool permissions, set the Read-only tools group to
+Always Allow: those tools cannot change anything, and it stops most
+permission prompts.
 
 ## Pack inventory (138 tools total)
 

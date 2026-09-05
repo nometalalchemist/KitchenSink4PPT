@@ -18,8 +18,21 @@ import os
 import sys
 from pathlib import Path
 
+from .. import packs as _packs
 from ..core import sandbox
 from ..core.errors import PptMcpError
+
+
+def _resolved_mode_env() -> dict:
+    """What the mode and lock envs actually resolve to, checkboxes and
+    power-user variables combined."""
+    try:
+        return {
+            "resolved_mode": _packs.resolve_startup_mode(),
+            "resolved_locked": _packs.resolve_lock(),
+        }
+    except PptMcpError as exc:
+        return {"resolved_error": str(exc)}
 
 
 def _file_checks(path: str) -> dict:
@@ -102,6 +115,12 @@ def diagnose(path: str | None = None) -> dict:
             "KS4P_PACK_POLICY": os.environ.get(
                 "KS4P_PACK_POLICY", "(unset, auto)"
             ),
+            "KS4P_ALL_TOOLS": os.environ.get("KS4P_ALL_TOOLS", "(unset)"),
+            "KS4P_LOCK_TOOLS": os.environ.get("KS4P_LOCK_TOOLS", "(unset)"),
+            # Garbage in either toggle refuses at startup, so a running
+            # server cannot reach the except branch; it is here so a
+            # diagnostic never becomes the thing that raises.
+            **_resolved_mode_env(),
         },
     }
     if path is not None:
