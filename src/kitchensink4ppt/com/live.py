@@ -42,7 +42,9 @@ from ..core.errors import (
     PptMcpError,
     ProtectedViewRefused,
 )
+from . import dialogs as _dialogs
 from . import serial as _serial
+from . import xproc as _xproc
 from .bridge import powerpnt_count, powerpnt_pids
 
 # HRESULTs (as signed ints, the way pywin32 surfaces them) — COM-level, not
@@ -104,8 +106,49 @@ def _hresults(exc) -> set:
     return out
 
 
+def _dialog_note() -> str:
+    """Name the modal dialog that is actually up, when one is.
+
+    COM cannot see PowerPoint's modal dialogs — the dialogs are exactly
+    what blocks COM — but com/dialogs reads them off the OS window layer.
+    A busy refusal that can say WHICH dialog is open turns an unactionable
+    error into an instruction."""
+    try:
+        pending = _dialogs.pending_dialogs()
+    except Exception:
+        return ""
+    if not pending:
+        return ""
+    named = [d.get("title") or d.get("text") or d.get("class") for d in pending]
+    return " Open dialog(s) detected in PowerPoint: " + "; ".join(
+        str(n) for n in named[:3]
+    ) + "."
+
+
+def _busy_error(reason: str) -> PowerPointBusy:
+    return PowerPointBusy(reason + _dialog_note())
+
+
 def _classify(exc):
-    """Map a com_error to our typed errors, or return None if unrecognized."""
+    """Map a com_error (or a late-bound AttributeError) to our typed
+    errors, or return None if unrecognized.
+
+    AttributeError is here because of the 2026-09-05 concurrency matrix,
+    finding H3, found on the Word sibling this layer was ported from.
+    These are LATE-BOUND proxies: pywin32's ``dynamic.__getattr__`` turns a
+    property call the application refused into a plain
+    ``AttributeError: <unknown>.FullName``, with the HRESULT discarded.
+    Guards that caught only ``pywintypes.com_error`` let that escape, so a
+    PowerPoint sitting behind a modal produced an unintelligible Python
+    error instead of a typed refusal naming the dialog, and the ROT
+    fallback that exists for a busy instance was never reached."""
+    if isinstance(exc, AttributeError):
+        return _busy_error(
+            "PowerPoint refused a property read on the presentation "
+            "(late-bound COM returns this when the application is blocked "
+            "by a dialog, Backstage, or a running command). Close it and "
+            "retry."
+        )
     hrs = _hresults(exc)
     if hrs & GONE_HRESULTS:
         return PowerPointDisconnected(
@@ -114,7 +157,7 @@ def _classify(exc):
             "still open, Ctrl+Z steps back through the partial edits."
         )
     if hrs & BUSY_HRESULTS:
-        return PowerPointBusy(
+        return _busy_error(
             "PowerPoint is busy or has a dialog open (a dialog box, "
             "Backstage, or a running command). Close it and retry."
         )
@@ -136,27 +179,58 @@ def _ensure_com(pythoncom):
     pythoncom.CoInitialize()
 
 
+_UNSET = object()
+
+
 class StateGuard:
     """Snapshot-on-mutate for interactive-instance state; LIFO restore.
 
     Tools must change app/presentation state ONLY through set(); restore()
     runs in the session finally and reports (not raises) anything it could
-    not put back."""
+    not put back.
+
+    Two behaviours carried from the Word sibling's H2 fix (2026-09-05
+    concurrency matrix):
+
+    - ``restore_to`` overrides the snapshot. Snapshot-and-restore is only
+      correct when the value read really was the user's; when it was
+      another server process's leaked setting, restoring it re-leaks it.
+      Word's ``DisplayAlerts`` is the case that proved it; this live layer
+      does not currently touch application-level state, and the override
+      exists so that the day it does, the wrong pattern is not the
+      convenient one.
+    - restore VERIFIES. A ``setattr`` that raised nothing is not proof the
+      value went back; PowerPoint accepts writes it later discards, and
+      the whole point of this guard is leaving the user's application as
+      we found it."""
 
     def __init__(self):
         self._stack = []
 
-    def set(self, obj, attr, value):
-        self._stack.append((obj, attr, getattr(obj, attr)))
+    def set(self, obj, attr, value, *, restore_to=_UNSET):
+        saved = getattr(obj, attr)
+        target = saved if restore_to is _UNSET else restore_to
+        self._stack.append((obj, attr, target))
         setattr(obj, attr, value)
+        return saved
 
     def restore(self) -> list:
         failed = []
-        for obj, attr, saved in reversed(self._stack):
+        for obj, attr, target in reversed(self._stack):
             try:
-                setattr(obj, attr, saved)
+                setattr(obj, attr, target)
             except Exception:
                 failed.append(attr)
+                continue
+            try:
+                observed = getattr(obj, attr)
+            except Exception:
+                continue  # cannot verify; do not invent a failure
+            if observed != target:
+                failed.append(
+                    f"{attr} (restore accepted but reads back {observed!r}, "
+                    f"wanted {target!r})"
+                )
         self._stack.clear()
         return failed
 
@@ -234,9 +308,19 @@ def _resolve_presentation(pythoncom, pywintypes, win32com, app, path: str):
             open_names.append(full)
             if full.lower() == target_lower:
                 return app, pres
-    except pywintypes.com_error as exc:
+    except (pywintypes.com_error, AttributeError) as exc:
         # The GetActiveObject instance may be busy or mid-shutdown while a
         # DIFFERENT instance holds the target — try the ROT before giving up.
+        #
+        # AttributeError belongs here (matrix H3, found on the Word sibling
+        # this layer was ported from): these are late-bound proxies, so a
+        # blocked application refusing pres.FullName arrives as
+        # ``AttributeError: <unknown>.FullName``, not as com_error.
+        # Catching only com_error skipped this fall-through entirely and
+        # handed the caller a raw Python error. The only calls inside the
+        # guarded block are COM property reads, so an AttributeError here
+        # is always the application refusing, never a bug in our own
+        # attribute access.
         primary_error = _classify(exc) or exc
     other_app, other_pres = _find_pres_via_rot(
         pythoncom, win32com, target_lower
@@ -271,13 +355,19 @@ def _resolve_presentation(pythoncom, pywintypes, win32com, app, path: str):
 
 
 def probe_ready(pywintypes, app, pres, retries: int = 3, delay: float = 0.25):
-    """Cheap round-trip into PowerPoint's STA; refuse BEFORE any mutation."""
+    """Cheap round-trip into PowerPoint's STA; refuse BEFORE any mutation.
+
+    AttributeError is caught alongside com_error for the same reason as in
+    _resolve_presentation (matrix H3): a late-bound proxy whose property
+    call the application refused raises AttributeError with the HRESULT
+    discarded, and a probe whose whole job is to detect a blocked
+    application must not let the clearest evidence of one escape untyped."""
     for attempt in range(retries):
         try:
             _ = app.Name
             _ = pres.Name
             return
-        except pywintypes.com_error as exc:
+        except (pywintypes.com_error, AttributeError) as exc:
             typed = _classify(exc)
             if isinstance(typed, PowerPointDisconnected):
                 raise typed from exc
@@ -287,11 +377,21 @@ def probe_ready(pywintypes, app, pres, retries: int = 3, delay: float = 0.25):
             raise typed or exc from exc
 
 
-def probe_with_timeout(timeout: float = 5.0) -> str:
+def probe_with_timeout(timeout: float = 5.0, *, check_dialogs: bool = True) -> str:
     """'ready' | 'busy' | 'blocked' | 'not_running' — fresh attach on a
     helper daemon thread, so a PowerPoint stuck in a long synchronous
     operation cannot hang the server. The worker owns its thread and may
-    pair its own CoInitialize/CoUninitialize there."""
+    pair its own CoInitialize/CoUninitialize there.
+
+    M1 (concurrency matrix, 2026-09-05, found on the Word sibling): a bare
+    COM round trip is not enough evidence for "ready". Simple property
+    reads still succeed while a modal is pending, so this probe answered
+    "ready" during a real dialog storm with every resolution failing.
+    live_status already read the window layer and reported blocked=true
+    beside interactive_state="ready", which is a contradiction the caller
+    had to resolve. The probe consults the same window layer now, so the
+    two agree. Cheap ctypes enumeration, no COM, so it works precisely
+    when COM is the thing that is stuck."""
     result = {}
 
     def _worker():
@@ -306,6 +406,9 @@ def probe_with_timeout(timeout: float = 5.0) -> str:
                 result["state"] = "busy"
             else:
                 result["state"] = "not_running"
+        except AttributeError:
+            # late-bound refusal: PowerPoint is there and will not answer
+            result["state"] = "busy"
         except Exception:
             result["state"] = "not_running"
         finally:
@@ -315,7 +418,19 @@ def probe_with_timeout(timeout: float = 5.0) -> str:
     t = threading.Thread(target=_worker, daemon=True)
     t.start()
     t.join(timeout)
-    return result.get("state", "blocked")
+    state = result.get("state", "blocked")
+    if check_dialogs and state == "ready" and pending_dialog_titles():
+        return "blocked"
+    return state
+
+
+def pending_dialog_titles() -> list:
+    """Modal dialogs currently up in PowerPoint (read-only, no COM). Empty
+    list on any failure — this must never be the reason a call fails."""
+    try:
+        return _dialogs.pending_dialogs()
+    except Exception:
+        return []
 
 
 class LiveSession:
@@ -394,8 +509,18 @@ def live_session(path: str, tool_name: str, *, mutating: bool = True):
     live tool funnels through here, which makes this the live layer's
     single serialization chokepoint. PowerPoint being a singleton means
     concurrent live calls would otherwise land on ONE application object
-    with no isolation whatsoever."""
-    with _serial.com_operation(f"live:{tool_name}"):
+    with no isolation whatsoever.
+
+    v1.1.1: and under the cross-PROCESS lock (com/xproc.py), because the
+    process-wide lock covers threads and nothing else. The 2026-09-05
+    concurrency matrix measured that gap on the Word sibling this layer
+    was ported from: two server processes overlapped in 49 of 50 operation
+    pairs, and a resolve-then-write sequence that looked atomic was not.
+    The singleton makes it sharper here, since two server processes cannot
+    land anywhere but on the same application."""
+    with _serial.com_operation(f"live:{tool_name}"), _xproc.cross_process_lock(
+        f"live:{tool_name}"
+    ):
         with _live_session_locked(path, tool_name, mutating=mutating) as s:
             yield s
 

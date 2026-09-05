@@ -1083,6 +1083,7 @@ def live_status() -> dict:
     hunting for a PowerPoint problem that does not exist."""
     from . import dialogs as _dialogs
     from . import serial as _serial
+    from . import xproc as _xproc
 
     out: dict = {"interactive_state": "unknown", "open_presentations": []}
     pending: list = []
@@ -1090,6 +1091,10 @@ def live_status() -> dict:
         pending = _dialogs.pending_dialogs()
     out["pending_dialogs"] = pending
     out["blocked"] = bool(pending)
+    # Who holds the cross-process live lock, if anyone: a caller that would
+    # queue behind ANOTHER server process can now see why (matrix H1/2b).
+    with contextlib.suppress(Exception):
+        out["live_lock"] = _xproc.holder_info()
     if pending:
         out["blocked_note"] = (
             "PowerPoint has a modal dialog open; live tools will be "

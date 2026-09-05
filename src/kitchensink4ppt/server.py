@@ -114,6 +114,7 @@ _CODE_MAP: tuple[tuple[type[BaseException], str], ...] = (
     (_err.ProtectedViewRefused, "PROTECTED_VIEW"),
     (_err.PowerPointNotRunning, "APP_NOT_RUNNING"),
     (_err.DocumentNotOpenInPowerPoint, "APP_NOT_RUNNING"),
+    (_err.LiveLockTimeout, "APP_BUSY"),
     (_err.PowerPointBusy, "APP_BUSY"),
     (_err.PowerPointBlocked, "APP_BLOCKED"),
     (_err.PowerPointDisconnected, "CONFLICT"),
@@ -420,7 +421,10 @@ def apply_edits(
     outcome. These ops EDIT existing content; nothing here inserts shapes,
     tables, or slides. Creation tools live in the packs (enable_tools).
     atomic must stay True: v1 has no partial-apply mode. Saves atomically
-    with two-slot backup; backup=False skips rotation."""
+    with two-slot backup; backup=False skips rotation. Use this when a
+    change needs two or more edits; for a single edit use the standalone
+    tool (set_shape, format_text, set_table_cells, set_placeholder_text,
+    search_and_replace, delete_shape)."""
     env = _edit(
         file_path,
         lambda pkg: _bt.apply_edits(pkg, edits, atomic=atomic),
@@ -446,7 +450,7 @@ def get_text(
     live in the assembly-export pack. live='auto' edits the open PowerPoint
     copy when the file is locked by it (edits stay UNSAVED until
     live_save); 'force' targets the open session; 'off' refuses locked
-    files."""
+    files. For edit anchors, use get_presentation_view."""
     return _route_live(
         live,
         lambda: _rd.get_text(
@@ -472,7 +476,8 @@ def find_text(
     regular expression (guarded against catastrophic backtracking). Matches
     text as displayed, not raw XML, so search for & rather than &amp;.
     Formatting-aware replacement lives in the graphics pack:
-    enable_tools(packs=['graphics'])."""
+    enable_tools(packs=['graphics']). Use this to locate text; to read it
+    in order, use get_text."""
     return _rd.find_text(
         _load(file_path),
         query,
@@ -499,9 +504,9 @@ def search_and_replace(
     capture groups (refused live); matches overlapping slide-number/date
     fields are skipped. Bulk cell rewrites: set_table_cells (tables-charts
     pack). Saves atomically with two-slot backup; backup=False skips
-    rotation. live='auto' edits the open PowerPoint copy when the file is
-    locked by it (edits stay UNSAVED until live_save); 'force' targets the
-    open session; 'off' refuses locked files."""
+    rotation. live='auto' edits the open PowerPoint copy of a locked file;
+    'force' targets the open session; 'off' refuses locked files.
+    Batches: apply_edits."""
     return _route_live(
         live,
         lambda: _edit(
@@ -631,12 +636,13 @@ def set_placeholder_text(
 ) -> dict:
     """Fill a layout placeholder (styling inherits from the layout).
     placeholder: "title", "subtitle", "body"/"content" (each matches both
-    body and obj placeholders; exact type wins when both exist), a raw
-    ph type, or an idx int (idx/paragraphs= file-mode only). text:
-    newline = paragraph, leading tabs = levels; or paragraphs=[{"text":
-    str, "level": 0..8}]. Free text boxes: graphics pack. Saves
+    body and obj placeholders; exact type wins), a raw ph type, or an idx
+    int (idx/paragraphs= file-mode only). text: newline = paragraph,
+    leading tabs = levels; or paragraphs=[{"text": str, "level": 0..8}].
+    Free text boxes: graphics pack. Saves
     atomically with two-slot backup; backup=False skips rotation.
-    live='auto' edits the open PowerPoint copy of a locked file."""
+    live='auto' edits the open PowerPoint copy of a locked file.
+    Batches: apply_edits."""
 
     def _live() -> dict:
         _live_refuse(paragraphs=paragraphs)
@@ -689,10 +695,10 @@ def get_slide_info(file_path: str, slide: Any, live: str = "auto") -> dict:
     presence, and every shape with id, name, kind, geometry in inches,
     placeholder type, and text preview. Shape ids here are the addresses
     every editing tool takes; edit what it lists via the graphics pack.
-    slide: 0-based index or {"slide_id": N}. live='auto' edits the open
-    PowerPoint copy when the file is locked by it (edits stay UNSAVED until
-    live_save); 'force' targets the open session; 'off' refuses locked
-    files."""
+    slide: 0-based index or {"slide_id": N}. All slides:
+    get_presentation_view. live='auto' edits the open PowerPoint copy when
+    the file is locked by it (edits stay UNSAVED until live_save); 'force'
+    targets the open session; 'off' refuses locked files."""
     return _route_live(
         live,
         lambda: _rd.get_slide_info(_load(file_path), slide),
@@ -704,7 +710,8 @@ def get_slide_info(file_path: str, slide: Any, live: str = "auto") -> dict:
 def get_presentation_info(file_path: str) -> dict:
     """Deck-level facts in one call: slide count and size, slide order with
     durable ids and titles, masters and layouts, section list, and notes
-    presence. The cheap first look before get_presentation_view. Rendering,
+    presence. The cheap first look before get_presentation_view. To
+    enumerate one kind of element, use list_elements. Rendering,
     validation, and PDF export live in the assembly-export pack:
     enable_tools(packs=['assembly-export'])."""
     return _rd.get_presentation_info(_load(file_path))
@@ -717,7 +724,9 @@ def list_elements(file_path: str, kind: str, scope: Any = None) -> dict:
     masters. Returns a flat item list with ids and locations; slide-scoped
     kinds honor scope (None = all slides, a selector, or a list). Use it to
     find layout names for insert_slide and shape ids for editing. The packs
-    (enable_tools) hold the tools that edit what this lists."""
+    (enable_tools) hold the tools that edit what this lists. For one slide
+    in depth, use get_slide_info; for edit anchors, use
+    get_presentation_view."""
     return _rd.list_elements(_load(file_path), kind, scope)
 
 
@@ -1059,7 +1068,7 @@ def set_shape(
     align, anchor, font, wrap (unknown keys refuse). Glued connectors
     re-route. Ids come from get_slide_info. Saves atomically with
     two-slot backup; backup=False skips rotation. live='auto' edits the
-    open PowerPoint copy of a locked file."""
+    open PowerPoint copy of a locked file. Batches: apply_edits."""
 
     def _live() -> dict:
         _live_refuse(
@@ -1100,7 +1109,7 @@ def delete_shape(
     when they should go too. Deleting a group removes its children with it;
     ungroup_shapes first to keep them. slide: 0-based index or
     {"slide_id": N}. Saves atomically with two-slot backup; backup=False
-    skips rotation."""
+    skips rotation. Batches: apply_edits."""
     return _edit(
         file_path, lambda pkg: _sh.delete_shape(pkg, slide, shape),
         backup=backup,
@@ -1308,11 +1317,10 @@ def format_text(
     (paragraph index), or a character range (start/end offsets, file-mode
     only, as find_text reports them). Handles fragmented runs without
     bleed. Table cell text goes through set_table_cells. shape: id or
-    unique name. Saves atomically with
-    two-slot backup; backup=False skips rotation. live='auto' edits the
-    open PowerPoint copy when the file is locked by it (edits stay UNSAVED
-    until live_save); 'force' targets the open session; 'off' refuses
-    locked files."""
+    unique name. Saves atomically with two-slot backup; backup=False
+    skips rotation. live='auto' edits the open PowerPoint copy of a locked
+    file; 'force' targets the open session; 'off' refuses locked files.
+    Batches: apply_edits."""
 
     def _live() -> dict:
         _live_refuse(
@@ -1721,7 +1729,7 @@ def set_table_cells(
     itself. Writing into a merge continuation refuses and names the origin
     cell. table: None for the slide's only table, an index, or
     {"shape_id": N}. Saves atomically with two-slot backup; backup=False
-    skips rotation."""
+    skips rotation. Batches: apply_edits."""
     return _edit(
         file_path,
         lambda pkg: _tb.set_table_cells(pkg, slide, table, cells),
