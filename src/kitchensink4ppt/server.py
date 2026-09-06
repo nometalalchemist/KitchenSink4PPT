@@ -40,6 +40,7 @@ from . import __version__
 
 from . import packs as _packs
 from .core import errors as _err
+from .core import readonly as _readonly
 from .core import update_check as _upd
 from .core.package import PptxPackage
 from .core.safesave import MutationLockTimeout
@@ -290,7 +291,12 @@ mcp.add_middleware(_DisabledToolSignpost())
 
 def _tool(pack: str | None = None):
     """Register a tool: refusal envelope + pack bookkeeping. pack=None means
-    the lite core (enabled at startup); anything else starts disabled."""
+    the lite core (enabled at startup); anything else starts disabled.
+
+    Every tool also carries the readOnlyHint its core/readonly.py
+    classification gives it. An unclassified tool raises HERE, at import,
+    rather than reaching tools/list without anyone having decided whether
+    it can change a deck."""
 
     def deco(fn):
         @functools.wraps(fn)
@@ -301,7 +307,12 @@ def _tool(pack: str | None = None):
                 return _RefusalResult(_refusal(exc))
 
         tool_obj = mcp.tool(
-            wrapper, enabled=(pack is None), tags={pack or "lite"}
+            wrapper,
+            enabled=(pack is None),
+            tags={pack or "lite"},
+            annotations={
+                "readOnlyHint": _readonly.read_only_hint(fn.__name__)
+            },
         )
         _packs.register(fn.__name__, pack, tool_obj)
         return tool_obj
