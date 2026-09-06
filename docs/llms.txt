@@ -67,6 +67,7 @@ Heavy editing with a safety net:
 ## The KitchenSink family
 
 - KitchenSink4Word (the original fixture, 219 operations across 108 tools for .docx): https://nometalalchemist.github.io/KitchenSink4Word/
+- KitchenSink4XL (the electrical aisle, 69 tools for .xlsx, every value labeled calculated, cached, or absent): https://nometalalchemist.github.io/KitchenSink4XL/
 - Family storefront: https://nometalalchemist.github.io/
 
 ## Links
