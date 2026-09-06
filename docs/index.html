@@ -379,6 +379,30 @@ th.us{background:var(--patina)!important;color:var(--paper)}
   border:1px solid var(--rule)}
 .devnote .devbody p{font-size:12.5px;line-height:1.6;color:var(--ink-soft);margin:0}
 .devnote b{color:var(--ink)}
+details.devnote > summary{cursor:pointer;padding:22px 20px 16px;font-size:11.5px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--ink);font-weight:600;list-style:none}
+details.devnote > summary::-webkit-details-marker{display:none}
+details.devnote > summary:before{content:"\25B8";color:var(--patina);margin-right:7px}
+details.devnote[open] > summary:before{content:"\25BE"}
+details.devnote[open] > summary{border-bottom:1px dashed var(--rule)}
+details.devnote > summary:hover{color:var(--patina)}
+details.devnote > summary:focus-visible{outline:2px dashed var(--patina);outline-offset:-4px}
+details.devnote .devbody p{margin:0 0 10px}
+details.devnote .devbody p:last-child{margin-bottom:0}
+details.devnote .devbody .term{margin-bottom:14px;font-size:13px;padding:16px 18px}
+details.devnote .devbody code{background:var(--paper-deep);padding:1px 5px;font-size:12px}
+
+/* the shelf-talker: the one setting nobody finds on their own. Glow spine, because
+   glow is this aisle's attention colour and the tip is what people wish somebody
+   had told them on the first day. */
+.tipcard{position:relative;margin-top:26px;border:2px solid var(--ink);
+  border-left:6px solid var(--glow);background:var(--paper-deep);
+  box-shadow:var(--shadow);padding:26px 24px 22px}
+.tipcard:before{content:attr(data-plate);position:absolute;top:-11px;left:22px;
+  background:var(--glow);color:var(--ink);font-size:10px;letter-spacing:.3em;
+  text-transform:uppercase;font-weight:700;padding:4px 12px}
+.tipcard h3{font-size:clamp(16px,2.2vw,19px);font-weight:800;margin-bottom:10px}
+.tipcard p{font-size:13px;color:var(--ink-soft);line-height:1.65;max-width:74ch}
 
 /* guarantee */
 .guarantee{max-width:820px;margin:0 auto;text-align:center;border:3px double var(--ink);
@@ -405,6 +429,27 @@ th.us{background:var(--patina)!important;color:var(--paper)}
 .counter p{font-size:12.5px;color:var(--ink-soft);line-height:1.55}
 .counter .go{display:inline-block;margin-top:14px;font-size:11px;letter-spacing:.18em;
   text-transform:uppercase;color:var(--patina);font-weight:600}
+
+/* the family shelf: one compact row, and it slides sideways rather than wrapping,
+   so the next fixture parks beside the last one instead of dropping to a second shelf */
+.famrow{display:flex;gap:16px;overflow-x:auto;padding:2px 2px 12px;
+  scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.famrow .counter{flex:1 0 250px;min-width:250px;padding:18px 18px 16px;scroll-snap-align:start}
+.famrow .counter .icon{font-size:22px;margin-bottom:6px}
+.famrow .counter h3{font-size:15px;margin-bottom:6px}
+.famrow .counter p{font-size:12px;line-height:1.5}
+.famrow .counter .go{margin-top:10px;font-size:10px;letter-spacing:.14em}
+.famrow::-webkit-scrollbar{height:8px}
+.famrow::-webkit-scrollbar-track{background:var(--paper-deep);border:1px solid var(--rule)}
+.famrow::-webkit-scrollbar-thumb{background:var(--rule);border:1px solid var(--ink)}
+
+/* the shelf gloss: names who "this shelf" means, in a quieter voice, and takes its
+   own line before it ever widens the head */
+.gloss{font-size:.42em;font-weight:400;font-style:italic;letter-spacing:0;
+  color:var(--ink-soft);white-space:normal}
+.demo-panel h3 .gloss{display:block;margin-top:5px;font-size:.88em;font-style:normal;
+  letter-spacing:.1em;text-transform:none;color:var(--ink-soft);opacity:.9}
+@media(max-width:760px){.sec-head h2 .gloss{display:block;margin-top:2px;font-size:.5em}}
 
 /* the faucet cameo: one respectful drip when the family strip scrolls into view */
 .cameo-drip{position:absolute;left:50%;bottom:-4px;width:5px;height:8px;margin-left:-2px;
@@ -512,7 +557,7 @@ footer a{color:var(--patina)}
       <div class="demo-panel bad">
         <span class="corner-tag" data-i18n="demo.badtag">FLAT PNG</span>
         <span class="nope" data-i18n="demo.nope">IT'S A PICTURE</span>
-        <h3 data-i18n="demo.badh">Other tools on this shelf</h3>
+        <h3 data-i18n="demo.badh">Other tools on this shelf <span class="gloss">(other PowerPoint MCPs)</span></h3>
         <div class="demo-fig" title="Nothing here moves. It is a picture.">
           <svg viewBox="0 0 300 180" width="300" height="180" role="img" aria-label="A three-node diagram flattened into a static image">
             <defs><marker id="ah0" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#3f5878"/></marker></defs>
@@ -588,7 +633,7 @@ footer a{color:var(--patina)}
 
 <section id="compare">
   <div class="wrap">
-    <div class="sec-head"><span class="no" data-i18n="no3">DEPT. 03</span><h2 data-i18n="h2.cmp">Other tools on this shelf</h2></div>
+    <div class="sec-head"><span class="no" data-i18n="no3">DEPT. 03</span><h2 data-i18n="h2.cmp">Other tools on this shelf <span class="gloss">(the other PowerPoint MCP servers)</span></h2></div>
     <p class="for-lead" data-i18n="cmp.lead">Feature grids flatter everybody. Here it is instead as seven things you would actually ask an agent for, and what happens next.</p>
     <div class="ticked"><div class="tablewrap">
       <table class="scenario">
@@ -621,12 +666,7 @@ footer a{color:var(--patina)}
          Run enable_tools(["tables-charts"]) to switch it on.
 <span class="p">&gt;</span> enable_tools(["tables-charts"])
 <span class="g">OK:</span> pack enabled, tools registered, token cost reported.</div></div>
-    <div class="devnote">
-      <span class="devnote-label" data-i18n="dev.label">TRADE COUNTER</span>
-      <div class="devbody">
-      <p data-i18n="eff.note">Power users who want everything loaded from the start can pin it: <b>KS4P_MODE=full</b> in the server environment, or a comma-separated pack list. Administrators can lock the selection with KS4P_PACK_POLICY=locked.</p>
-      </div>
-    </div>
+    <p class="foot-note" style="margin-top:18px" data-i18n="eff.note">Power users who want everything loaded from the start can pin it: <b>KS4P_MODE=full</b> in the server environment, or a comma-separated pack list. Administrators can lock the selection with KS4P_PACK_POLICY=locked.</p>
   </div>
 </section>
 
@@ -646,8 +686,17 @@ footer a{color:var(--patina)}
           <div class="term"><div><span class="p">$</span> claude mcp add ppt -s user -- kitchensink4ppt</div></div>
         </div>
       </div>
-      <div style="margin-top:26px">
-        <h3 style="font-size:15px;letter-spacing:.06em;margin-bottom:12px" data-i18n="inst.s3">③ ANY OTHER MCP CLIENT (stdio)</h3>
+    </div>
+    <div class="tipcard" data-plate="TIP">
+      <h3 data-i18n="tip.t">One tip that removes most permission pop-ups</h3>
+      <p data-i18n="tip.p">In Claude Desktop's Tool permissions for this server, set the Read-only tools group to Always Allow. Those tools cannot change anything, so approving them once is safe, and Claude stops asking about every read. Leave the acting tools on Ask, so anything that changes things still checks with you first.</p>
+    </div>
+    <details class="devnote">
+      <summary data-i18n="inst.dev">For developers: pip, source, other MCP clients</summary>
+      <span class="devnote-label" data-i18n="dev.label">TRADE COUNTER</span>
+      <div class="devbody">
+        <p data-i18n="inst.dp1">Install the package and point any MCP client at the executable:</p>
+        <div class="term"><div><span class="p">$</span> pip install kitchensink4ppt</div></div>
         <div class="term"><div>{
   <span class="g">"mcpServers"</span>: {
     <span class="g">"ppt"</span>: {
@@ -656,9 +705,10 @@ footer a{color:var(--patina)}
     }
   }
 }</div></div>
+        <p data-i18n="inst.dp2">Running from a clone works the same way; point the command at the <code>ppt-mcp</code> executable in the clone's virtual environment. Full setup is in the <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.</p>
       </div>
-      <p class="foot-note" style="margin-top:18px" data-i18n="inst.note">File-based tools, which are the large majority, need no PowerPoint installation and run cross-platform. The export and validation tools borrow the PowerPoint already installed on the machine when one is there, to render, export, and double-check its own work. Full setup in the <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.</p>
-    </div>
+    </details>
+    <p class="foot-note" style="margin-top:18px" data-i18n="inst.note">File-based tools, which are the large majority, need no PowerPoint installation and run cross-platform. The export and validation tools borrow the PowerPoint already installed on the machine when one is there, to render, export, and double-check its own work. Full setup in the <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.</p>
   </div>
 </section>
 
@@ -704,18 +754,24 @@ footer a{color:var(--patina)}
 <section id="family">
   <div class="wrap">
     <div class="sec-head"><span class="no" data-i18n="no7">DEPT. 07</span><h2 data-i18n="h2.fam">The other aisles</h2></div>
-    <div class="service-grid">
+    <div class="famrow">
       <a class="counter" href="https://nometalalchemist.github.io/KitchenSink4Word/">
         <span class="icon" id="faucetCameo">🚰<span class="cameo-drip"></span></span>
         <h3>KitchenSink4Word</h3>
         <p data-i18n="fam1.p">The original fixture: everything plus the kitchen sink for Microsoft Word. It handles the manuscript misery that made this family exist, from tracked-changes triage to a reference list that finally matches the citations, and it edits documents live in your own Word window. Same promise: engineered not to corrupt.</p>
         <span class="go" data-i18n="fam1.g">Visit the plumbing aisle →</span>
       </a>
+      <a class="counter" href="https://nometalalchemist.github.io/KitchenSink4XL/">
+        <span class="icon">🔌</span>
+        <h3>KitchenSink4XL</h3>
+        <p data-i18n="fam2.p">Everything plus the kitchen sink for Excel (.xlsx): every value labeled calculated, cached, or missing, so the AI never repeats a stale number as a fresh one. Same never-corrupts promise, now for spreadsheets.</p>
+        <span class="go" data-i18n="fam2.g">Visit the electrical aisle →</span>
+      </a>
       <a class="counter" href="https://nometalalchemist.github.io/">
         <span class="icon">🏪</span>
-        <h3 data-i18n="fam2.t">The storefront</h3>
-        <p data-i18n="fam2.p">The whole hardware store on one page: every KitchenSink server, its fixture, and its counter, plus a shelf or two that are not empty by accident.</p>
-        <span class="go" data-i18n="fam2.g">Browse the store →</span>
+        <h3 data-i18n="fam3.t">The storefront</h3>
+        <p data-i18n="fam3.p">The whole hardware store on one page: every KitchenSink server, its fixture, and its counter, plus a shelf or two that are not empty by accident.</p>
+        <span class="go" data-i18n="fam3.g">Browse the store →</span>
       </a>
     </div>
   </div>
@@ -883,7 +939,7 @@ en: {
 "demo.lead": "Every AI pipeline can put a diagram on a slide. Almost all of them hand you a picture of one: flat pixels behind glass. The night before you present, one box needs to move half an inch, and a picture does not care how small the change is. This server draws the diagram out of real PowerPoint shapes, the same ones you would draw by hand, with the arrows genuinely attached to the boxes they join. Drag a node in PowerPoint and the arrows follow. Ask the agent to recolor one box by name and only that box changes. No starting over, no waiting on an image service, and nothing extra to install to build it.",
 "demo.badtag": "FLAT PNG",
 "demo.nope": "IT'S A PICTURE",
-"demo.badh": "Other tools on this shelf",
+"demo.badh": "Other tools on this shelf <span class=\"gloss\">(other PowerPoint MCPs)</span>",
 "demo.badp": "One bitmap. Try to drag it: nothing. To move one node, you go back to the generator, describe the change, wait, and hope the other two nodes come back where they were.",
 "demo.goodtag": "NATIVE SHAPES",
 "demo.goodh": "This one",
@@ -923,7 +979,7 @@ en: {
 "pk7.t": "Live Editing", "pk7.n": "OPEN DECK? FINE.",
 "pk7.p": "Edit the deck while it is open in the user's PowerPoint: the same tools route automatically, edits stay unsaved until asked, the cursor is never touched, and the undo guarantee is reported honestly. Every call runs through one queue, so agents working the same open deck cannot interleave, and a dialog waiting on a human is caught at the window level. PowerPoint status and a zombie-process check come along.",
 "pk7.e": "e.g. fix a typo in the deck you are presenting from tomorrow · see unsaved edits the file on disk does not have · check whether a stray PowerPoint is still running",
-"h2.cmp": "Other tools on this shelf",
+"h2.cmp": "Other tools on this shelf <span class=\"gloss\">(the other PowerPoint MCP servers)</span>",
 "cmp.lead": "Feature grids flatter everybody. Here it is instead as seven things you would actually ask an agent for, and what happens next.",
 "cmp.h1": "\"Hey, could you…\"",
 "cmp.h3": "GongRzhe (archived)<span class=\"stars\">1,851 GitHub stars&dagger;</span>",
@@ -959,7 +1015,6 @@ en: {
 "inst.form": "ORDER FORM № KS4P-1",
 "inst.s1": "① GET THE FIXTURE",
 "inst.s2": "② WIRE IT UP (Claude Code)",
-"inst.s3": "③ ANY OTHER MCP CLIENT (stdio)",
 "inst.note": "File-based tools, which are the large majority, need no PowerPoint installation and run cross-platform. The export and validation tools borrow the PowerPoint already installed on the machine when one is there, to render, export, and double-check its own work. Full setup in the <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "inst.lead": "Three ways in, shortest first. Most people only need the first.",
 "h2.svc": "Customer service",
@@ -980,11 +1035,18 @@ en: {
 "h2.fam": "The other aisles",
 "fam1.p": "The original fixture: everything plus the kitchen sink for Microsoft Word. It handles the manuscript misery that made this family exist, from tracked-changes triage to a reference list that finally matches the citations, and it edits documents live in your own Word window. Same promise: engineered not to corrupt.",
 "fam1.g": "Visit the plumbing aisle →",
-"fam2.t": "The storefront",
-"fam2.p": "The whole hardware store on one page: every KitchenSink server, its fixture, and its counter, plus a shelf or two that are not empty by accident.",
-"fam2.g": "Browse the store →",
+"fam3.t": "The storefront",
+"fam3.p": "The whole hardware store on one page: every KitchenSink server, its fixture, and its counter, plus a shelf or two that are not empty by accident.",
+"fam3.g": "Browse the store →",
 "f.left": "&copy; 2026 &middot; <b>AGPL-3.0</b>: free for individuals and personal use.<br>Companies building it into their own products need a commercial license; <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml'>open an issue</a> and we will talk it through.",
-"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>report a glitch</a><br>Built on the KitchenSink4Word safety core, prototyped with Claude Code, and hardened through adversarial rounds until the test agents ran out of complaints. That's a well-dressed room! 💡"
+"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>report a glitch</a><br>Built on the KitchenSink4Word safety core, prototyped with Claude Code, and hardened through adversarial rounds until the test agents ran out of complaints. That's a well-dressed room! 💡",
+"inst.dev": "For developers: pip, source, other MCP clients",
+"inst.dp1": "Install the package and point any MCP client at the executable:",
+"inst.dp2": "Running from a clone works the same way; point the command at the <code>ppt-mcp</code> executable in the clone's virtual environment. Full setup is in the <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
+"tip.t": "One tip that removes most permission pop-ups",
+"tip.p": "In Claude Desktop's Tool permissions for this server, set the Read-only tools group to Always Allow. Those tools cannot change anything, so approving them once is safe, and Claude stops asking about every read. Leave the acting tools on Ask, so anything that changes things still checks with you first.",
+"fam2.p": "Everything plus the kitchen sink for Excel (.xlsx): every value labeled calculated, cached, or missing, so the AI never repeats a stale number as a fresh one. Same never-corrupts promise, now for spreadsheets.",
+"fam2.g": "Visit the electrical aisle →"
 },
 ko: {
 "pageTitle": "KitchenSink4PPT: Microsoft PowerPoint 도구라면 없는 게 없는 MCP 서버",
@@ -1028,7 +1090,7 @@ ko: {
 "demo.lead": "슬라이드에 다이어그램을 넣을 수 있는 AI 파이프라인은 얼마든지 있습니다. 그런데 거의 전부가 다이어그램의 '그림'을 건네줍니다: 납작한 픽셀, 유리 안에 걸린 그림. 발표 전날 밤 상자 하나를 반 인치만 옮겨야 하는데, 그림은 그 변경이 아무리 작아도 상관하지 않습니다. 이 서버는 다이어그램을 진짜 PowerPoint 도형으로, 직접 손으로 그렸을 바로 그 도형으로 그려 냅니다. 화살표는 잇는 상자에 실제로 붙어 있습니다. PowerPoint에서 노드를 드래그하면 화살표가 따라오고, 에이전트에게 상자 하나를 이름으로 지정해 색을 바꾸라고 하면 그 상자만 바뀝니다. 처음부터 다시 만들 일도, 이미지 서비스를 기다릴 일도, 만들기 위해 따로 설치할 것도 없습니다.",
 "demo.badtag": "납작한 PNG",
 "demo.nope": "이건 그림입니다",
-"demo.badh": "이 진열대의 다른 도구들",
+"demo.badh": "이 진열대의 다른 도구들 <span class=\"gloss\">(다른 PowerPoint MCP)</span>",
 "demo.badp": "비트맵 한 장입니다. 드래그해 보세요: 아무 일도 없습니다. 노드 하나를 옮기려면 생성기로 돌아가 변경 사항을 설명하고, 기다리고, 나머지 두 노드가 제자리로 돌아오길 바라야 합니다.",
 "demo.goodtag": "네이티브 도형",
 "demo.goodh": "이것",
@@ -1068,7 +1130,7 @@ ko: {
 "pk7.t": "라이브 편집", "pk7.n": "열려 있어도 됩니다",
 "pk7.p": "사용자의 PowerPoint에 열려 있는 슬라이드를 그대로 편집합니다: 같은 도구가 자동으로 라우팅되고, 편집은 요청 전까지 저장되지 않은 상태로 남으며, 커서는 절대 건드리지 않고, 실행 취소 보증은 정직하게 보고됩니다. 모든 호출은 하나의 큐를 지나가므로 같은 문서를 다루는 에이전트들이 서로 끼어들 수 없고, 사람을 기다리는 대화상자는 창 수준에서 잡아냅니다. PowerPoint 상태 확인과 좀비 프로세스 점검도 함께 들어 있습니다.",
 "pk7.e": "예: 내일 발표할 슬라이드의 오타를 바로 수정 · 디스크의 파일에는 없는 미저장 편집 확인 · 떠도는 PowerPoint 프로세스가 남아 있는지 확인",
-"h2.cmp": "이 진열대의 다른 도구들",
+"h2.cmp": "이 진열대의 다른 도구들 <span class=\"gloss\">(다른 PowerPoint MCP 서버들)</span>",
 "cmp.lead": "기능 비교표는 모두를 좋게 보이게 만듭니다. 그래서 실제로 에이전트에게 시킬 법한 일곱 가지 부탁과, 그다음에 벌어지는 일로 대신 보여 드립니다.",
 "cmp.h1": "“저기, 혹시…”",
 "cmp.h3": "GongRzhe (보관됨)<span class=\"stars\">GitHub 스타 1,851&dagger;</span>",
@@ -1104,7 +1166,6 @@ ko: {
 "inst.form": "주문서 № KS4P-1",
 "inst.s1": "① 기구 받기",
 "inst.s2": "② 배선 연결 (Claude Code)",
-"inst.s3": "③ 다른 모든 MCP 클라이언트 (stdio)",
 "inst.note": "대다수를 차지하는 파일 기반 도구는 PowerPoint 설치가 필요 없고 크로스 플랫폼으로 돌아갑니다. 내보내기와 검증 도구는 컴퓨터에 이미 설치된 PowerPoint가 있으면 그것을 빌려서, 자기 작업물을 렌더링하고 내보내고 다시 확인합니다. 전체 설정은 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>에 있습니다.",
 "inst.lead": "들어오는 길은 세 갈래, 짧은 것부터입니다. 대부분은 첫 번째면 충분합니다.",
 "h2.svc": "고객 서비스",
@@ -1125,11 +1186,18 @@ ko: {
 "h2.fam": "다른 통로들",
 "fam1.p": "원조 설비: Microsoft Word 도구라면 없는 게 없습니다. 이 제품군이 생겨나게 만든 원고의 고통을 다룹니다. 추적 변경 정리부터 마침내 인용과 맞아떨어지는 참고문헌 목록까지, 그리고 문서를 내 Word 창에서 라이브로 편집합니다. 약속은 같습니다: 손상시키지 않도록 설계.",
 "fam1.g": "배관 코너 방문하기 →",
-"fam2.t": "본점",
-"fam2.p": "철물점 전체를 한 페이지에: 모든 KitchenSink 서버와 그 설비, 그 창구, 그리고 우연히 비어 있는 게 아닌 선반 한두 개까지.",
-"fam2.g": "매장 둘러보기 →",
+"fam3.t": "본점",
+"fam3.p": "철물점 전체를 한 페이지에: 모든 KitchenSink 서버와 그 설비, 그 창구, 그리고 우연히 비어 있는 게 아닌 선반 한두 개까지.",
+"fam3.g": "매장 둘러보기 →",
 "f.left": "&copy; 2026 &middot; <b>AGPL-3.0</b>: 개인과 개인적 용도에는 무료.<br>자사 제품에 넣어 만드는 회사에는 상업용 라이선스가 필요합니다. <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml'>이슈를 열어</a> 주시면 함께 이야기하겠습니다.",
-"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>오작동 신고</a><br>KitchenSink4Word 안전 코어 위에 세우고, Claude Code로 프로토타입을 만들고, 테스트 에이전트가 불평거리를 다 소진할 때까지 적대적 라운드로 단련했습니다. 이만하면 방 하나 잘 꾸몄죠! 💡"
+"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>오작동 신고</a><br>KitchenSink4Word 안전 코어 위에 세우고, Claude Code로 프로토타입을 만들고, 테스트 에이전트가 불평거리를 다 소진할 때까지 적대적 라운드로 단련했습니다. 이만하면 방 하나 잘 꾸몄죠! 💡",
+"inst.dev": "개발자용: pip, 소스, 다른 MCP 클라이언트",
+"inst.dp1": "패키지를 설치하고 원하는 MCP 클라이언트가 실행 파일을 가리키게 하면 됩니다:",
+"inst.dp2": "클론에서 실행할 때도 같은 방식이며, 클론의 가상 환경에 있는 <code>ppt-mcp</code> 실행 파일을 가리키면 됩니다. 전체 설정은 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>에 있습니다.",
+"tip.t": "권한 팝업 대부분을 없애는 요령 하나",
+"tip.p": "Claude Desktop에서 이 서버의 Tool permissions로 들어가, 읽기 전용 도구 그룹을 Always Allow로 바꾸세요. 이 도구들은 아무것도 바꿀 수 없으므로 한 번 허용해 두어도 안전하고, Claude가 읽을 때마다 묻는 일이 사라집니다. 실제로 작업하는 도구들은 Ask로 남겨 두세요. 무언가를 바꾸는 일은 여전히 먼저 확인을 받습니다.",
+"fam2.p": "Excel(.xlsx) 도구라면 없는 게 없습니다. 모든 값에 계산됨, 캐시됨, 없음이 표시되어, AI가 오래된 숫자를 새로 나온 숫자인 양 되풀이하는 일이 없습니다. 손상시키지 않는다는 같은 약속이, 이제 스프레드시트에도 적용됩니다.",
+"fam2.g": "전기 코너 방문하기 →"
 },
 ja: {
 "pageTitle": "KitchenSink4PPT: Microsoft PowerPoint のための、何でも揃う MCP サーバー",
@@ -1173,7 +1241,7 @@ ja: {
 "demo.lead": "スライドに図を載せられる AI パイプラインなら、いくらでもあります。しかしそのほとんどが渡してくるのは図の「画像」です:平らなピクセル、額の硝子の向こう。発表前夜、箱をひとつ半インチ動かしたいのに、画像は変更がどれほど小さかろうとお構いなしです。このサーバーは、図を本物の PowerPoint 図形で、あなたが手で描いたであろうその図形で描き起こします。矢印は、結ぶ箱に本当に付いています。PowerPoint でノードをドラッグすれば矢印がついてくる。エージェントに箱ひとつを名前で指定して色替えを頼めば、その箱だけが変わる。作り直しも、画像サービス待ちも、作るために別途インストールするものも要りません。",
 "demo.badtag": "ただの PNG",
 "demo.nope": "これは画像です",
-"demo.badh": "この棚の他のツール",
+"demo.badh": "この棚の他のツール <span class=\"gloss\">(ほかの PowerPoint MCP)</span>",
 "demo.badp": "ビットマップ一枚です。ドラッグしてみてください:何も起きません。ノードをひとつ動かすには、生成器に戻って変更を説明し、待って、残り二つのノードが元の場所に戻ってくることを祈るしかありません。",
 "demo.goodtag": "ネイティブ図形",
 "demo.goodh": "こちら",
@@ -1213,7 +1281,7 @@ ja: {
 "pk7.t": "ライブ編集", "pk7.n": "開いたままでも結構",
 "pk7.p": "ユーザーの PowerPoint で開いたままのデッキを編集:同じツールが自動でルーティングされ、編集は頼まれるまで未保存のまま、カーソルには一切触れず、元に戻す保証は正直に報告されます。 すべての呼び出しは一つの列を通るので、同じデッキを扱うエージェントどうしが割り込むことはなく、人を待っているダイアログはウィンドウの層で検知します。PowerPoint の状態確認とゾンビプロセスの点検も付いています。",
 "pk7.e": "例:明日発表するデッキの誤字をその場で修正 · ディスク上のファイルにはない未保存の編集を確認 · 居残っている PowerPoint がないか確認",
-"h2.cmp": "この棚の他のツール",
+"h2.cmp": "この棚の他のツール <span class=\"gloss\">(ほかの PowerPoint MCP サーバー)</span>",
 "cmp.lead": "機能マトリクスは誰でも良く見せます。ですので代わりに、実際にエージェントへ頼みそうな7つのお願いと、その後に起きることで並べます。",
 "cmp.h1": "「ねえ、ちょっと…」",
 "cmp.h3": "GongRzhe(アーカイブ済み)<span class=\"stars\">GitHub スター 1,851&dagger;</span>",
@@ -1249,7 +1317,6 @@ ja: {
 "inst.form": "注文書 № KS4P-1",
 "inst.s1": "① 器具を入手",
 "inst.s2": "② 配線をつなぐ (Claude Code)",
-"inst.s3": "③ その他の MCP クライアント (stdio)",
 "inst.note": "大多数を占めるファイルベースのツールに PowerPoint のインストールは不要で、クロスプラットフォームで動きます。書き出しと検証のツールは、そのマシンにすでに入っている PowerPoint があればそれを借りて、自分の仕事を描画し、書き出し、確かめ直します。詳しい設定は <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a> へ。",
 "inst.lead": "入り口は三つ、短いものから並べています。たいていの方は最初のひとつで足ります。",
 "h2.svc": "カスタマーサービス",
@@ -1270,11 +1337,18 @@ ja: {
 "h2.fam": "ほかの売り場",
 "fam1.p": "元祖の器具:Microsoft Word のためなら何でも揃う。このファミリーを生んだ原稿の苦しみを引き受けます。変更履歴の仕分けから、ようやく引用と一致する参考文献一覧まで。しかも自分の Word のウィンドウで文書をそのまま編集します。約束は同じ:壊さないための設計。",
 "fam1.g": "配管コーナーへ →",
-"fam2.t": "本店",
-"fam2.p": "金物屋まるごと1ページに:すべての KitchenSink サーバーとその器具、その窓口、そして偶然ではなく空けてある棚が一つ二つ。",
-"fam2.g": "店内を見る →",
+"fam3.t": "本店",
+"fam3.p": "金物屋まるごと1ページに:すべての KitchenSink サーバーとその器具、その窓口、そして偶然ではなく空けてある棚が一つ二つ。",
+"fam3.g": "店内を見る →",
 "f.left": "&copy; 2026 &middot; <b>AGPL-3.0</b>:個人利用と私的な用途は無料。<br>自社製品に組み込む企業には商用ライセンスが必要です。<a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml'>Issue を開いて</a>いただければ、そこから話を進めます。",
-"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>不具合を報告</a><br>KitchenSink4Word の安全コアの上に築き、Claude Code でプロトタイプを作り、テストエージェントが文句を言い尽くすまで敵対的ラウンドで鍛えました。これで部屋はすっかり整いました!💡"
+"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>不具合を報告</a><br>KitchenSink4Word の安全コアの上に築き、Claude Code でプロトタイプを作り、テストエージェントが文句を言い尽くすまで敵対的ラウンドで鍛えました。これで部屋はすっかり整いました!💡",
+"inst.dev": "開発者向け: pip、ソース、その他の MCP クライアント",
+"inst.dp1": "パッケージを入れて、任意の MCP クライアントから実行ファイルを指すだけです:",
+"inst.dp2": "クローンから動かす場合も同じで、クローンの仮想環境にある <code>ppt-mcp</code> 実行ファイルを指してください。設定の全体は <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a> にあります。",
+"tip.t": "許可のポップアップがほとんど消える、たったひとつのコツ",
+"tip.p": "Claude Desktop でこのサーバーの Tool permissions を開き、読み取り専用ツールのグループを Always Allow にしてください。これらのツールは何も変更できないので、一度許可しても安全で、読み取りのたびに Claude が尋ねてくることがなくなります。実際に手を動かすツールは Ask のままにしておけば、何かを変える操作は今までどおり先に確認を取ります。",
+"fam2.p": "Excel(.xlsx)のためなら何でも揃う。すべての値に「計算済み」「キャッシュ」「欠損」のいずれかが付くので、AI が古い数字を新しい数字として言い直すことがありません。壊さないという同じ約束が、いまは表計算にも。",
+"fam2.g": "電気コーナーへ →"
 },
 zh: {
 "pageTitle": "KitchenSink4PPT: 为 Microsoft PowerPoint 而备,应有尽有的 MCP 服务器",
@@ -1318,7 +1392,7 @@ zh: {
 "demo.lead": "能往幻灯片里放图表的 AI 流水线遍地都是,可几乎全都递给你一张图表的“图片”:扁平的像素,裱在玻璃后面。汇报前夜,一个框要挪半英寸,而图片不在乎改动有多小。这台服务器是用真正的 PowerPoint 图形把图画出来的,和你亲手会画的那些一模一样,箭头是真的连在它们所接的框上。在 PowerPoint 里拖动节点,箭头跟着走;让智能体按名字给某个框改色,就只有那个框会变。不用从头再来,不用等图片服务,构建时也不用额外装什么。",
 "demo.badtag": "扁平 PNG",
 "demo.nope": "这是一张图片",
-"demo.badh": "这个货架上的其他工具",
+"demo.badh": "这个货架上的其他工具 <span class=\"gloss\">(其他 PowerPoint MCP)</span>",
 "demo.badp": "一张位图。试着拖一下:毫无反应。想挪动一个节点,就得回到生成器,描述改动,等待,再祈祷另外两个节点还回到原位。",
 "demo.goodtag": "原生图形",
 "demo.goodh": "这一款",
@@ -1358,7 +1432,7 @@ zh: {
 "pk7.t": "实时编辑", "pk7.n": "文件开着?没事。",
 "pk7.p": "在用户的 PowerPoint 里开着照样编辑:同一批工具自动改道,改动在你开口之前保持未保存,光标绝不被碰,撤销保证如实报告。 所有调用都走同一条队列,同时动一份文件的多个代理不会互相插队,等着人点的对话框会在窗口层面被发现。另外还附带 PowerPoint 状态查询和僵尸进程检查。",
 "pk7.e": "例:改掉明天要讲的幻灯片里的错别字 · 查看磁盘文件里还没有的未保存改动 · 查一查是不是还有 PowerPoint 没退干净",
-"h2.cmp": "这个货架上的其他工具",
+"h2.cmp": "这个货架上的其他工具 <span class=\"gloss\">(其他 PowerPoint MCP 服务器)</span>",
 "cmp.lead": "功能对比表人人都好看。所以这里换个摆法:七件你真会开口让智能体做的事,以及接下来发生什么。",
 "cmp.h1": "“嘿,能不能…”",
 "cmp.h3": "GongRzhe(已归档)<span class=\"stars\">GitHub 星标 1,851&dagger;</span>",
@@ -1394,7 +1468,6 @@ zh: {
 "inst.form": "订购单 № KS4P-1",
 "inst.s1": "① 领取器具",
 "inst.s2": "② 接好线路(Claude Code)",
-"inst.s3": "③ 任何其他 MCP 客户端(stdio)",
 "inst.note": "占大多数的基于文件的工具无需安装 PowerPoint,并且跨平台运行。导出与校验工具在机器上已经装好 PowerPoint 时会借来一用,用来渲染、导出并复核自己的成果。完整设置见 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>。",
 "inst.lead": "三条路进来,先短后长。多数人只需要第一条。",
 "h2.svc": "客户服务",
@@ -1415,11 +1488,18 @@ zh: {
 "h2.fam": "其他通道",
 "fam1.p": "元老设备:为 Microsoft Word 而备,应有尽有。它专治催生了这一门产品的稿件之苦,从修订的分诊到一份终于对得上引文的参考文献列表,而且是在你自己的 Word 窗口里实时改文档。承诺照旧:为“不损坏”而设计。",
 "fam1.g": "去水暖货架逛逛 →",
-"fam2.t": "总店门面",
-"fam2.p": "整间五金店放在一页里:每台 KitchenSink 服务器、它的设备、它的柜台,外加一两个绝非碰巧空着的货架。",
-"fam2.g": "逛逛店里 →",
+"fam3.t": "总店门面",
+"fam3.p": "整间五金店放在一页里:每台 KitchenSink 服务器、它的设备、它的柜台,外加一两个绝非碰巧空着的货架。",
+"fam3.g": "逛逛店里 →",
 "f.left": "&copy; 2026 &middot; <b>AGPL-3.0</b>:个人和个人用途免费。<br>把它做进自家产品的公司需要商业许可,<a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml'>开一个 issue</a>,我们细谈。",
-"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>报告故障</a><br>建在 KitchenSink4Word 的安全内核之上,用 Claude Code 做出原型,再经一轮轮对抗测试打磨,直到测试智能体挑不出毛病。这屋子算是布置齐了!💡"
+"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>报告故障</a><br>建在 KitchenSink4Word 的安全内核之上,用 Claude Code 做出原型,再经一轮轮对抗测试打磨,直到测试智能体挑不出毛病。这屋子算是布置齐了!💡",
+"inst.dev": "开发者选项:pip、源码、其他 MCP 客户端",
+"inst.dp1": "安装这个包,然后让任意 MCP 客户端指向可执行文件:",
+"inst.dp2": "从克隆仓库运行的方式相同,指向克隆虚拟环境里的 <code>ppt-mcp</code> 可执行文件即可。完整设置见 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>。",
+"tip.t": "一个能消掉大部分权限弹窗的小窍门",
+"tip.p": "在 Claude Desktop 里打开这台服务器的 Tool permissions，把只读工具那一组设为 Always Allow。这些工具改不了任何东西,所以一次性放行是安全的,Claude 也不会再为每一次读取来问你。会动手的那些工具留在 Ask,凡是会改动东西的操作仍旧先征求你的同意。",
+"fam2.p": "为 Excel(.xlsx)而备,应有尽有:每个值都标着已计算、已缓存或缺失,所以 AI 绝不会把一个过时的数字当成新算的再说一遍。同样的“不损坏”承诺，现在也给了电子表格。",
+"fam2.g": "去电料货架逛逛 →"
 },
 de: {
 "pageTitle": "KitchenSink4PPT: Microsoft PowerPoint mit allem Drum und Dran",
@@ -1463,7 +1543,7 @@ de: {
 "demo.lead": "Jede KI-Pipeline kann ein Diagramm auf eine Folie setzen. Fast alle liefern dabei nur ein Bild davon: flache Pixel hinter Glas. Am Abend vor der Präsentation muss ein Kasten einen Zentimeter wandern, und einem Bild ist egal, wie klein die Änderung ist. Dieser Server zeichnet das Diagramm aus echten PowerPoint-Formen, denselben, die Sie von Hand zeichnen würden, und die Pfeile hängen wirklich an den Kästen, die sie verbinden. Ziehen Sie einen Knoten in PowerPoint, und die Pfeile folgen. Bitten Sie den Agenten, einen Kasten per Name umzufärben, und nur dieser Kasten ändert sich. Kein Von-vorn-Anfangen, kein Warten auf einen Bilddienst und nichts zusätzlich zu installieren, um es zu bauen.",
 "demo.badtag": "FLACHES PNG",
 "demo.nope": "ES IST EIN BILD",
-"demo.badh": "Andere Werkzeuge in diesem Regal",
+"demo.badh": "Andere Werkzeuge in diesem Regal <span class=\"gloss\">(andere PowerPoint-MCPs)</span>",
 "demo.badp": "Eine Bitmap. Versuchen Sie zu ziehen: nichts. Um einen Knoten zu bewegen, gehen Sie zurück zum Generator, beschreiben die Änderung, warten und hoffen, dass die anderen beiden Knoten dort landen, wo sie waren.",
 "demo.goodtag": "NATIVE FORMEN",
 "demo.goodh": "Dieses hier",
@@ -1503,7 +1583,7 @@ de: {
 "pk7.t": "Live-Bearbeitung", "pk7.n": "OFFENER FOLIENSATZ? GUT.",
 "pk7.p": "Den Foliensatz bearbeiten, während er im PowerPoint des Nutzers geöffnet ist: dieselben Werkzeuge routen automatisch, Änderungen bleiben ungespeichert, bis man es verlangt, der Cursor bleibt unberührt, und die Rückgängig-Garantie wird ehrlich gemeldet. Jeder Aufruf läuft durch eine einzige Warteschlange, sodass Agenten am selben offenen Foliensatz sich nicht ins Wort fallen, und ein Dialog, der auf einen Menschen wartet, wird auf Fensterebene erkannt. PowerPoint-Status und eine Zombie-Prozess-Prüfung gehören dazu.",
 "pk7.e": "z. B. einen Tippfehler im Foliensatz für morgen beheben · ungespeicherte Änderungen sehen, die die Datei auf der Platte nicht hat · prüfen, ob noch ein verirrtes PowerPoint läuft",
-"h2.cmp": "Andere Werkzeuge in diesem Regal",
+"h2.cmp": "Andere Werkzeuge in diesem Regal <span class=\"gloss\">(die anderen PowerPoint-MCP-Server)</span>",
 "cmp.lead": "Feature-Tabellen schmeicheln jedem. Deshalb hier stattdessen sieben Dinge, um die man einen Agenten wirklich bitten würde, und was dann passiert.",
 "cmp.h1": "„Du, könntest du…“",
 "cmp.h3": "GongRzhe (archiviert)<span class=\"stars\">1.851 GitHub-Sterne&dagger;</span>",
@@ -1539,7 +1619,6 @@ de: {
 "inst.form": "BESTELLSCHEIN № KS4P-1",
 "inst.s1": "① DIE ARMATUR BESORGEN",
 "inst.s2": "② VERKABELN (Claude Code)",
-"inst.s3": "③ JEDER ANDERE MCP-CLIENT (stdio)",
 "inst.note": "Dateibasierte Werkzeuge, die große Mehrheit, brauchen kein installiertes PowerPoint und laufen plattformübergreifend. Die Export- und Prüfwerkzeuge leihen sich das PowerPoint, das auf dem Rechner schon installiert ist, wenn eines da ist, um ihre eigene Arbeit zu rendern, zu exportieren und noch einmal zu prüfen. Vollständige Einrichtung im <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "inst.lead": "Drei Wege hinein, der kürzeste zuerst. Die meisten brauchen nur den ersten.",
 "h2.svc": "Kundendienst",
@@ -1560,11 +1639,18 @@ de: {
 "h2.fam": "Die anderen Gänge",
 "fam1.p": "Die Original-Armatur: Microsoft Word mit allem Drum und Dran. Sie nimmt sich des Manuskript-Elends an, dem diese Familie ihre Existenz verdankt, von der Sichtung nachverfolgter Änderungen bis zu einem Literaturverzeichnis, das endlich zu den Zitaten passt, und sie bearbeitet Dokumente live in Ihrem eigenen Word-Fenster. Dasselbe Versprechen: konstruiert mit dem Ziel, nichts zu beschädigen.",
 "fam1.g": "Zum Sanitärgang →",
-"fam2.t": "Das Ladengeschäft",
-"fam2.p": "Der ganze Baumarkt auf einer Seite: jeder KitchenSink-Server, seine Armatur und sein Schalter, dazu ein, zwei Regale, die nicht aus Versehen leer sind.",
-"fam2.g": "Den Laden durchstöbern →",
+"fam3.t": "Das Ladengeschäft",
+"fam3.p": "Der ganze Baumarkt auf einer Seite: jeder KitchenSink-Server, seine Armatur und sein Schalter, dazu ein, zwei Regale, die nicht aus Versehen leer sind.",
+"fam3.g": "Den Laden durchstöbern →",
 "f.left": "&copy; 2026 &middot; <b>AGPL-3.0</b>: kostenlos für Privatpersonen und private Nutzung.<br>Unternehmen, die es in eigene Produkte einbauen, brauchen eine kommerzielle Lizenz; <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml'>ein Issue öffnen</a>, dann klären wir das.",
-"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>Störung melden</a><br>Auf dem Sicherheitskern von KitchenSink4Word errichtet, mit Claude Code prototypisiert und in adversarialen Runden gehärtet, bis den Test-Agenten die Beschwerden ausgingen. Das nennt man einen gut eingerichteten Raum! 💡"
+"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>Störung melden</a><br>Auf dem Sicherheitskern von KitchenSink4Word errichtet, mit Claude Code prototypisiert und in adversarialen Runden gehärtet, bis den Test-Agenten die Beschwerden ausgingen. Das nennt man einen gut eingerichteten Raum! 💡",
+"inst.dev": "Für Entwickler: pip, Quellcode, andere MCP-Clients",
+"inst.dp1": "Paket installieren und einen beliebigen MCP-Client auf die ausführbare Datei zeigen lassen:",
+"inst.dp2": "Aus einem Klon heraus läuft es genauso, dann zeigt der Befehl auf die ausführbare Datei <code>ppt-mcp</code> in der virtuellen Umgebung des Klons. Die vollständige Einrichtung steht in der <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
+"tip.t": "Ein Tipp, der die meisten Berechtigungsabfragen verschwinden lässt",
+"tip.p": "Setzen Sie in Claude Desktop unter ‚Tool permissions‘ für diesen Server die Gruppe der schreibgeschützten Werkzeuge auf ‚Always Allow‘. Diese Werkzeuge können nichts verändern, eine einmalige Freigabe ist also sicher, und Claude fragt nicht mehr bei jedem Lesevorgang nach. Lassen Sie die ausführenden Werkzeuge auf ‚Ask‘, damit alles, was etwas verändert, weiterhin zuerst bei Ihnen nachfragt.",
+"fam2.p": "Excel (.xlsx) mit allem Drum und Dran: Jeder Wert ist als berechnet, zwischengespeichert oder fehlend gekennzeichnet, damit die KI eine veraltete Zahl nie als frische wiederholt. Dasselbe Versprechen, nichts zu beschädigen, jetzt für Tabellen.",
+"fam2.g": "Zum Elektrogang →"
 },
 fr: {
 "pageTitle": "KitchenSink4PPT : absolument tout pour Microsoft PowerPoint, jusqu'au moindre détail",
@@ -1608,7 +1694,7 @@ fr: {
 "demo.lead": "Toutes les chaînes IA savent poser un diagramme sur une diapositive. Presque toutes vous en remettent une image : des pixels plats, sous verre. La veille de la présentation, une boîte doit bouger d'un demi-centimètre, et une image se moque de la taille du changement. Ce serveur dessine le diagramme à partir de vraies formes PowerPoint, celles-là mêmes que vous traceriez à la main, avec des flèches réellement accrochées aux boîtes qu'elles relient. Faites glisser un nœud dans PowerPoint et les flèches suivent. Demandez à l'agent de recolorer une boîte par son nom et seule cette boîte change. Pas de reprise à zéro, pas d'attente d'un service d'images, et rien de plus à installer pour la construire.",
 "demo.badtag": "PNG PLAT",
 "demo.nope": "C'EST UNE IMAGE",
-"demo.badh": "Les autres outils de ce rayon",
+"demo.badh": "Les autres outils de ce rayon <span class=\"gloss\">(autres MCP PowerPoint)</span>",
 "demo.badp": "Un bitmap. Essayez de le faire glisser : rien. Pour déplacer un nœud, on retourne au générateur, on décrit le changement, on attend, et on espère que les deux autres nœuds reviendront là où ils étaient.",
 "demo.goodtag": "FORMES NATIVES",
 "demo.goodh": "Celui-ci",
@@ -1648,7 +1734,7 @@ fr: {
 "pk7.t": "Édition en direct", "pk7.n": "JEU OUVERT ? TRÈS BIEN.",
 "pk7.p": "Modifier le jeu pendant qu'il est ouvert dans le PowerPoint de l'utilisateur : les mêmes outils se routent automatiquement, les modifications restent non enregistrées jusqu'à la demande, le curseur n'est jamais touché, et la garantie d'annulation est rapportée honnêtement. Chaque appel passe par une seule file, si bien que des agents travaillant le même jeu ouvert ne peuvent pas s'entremêler, et une boîte de dialogue qui attend un humain est repérée au niveau de la fenêtre. L'état de PowerPoint et une vérification des processus fantômes sont inclus.",
 "pk7.e": "p. ex. corriger une coquille dans le jeu que vous présentez demain · voir des modifications non enregistrées que le fichier sur disque n'a pas · vérifier qu'aucun PowerPoint égaré ne tourne encore",
-"h2.cmp": "Les autres outils de ce rayon",
+"h2.cmp": "Les autres outils de ce rayon <span class=\"gloss\">(les autres serveurs MCP pour PowerPoint)</span>",
 "cmp.lead": "Les grilles de fonctionnalités flattent tout le monde. Voici plutôt sept choses que vous demanderiez vraiment à un agent, et ce qui se passe ensuite.",
 "cmp.h1": "« Dis, tu pourrais… »",
 "cmp.h3": "GongRzhe (archivé)<span class=\"stars\">1 851 étoiles GitHub&dagger;</span>",
@@ -1684,7 +1770,6 @@ fr: {
 "inst.form": "BON DE COMMANDE № KS4P-1",
 "inst.s1": "① SE PROCURER LA ROBINETTERIE",
 "inst.s2": "② FAIRE LE BRANCHEMENT (Claude Code)",
-"inst.s3": "③ TOUT AUTRE CLIENT MCP (stdio)",
 "inst.note": "Les outils sur fichier, la grande majorité, ne demandent aucune installation de PowerPoint et tournent sur toutes les plateformes. Les outils d'export et de validation empruntent le PowerPoint déjà installé sur la machine quand il y en a un, pour rendre, exporter et revérifier leur propre travail. Configuration complète dans le <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "inst.lead": "Trois façons d'entrer, la plus courte d'abord. La plupart des gens n'ont besoin que de la première.",
 "h2.svc": "Service client",
@@ -1705,11 +1790,18 @@ fr: {
 "h2.fam": "Les autres rayons",
 "fam1.p": "La robinetterie d'origine : absolument tout pour Microsoft Word, jusqu'au moindre détail. Elle s'occupe de la misère des manuscrits qui a fait naître cette famille, du tri des modifications suivies à une bibliographie qui correspond enfin aux citations, et elle modifie les documents en direct dans votre propre fenêtre Word. Même promesse : conçue pour ne pas corrompre.",
 "fam1.g": "Visiter le rayon plomberie →",
-"fam2.t": "La devanture",
-"fam2.p": "Toute la quincaillerie sur une page : chaque serveur KitchenSink, son installation et son comptoir, plus une étagère ou deux qui ne sont pas vides par hasard.",
-"fam2.g": "Parcourir la boutique →",
+"fam3.t": "La devanture",
+"fam3.p": "Toute la quincaillerie sur une page : chaque serveur KitchenSink, son installation et son comptoir, plus une étagère ou deux qui ne sont pas vides par hasard.",
+"fam3.g": "Parcourir la boutique →",
 "f.left": "&copy; 2026 &middot; <b>AGPL-3.0</b> : gratuit pour les particuliers et l'usage personnel.<br>Les entreprises qui l'intègrent dans leurs propres produits ont besoin d'une licence commerciale ; <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml'>ouvrez un ticket</a> et nous en parlerons.",
-"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>signaler un pépin</a><br>Bâti sur le noyau de sûreté de KitchenSink4Word, prototypé avec Claude Code et endurci par des manches adversariales jusqu'à ce que les agents de test soient à court de réclamations. Voilà une pièce bien décorée ! 💡"
+"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>signaler un pépin</a><br>Bâti sur le noyau de sûreté de KitchenSink4Word, prototypé avec Claude Code et endurci par des manches adversariales jusqu'à ce que les agents de test soient à court de réclamations. Voilà une pièce bien décorée ! 💡",
+"inst.dev": "Pour les développeurs : pip, sources, autres clients MCP",
+"inst.dp1": "Installez le paquet, puis pointez n'importe quel client MCP sur l'exécutable :",
+"inst.dp2": "Depuis un clone, c'est identique : pointez la commande sur l'exécutable <code>ppt-mcp</code> de l'environnement virtuel du clone. Installation complète dans le <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
+"tip.t": "Une astuce qui supprime la plupart des fenêtres de permission",
+"tip.p": "Dans Claude Desktop, ouvrez les « Tool permissions » de ce serveur et réglez le groupe des outils en lecture seule sur « Always Allow ». Ces outils ne peuvent rien modifier, les autoriser une fois est donc sans risque, et Claude cesse de demander à chaque lecture. Laissez les outils qui agissent sur « Ask », pour que tout ce qui modifie quelque chose vous demande encore votre accord.",
+"fam2.p": "Absolument tout pour Excel (.xlsx), jusqu'au moindre détail : chaque valeur est étiquetée calculée, mise en cache ou manquante, si bien que l'IA ne répète jamais un chiffre périmé comme s'il venait d'être calculé. La même promesse de ne rien corrompre, désormais pour les tableurs.",
+"fam2.g": "Visiter le rayon électricité →"
 },
 es: {
 "pageTitle": "KitchenSink4PPT: de todo para Microsoft PowerPoint, hasta lo que no imaginas",
@@ -1753,7 +1845,7 @@ es: {
 "demo.lead": "Cualquier canalización de IA puede poner un diagrama en una diapositiva. Casi todas le entregan una imagen del diagrama: píxeles planos tras el cristal. La noche antes de presentar, una caja tiene que moverse medio centímetro, y a una imagen no le importa lo pequeño que sea el cambio. Este servidor dibuja el diagrama con formas reales de PowerPoint, las mismas que usted trazaría a mano, con las flechas de verdad pegadas a las cajas que unen. Arrastre un nodo en PowerPoint y las flechas lo siguen. Pida al agente recolorear una caja por su nombre y solo esa caja cambia. Sin empezar de cero, sin esperar a un servicio de imágenes y sin nada extra que instalar para construirlo.",
 "demo.badtag": "PNG PLANO",
 "demo.nope": "ES UNA IMAGEN",
-"demo.badh": "Otras herramientas de este estante",
+"demo.badh": "Otras herramientas de este estante <span class=\"gloss\">(otros MCP de PowerPoint)</span>",
 "demo.badp": "Un mapa de bits. Intente arrastrarlo: nada. Para mover un nodo hay que volver al generador, describir el cambio, esperar y confiar en que los otros dos nodos vuelvan a donde estaban.",
 "demo.goodtag": "FORMAS NATIVAS",
 "demo.goodh": "Esta",
@@ -1793,7 +1885,7 @@ es: {
 "pk7.t": "Edición en vivo", "pk7.n": "¿ABIERTA? DA IGUAL.",
 "pk7.p": "Editar la presentación mientras está abierta en el PowerPoint del usuario: las mismas herramientas se enrutan solas, las ediciones quedan sin guardar hasta que se pida, el cursor nunca se toca y la garantía de deshacer se informa con honestidad. Cada llamada pasa por una sola cola, de modo que varios agentes sobre la misma presentación abierta no pueden entrelazarse, y un cuadro de diálogo que espera a una persona se detecta a nivel de ventana. Se incluyen el estado de PowerPoint y una comprobación de procesos zombis.",
 "pk7.e": "p. ej. corregir una errata en la presentación de mañana · ver ediciones sin guardar que el archivo en disco no tiene · comprobar si queda algún PowerPoint suelto en ejecución",
-"h2.cmp": "Otras opciones de este estante",
+"h2.cmp": "Otras opciones de este estante <span class=\"gloss\">(los otros servidores MCP de PowerPoint)</span>",
 "cmp.lead": "Las tablas de funciones favorecen a todos. Así que aquí va en su lugar: siete cosas que de verdad le pediría a un agente, y lo que pasa después.",
 "cmp.h1": "«Oye, ¿podrías…?»",
 "cmp.h3": "GongRzhe (archivado)<span class=\"stars\">1.851 estrellas de GitHub&dagger;</span>",
@@ -1829,7 +1921,6 @@ es: {
 "inst.form": "HOJA DE PEDIDO № KS4P-1",
 "inst.s1": "① CONSIGA LA GRIFERÍA",
 "inst.s2": "② CONECTE EL CABLEADO (Claude Code)",
-"inst.s3": "③ CUALQUIER OTRO CLIENTE MCP (stdio)",
 "inst.note": "Las herramientas basadas en archivo, la gran mayoría, no necesitan PowerPoint instalado y corren en cualquier plataforma. Las herramientas de exportación y validación toman prestado el PowerPoint ya instalado en la máquina cuando lo hay, para renderizar, exportar y comprobar de nuevo su propio trabajo. Configuración completa en el <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "inst.lead": "Tres formas de entrar, la más corta primero. La mayoría solo necesita la primera.",
 "h2.svc": "Atención al cliente",
@@ -1850,11 +1941,18 @@ es: {
 "h2.fam": "Los otros pasillos",
 "fam1.p": "El accesorio original: de todo para Microsoft Word, hasta lo que no imaginas. Se ocupa de la miseria de los manuscritos que hizo nacer esta familia, desde el triaje de los cambios rastreados hasta una lista de referencias que por fin coincide con las citas, y edita documentos en vivo en su propia ventana de Word. La misma promesa: diseñado para no corromper.",
 "fam1.g": "Visite el pasillo de fontanería →",
-"fam2.t": "La tienda",
-"fam2.p": "Toda la ferretería en una página: cada servidor KitchenSink, su accesorio y su mostrador, más un estante o dos que no están vacíos por casualidad.",
-"fam2.g": "Recorrer la tienda →",
+"fam3.t": "La tienda",
+"fam3.p": "Toda la ferretería en una página: cada servidor KitchenSink, su accesorio y su mostrador, más un estante o dos que no están vacíos por casualidad.",
+"fam3.g": "Recorrer la tienda →",
 "f.left": "&copy; 2026 &middot; <b>AGPL-3.0</b>: gratis para particulares y uso personal.<br>Las empresas que lo integren en productos propios necesitan una licencia comercial; <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=commercial_license.yml'>abra un issue</a> y lo hablamos.",
-"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>informar de un fallo</a><br>Construido sobre el núcleo de seguridad de KitchenSink4Word, prototipado con Claude Code y endurecido en rondas adversariales hasta que los agentes de prueba se quedaron sin quejas. ¡Menuda sala tan bien decorada! 💡"
+"f.right": "<a href='https://github.com/nometalalchemist/KitchenSink4PPT'>github.com/nometalalchemist/KitchenSink4PPT</a> · <a href='https://github.com/nometalalchemist/KitchenSink4PPT/issues/new/choose'>informar de un fallo</a><br>Construido sobre el núcleo de seguridad de KitchenSink4Word, prototipado con Claude Code y endurecido en rondas adversariales hasta que los agentes de prueba se quedaron sin quejas. ¡Menuda sala tan bien decorada! 💡",
+"inst.dev": "Para desarrolladores: pip, código fuente, otros clientes MCP",
+"inst.dp1": "Instale el paquete y apunte cualquier cliente MCP al ejecutable:",
+"inst.dp2": "Desde un clon funciona igual: apunte el comando al ejecutable <code>ppt-mcp</code> del entorno virtual del clon. La instalación completa está en el <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
+"tip.t": "Un consejo que elimina casi todas las ventanas de permisos",
+"tip.p": "En Claude Desktop, entre en «Tool permissions» de este servidor y ponga el grupo de herramientas de solo lectura en «Always Allow». Esas herramientas no pueden cambiar nada, así que autorizarlas una vez es seguro y Claude deja de preguntar por cada lectura. Deje las herramientas que actúan en «Ask», para que todo lo que modifique algo siga pidiéndole permiso antes.",
+"fam2.p": "De todo para Excel (.xlsx), hasta lo que no imaginas: cada valor lleva su etiqueta de calculado, en caché o ausente, así la IA nunca repite un número viejo como si acabara de salir. La misma promesa de no corromper nada, ahora para las hojas de cálculo.",
+"fam2.g": "Visite el pasillo de electricidad →"
 }
 };
 /*I18N-END*/
