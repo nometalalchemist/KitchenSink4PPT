@@ -13,8 +13,15 @@
   carries no per-pack counts except the lite core's "24" (which also appears in DEPT. 04; keep them
   identical). If per-pack counts are ever added, they must visibly sum to the stated total, or a
   careful reader will do the math and get two answers (this happened on the KS4W page).
-  AISLE: DECOR. The pendant lamp and its pull-chain are the aisle's inherited fixture and stay
-  exactly as they are; the copy talks about decorating a room, not about light.
+  AISLE: PAINT (moved from DECOR, 2026-09-06). Masthead reads PAINT DEPARTMENT - AISLE P.
+  The accent vocabulary is finish-and-pigment language (patina, gilt, glow, verdigris) and the
+  headline feature is graphics, so the shelf reads as the paint department: the packs are a rack
+  of colour chips with swatch names, section markers are chips, section rules are dry-brush
+  strokes, and the page carries exactly one drip (off the tale label). --glow #e0a43c is the
+  wet-paint state: the pull-chain raises the WET PAINT sign. Chip names ACCOMPANY the pack names,
+  they never replace them; a reader ignoring the theme still reads every feature.
+  The pendant lamp and its pull-chain are the family's inherited fixture for this shelf and stay
+  exactly as they are; the copy talks about finishing a room, not about light.
   STOREFRONT: live at https://nometalalchemist.github.io/
 -->
 <title>KitchenSink4PPT: Everything plus the kitchen sink for Microsoft PowerPoint</title>
@@ -31,9 +38,11 @@
 @font-face{font-family:"Plex Mono Fallback";src:local("Courier New");size-adjust:100%;line-gap-override:0%}
 @font-face{font-family:"Fraunces Fallback";src:local("Georgia");size-adjust:104%;line-gap-override:0%}
 :root{
-  --paper:#f5efe0; --paper-deep:#ede4cd; --ink:#1e3550; --ink-soft:#3f5878;
-  --patina:#2e6e55; --patina-bright:#3c8a6b; --glow:#e0a43c; --stamp:#a3352b; --rule:#c9bda0;
+  --paper:#e3edea; --paper-deep:#d2e2dd; --ink:#1e3550; --ink-soft:#3f5878;
+  --patina:#2e6e55; --patina-bright:#3c8a6b; --glow:#e0a43c; --stamp:#a3352b; --rule:#a3bdb4;
   --pool-op:.45; --dusk-tint:rgba(46,110,85,.07);
+  /* the swatch fan: one ramp of the aisle's own finishes, cool to warm, behind every chip */
+  --chip:#2e6e55; --chip-mid:#6ba58c;
   --shadow: 0 2px 0 var(--rule), 0 10px 30px rgba(30,53,80,.10);
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -48,7 +57,7 @@ body{
 }
 /* dusk mode: the pull-chain swaps the paper stock for evening light (per visit, not stored) */
 body.dusk{
-  --paper:#ecdfbd; --paper-deep:#e1d1a6; --pool-op:.85;
+  --paper:#daddc7; --paper-deep:#c6cfb6; --pool-op:.85;
   --dusk-tint:rgba(224,164,60,.16);
 }
 body.dusk .pendant .bulb{filter:sepia(.15) saturate(1.1) drop-shadow(0 4px 14px rgba(224,164,60,.55))}
@@ -113,7 +122,7 @@ a:hover{text-decoration-style:wavy;text-decoration-thickness:1px;text-underline-
   background:var(--paper-deep)}
 .hero h1{font-size:clamp(44px,8.5vw,104px);font-weight:900;line-height:.95;
   letter-spacing:-.015em;font-variation-settings:'SOFT' 50;
-  text-shadow:3px 3px 0 var(--paper-deep), 5px 5px 0 var(--rule)}
+  text-shadow:3px 3px 0 var(--paper-deep), 5px 5px 0 var(--rule), 7px 7px 0 rgba(46,110,85,.26)}
 .hero h1 .four{color:var(--patina)}
 .tagline{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-style:italic;font-size:clamp(18px,2.6vw,26px);
   color:var(--ink-soft);margin:22px auto 0;max-width:660px}
@@ -142,13 +151,24 @@ a:hover{text-decoration-style:wavy;text-decoration-thickness:1px;text-underline-
   background:radial-gradient(ellipse, rgba(224,164,60,var(--pool-op)), transparent 70%);
   animation:flicker 5.5s linear infinite;transition:transform .6s}
 body.dusk .pool{transform:scaleX(1.5) scaleY(1.25)}
+body.dusk .dept:before, body.dusk .spec:before, body.dusk .sec-head .no:before{
+  background-image:linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,0) 65%)}
+.wetpaint{display:block;width:max-content;margin:8px auto 0;font-size:9px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--stamp);border:1.5px solid var(--stamp);padding:2px 9px;
+  border-radius:3px;transform:rotate(-2deg);opacity:0;transition:opacity .5s}
+body.dusk .wetpaint{opacity:.95}
 @keyframes sway{0%,100%{transform:rotate(0deg)}25%{transform:rotate(1.6deg)}75%{transform:rotate(-1.6deg)}}
 @keyframes flicker{0%,4%{opacity:.25}5%,7%{opacity:1}8%{opacity:.4}9%,100%{opacity:1}}
 
 .specs-strip{display:flex;justify-content:center;gap:0;margin:44px auto 0;
   border:2px solid var(--ink);max-width:720px;background:var(--paper-deep);
   box-shadow:var(--shadow);flex-wrap:wrap}
-.spec{padding:16px 28px;border-right:1px solid var(--rule);flex:1;min-width:150px}
+.spec{padding:22px 28px 16px;border-right:1px solid var(--rule);flex:1;min-width:150px;position:relative}
+.spec:before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:var(--chip)}
+.spec:nth-child(1){--chip:#1e3550}
+.spec:nth-child(2){--chip:#2e6e55}
+.spec:nth-child(3){--chip:var(--chip-mid)}
+.spec:nth-child(4){--chip:#e0a43c}
 .spec:last-child{border-right:none}
 .spec .n{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-weight:900;font-size:34px;display:block;overflow-wrap:anywhere}
 /* numbers filled at ship */
@@ -173,7 +193,30 @@ section{padding:64px 0;border-top:1px solid var(--rule)}
   border:2px solid currentColor;border-radius:3px;padding:3px 10px;transform:rotate(-2deg);
   display:inline-block;opacity:.85;
   mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='white'/%3E%3Ccircle cx='2.5' cy='1.5' r='.3' fill='black'/%3E%3C/svg%3E")}
-.sec-head:after{content:"";flex:1;border-bottom:2px dotted var(--rule);transform:translateY(-6px)}
+.sec-head .no:before{content:"";display:inline-block;width:9px;height:9px;margin-right:8px;
+  background:var(--chip);border:1px solid var(--ink);transform:translateY(1px)}
+/* the rule under a section head is a dry brush stroke that runs out of paint to the right */
+.sec-head:after{content:"";flex:1;min-width:40px;height:9px;transform:translateY(-8px);
+  background-image:repeating-linear-gradient(0deg, var(--rule) 0 1px, transparent 1px 2px,
+    var(--rule) 2px 5px, transparent 5px 6px, var(--rule) 6px 7px, transparent 7px 9px);
+  -webkit-mask-image:linear-gradient(90deg, rgba(0,0,0,1) 0 8%, rgba(0,0,0,.8) 58%, rgba(0,0,0,0) 100%);
+  mask-image:linear-gradient(90deg, rgba(0,0,0,1) 0 8%, rgba(0,0,0,.8) 58%, rgba(0,0,0,0) 100%)}
+/* each section carries its own chip tone; read down the page they are one fan */
+#headline{--chip:#2e6e55}
+#tale{--chip:#a3352b}
+#inventory{--chip:#3c8a6b}
+#compare{--chip:#1e3550}
+#efficiency{--chip:#e0a43c}
+#install{--chip:var(--chip-mid)}
+#service{--chip:#a3bdb4}
+#family{--chip:#2e6e55}
+/* the aisle sign over the diagram demo, brush stroke either side */
+.onprem{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 0 16px;
+  font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft)}
+.onprem:before,.onprem:after{content:"";width:56px;height:9px;flex:none;
+  background-image:repeating-linear-gradient(0deg, var(--rule) 0 1px, transparent 1px 2px,
+    var(--rule) 2px 5px, transparent 5px 6px, var(--rule) 6px 7px, transparent 7px 9px)}
+@media(max-width:480px){.onprem:before,.onprem:after{width:22px}}
 .for-lead{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-size:clamp(16px,2.1vw,20px);line-height:1.65;max-width:820px;margin:0 auto 30px}
 
 /* spec-sheet corner registration ticks */
@@ -192,11 +235,11 @@ section{padding:64px 0;border-top:1px solid var(--rule)}
 .demo-panel p{font-size:12.5px;color:var(--ink-soft);margin-top:12px;line-height:1.55}
 .demo-fig{background:var(--paper-deep);border:1px solid var(--rule);padding:8px;display:flex;justify-content:center;position:relative}
 .demo-fig svg{max-width:100%;height:auto;display:block}
-.demo-panel.bad .demo-fig{filter:blur(.7px) sepia(.35) contrast(.92);cursor:not-allowed;user-select:none}
+.demo-panel.bad .demo-fig{filter:blur(.7px) grayscale(.55) contrast(.92);cursor:not-allowed;user-select:none}
 .demo-panel.bad .demo-fig svg{pointer-events:none}
 .nope{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%) rotate(-8deg) scale(.7);
   border:3px solid var(--stamp);color:var(--stamp);padding:6px 14px;font-weight:600;font-size:13px;
-  letter-spacing:.14em;text-transform:uppercase;border-radius:4px;background:rgba(245,239,224,.85);
+  letter-spacing:.14em;text-transform:uppercase;border-radius:4px;background:rgba(227,237,234,.85);
   opacity:0;transition:opacity .12s, transform .12s;pointer-events:none;z-index:2}
 .demo-panel.bad:active .nope{opacity:1;transform:translate(-50%,-50%) rotate(-8deg) scale(1)}
 .corner-tag{position:absolute;top:14px;right:14px;font-size:10px;letter-spacing:.18em;
@@ -230,6 +273,8 @@ section{padding:64px 0;border-top:1px solid var(--rule)}
 .tale:before{content:attr(data-label);position:absolute;top:-11px;left:28px;
   background:var(--ink);color:var(--paper);font-size:10px;letter-spacing:.3em;
   padding:4px 12px}
+.tale:after{content:"";position:absolute;top:12px;left:47px;width:6px;height:17px;
+  background:var(--ink);border-radius:0 0 4px 4px}
 .tale p{font-family:'Fraunces',"Fraunces Fallback",Georgia,serif;font-size:clamp(17px,2.2vw,21px);line-height:1.65}
 .tale p+p{margin-top:14px}
 .tale em{color:var(--stamp);font-style:normal;font-weight:700}
@@ -237,18 +282,43 @@ section{padding:64px 0;border-top:1px solid var(--rule)}
 /* inventory (packs as departments) */
 .depts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2px;
   background:var(--rule);border:2px solid var(--ink)}
-.dept{background:var(--paper);padding:20px 20px 16px;transition:background .25s;position:relative}
+.dept{background:var(--paper);padding:30px 20px 16px;transition:background .25s;position:relative}
 .dept:hover{background:var(--paper-deep)}
-.dept:hover:after{content:"✎";position:absolute;top:8px;right:10px;font-size:14px;
-  color:var(--patina);opacity:.45;transform:rotate(12deg)}
+/* the chip: a painted band across the head of the card, pulled proud when you reach for it */
+.dept:before{content:"";position:absolute;top:0;left:0;right:0;height:13px;background:var(--chip);
+  transition:height .25s}
+.dept:hover:before{height:19px}
+/* the swatch name sits under the chip the way it does on a real card; the pack name is next to it
+   and stays the thing you actually read. The sample pot appears only when you reach for the chip. */
+.chiprow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:7px;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft)}
+.chiprow .pot{opacity:0;transition:opacity .2s;display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap}
+.chiprow .pot:after{content:"";width:11px;height:11px;background:var(--chip);opacity:.8;
+  border-radius:52% 48% 45% 55% / 48% 55% 45% 52%}
+.dept:hover .chiprow .pot{opacity:.85}
+.depts .dept:nth-child(1){--chip:#1e3550}
+.depts .dept:nth-child(2){--chip:#2e6e55}
+.depts .dept:nth-child(3){--chip:#3c8a6b}
+.depts .dept:nth-child(4){--chip:var(--chip-mid)}
+.depts .dept:nth-child(5){--chip:#a3bdb4}
+.depts .dept:nth-child(6){--chip:#e0a43c}
+.depts .dept:nth-child(7){--chip:#a3352b}
+/* the rack has one empty slot at four columns; it should read as paper, not as a painted tile */
+.depts:after{content:"";background:var(--paper)}
 .dept h3{font-size:17px;font-weight:800;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .dept h3 .num{font-family:'IBM Plex Mono',"Plex Mono Fallback",monospace;font-size:10px;color:var(--patina);letter-spacing:.15em;white-space:nowrap}
 .dept p{font-size:12.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55}
 .dept .ex{font-size:11.5px;color:var(--patina);margin-top:8px;line-height:1.5}
 .dept .count{display:inline-block;margin-top:10px;font-size:10px;border:1px solid var(--patina);
   color:var(--patina);padding:2px 8px;letter-spacing:.15em}
+.dept .count:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--chip);margin-right:7px;transform:translateY(1px)}
 .dept.backorder{background:repeating-linear-gradient(-45deg, var(--paper) 0 10px, var(--paper-deep) 10px 20px)}
-.dept.backorder:hover:after{content:"soon."}
+.dept.backorder:hover .chiprow .pot{opacity:0}
+.dept.backorder:after{content:"soon.";position:absolute;top:22px;right:12px;font-size:11px;
+  color:var(--ink-soft);opacity:0;transition:opacity .2s}
+.dept.backorder:hover:after{opacity:.6}
 .dept.backorder h3 .num{color:var(--ink-soft)}
 .dept.backorder .count{border-style:dashed;border-color:var(--ink-soft);color:var(--ink-soft)}
 
@@ -281,6 +351,9 @@ th.us{background:var(--patina)!important;color:var(--paper)}
 .term .g{color:var(--glow)}
 .term div{white-space:pre}
 .install-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+/* grid cells must be allowed to shrink; the terminal scrolls inside itself instead of
+   pushing the page sideways (this was a pre-existing 133px overflow at 390px) */
+.install-grid>div{min-width:0}
 @media(max-width:760px){.install-grid{grid-template-columns:1fr}}
 .install-grid h3{font-size:15px;letter-spacing:.06em;margin-bottom:12px}
 
@@ -290,6 +363,22 @@ th.us{background:var(--patina)!important;color:var(--paper)}
   padding:0 8px;font-size:17px;color:var(--ink-soft);transform:scaleX(-1)}
 .orderform .form-no{position:absolute;top:-9px;right:22px;background:var(--paper);padding:0 8px;
   font-size:10px;letter-spacing:.25em;color:var(--ink-soft);text-transform:uppercase}
+
+/* the trade counter: the family's parts window, dressed for this aisle. Pegboard field
+   (paper-deep under an ink dot grid), 2px ink border with a 5px patina spine on the hinge side,
+   the instructions themselves laid on a paper slip. Same standing as the install station, and
+   visibly a different station, so it reads as where the trade is served, not as a caveat. */
+.devnote{position:relative;margin-top:30px;border:2px solid var(--ink);
+  border-left:5px solid var(--patina);box-shadow:var(--shadow);
+  background-color:var(--paper-deep);
+  background-image:radial-gradient(circle at center, rgba(30,53,80,.17) 1.1px, transparent 1.4px);
+  background-size:14px 14px}
+.devnote-label{position:absolute;top:-11px;left:24px;background:var(--patina);color:var(--paper);
+  font-size:10px;letter-spacing:.3em;text-transform:uppercase;padding:4px 12px;white-space:nowrap}
+.devnote .devbody{margin:16px;padding:20px 20px 16px;background:var(--paper);
+  border:1px solid var(--rule)}
+.devnote .devbody p{font-size:12.5px;line-height:1.6;color:var(--ink-soft);margin:0}
+.devnote b{color:var(--ink)}
 
 /* guarantee */
 .guarantee{max-width:820px;margin:0 auto;text-align:center;border:3px double var(--ink);
@@ -352,7 +441,7 @@ footer a{color:var(--patina)}
 <body>
 
 <div class="wrap masthead rev d1">
-  <span data-i18n="m.left"><b>DECOR DEPARTMENT</b> &middot; FINE INSTRUMENTS FOR THE WELL-DRESSED DECK</span>
+  <span data-i18n="m.left"><b>PAINT DEPARTMENT</b> &middot; AISLE P</span>
   <nav class="lang-toggle" id="langToggle" aria-label="Language"></nav>
   <span><span data-i18n="m.catalog">CATALOG № 138</span> · <a href="https://nometalalchemist.github.io/" data-i18n="m.family">FAMILY</a> · <a href="#service" data-i18n="m.service">SERVICE</a> · <a href="https://github.com/nometalalchemist/KitchenSink4PPT">GITHUB</a> · <a href="https://pypi.org/project/kitchensink4ppt/">PYPI</a> · <a href="llms.txt">LLMS.TXT</a></span>
 </div>
@@ -374,6 +463,7 @@ footer a{color:var(--patina)}
     </span>
     <div class="pool"></div>
     <span class="chain-hint" data-i18n="hero.chain">pull the chain</span>
+    <span class="wetpaint" data-i18n="state.wet" aria-hidden="true">WET PAINT</span>
   </div>
   <div class="catalog-no rev d2" data-i18n="hero.catno">Model Context Protocol · Server for Microsoft PowerPoint</div>
   <h1 class="rev d2">Kitchen&shy;Sink<span class="four">4</span>PPT</h1>
@@ -417,39 +507,40 @@ footer a{color:var(--patina)}
   <div class="wrap">
     <div class="sec-head"><span class="no" data-i18n="no0">DEPT. 00</span><h2 data-i18n="h2.demo">Move the node, the arrows follow</h2></div>
     <p class="for-lead" data-i18n="demo.lead">Every AI pipeline can put a diagram on a slide. Almost all of them hand you a picture of one: flat pixels behind glass. The night before you present, one box needs to move half an inch, and a picture does not care how small the change is. This server draws the diagram out of real PowerPoint shapes, the same ones you would draw by hand, with the arrows genuinely attached to the boxes they join. Drag a node in PowerPoint and the arrows follow. Ask the agent to recolor one box by name and only that box changes. No starting over, no waiting on an image service, and nothing extra to install to build it.</p>
+    <div class="onprem"><span data-i18n="sec.mixed">MIXED ON PREMISES</span></div>
     <div class="demo-grid ticked">
       <div class="demo-panel bad">
         <span class="corner-tag" data-i18n="demo.badtag">FLAT PNG</span>
         <span class="nope" data-i18n="demo.nope">IT'S A PICTURE</span>
-        <h3 data-i18n="demo.badh">What the rest of the shelf sells</h3>
+        <h3 data-i18n="demo.badh">Other tools on this shelf</h3>
         <div class="demo-fig" title="Nothing here moves. It is a picture.">
           <svg viewBox="0 0 300 180" width="300" height="180" role="img" aria-label="A three-node diagram flattened into a static image">
             <defs><marker id="ah0" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#3f5878"/></marker></defs>
             <line x1="78" y1="52" x2="185" y2="85" stroke="#3f5878" stroke-width="2" marker-end="url(#ah0)"/>
             <line x1="78" y1="121" x2="185" y2="98" stroke="#3f5878" stroke-width="2" marker-end="url(#ah0)"/>
             <line x1="60" y1="64" x2="60" y2="105" stroke="#3f5878" stroke-width="2" marker-end="url(#ah0)"/>
-            <circle cx="60" cy="45" r="17" fill="#ede4cd" stroke="#1e3550" stroke-width="2"/>
-            <circle cx="60" cy="128" r="17" fill="#ede4cd" stroke="#1e3550" stroke-width="2"/>
-            <circle cx="207" cy="92" r="17" fill="#c9bda0" stroke="#1e3550" stroke-width="2"/>
+            <circle cx="60" cy="45" r="17" fill="#d2e2dd" stroke="#1e3550" stroke-width="2"/>
+            <circle cx="60" cy="128" r="17" fill="#d2e2dd" stroke="#1e3550" stroke-width="2"/>
+            <circle cx="207" cy="92" r="17" fill="#a3bdb4" stroke="#1e3550" stroke-width="2"/>
           </svg>
         </div>
         <p data-i18n="demo.badp">One bitmap. Try to drag it: nothing. To move one node, you go back to the generator, describe the change, wait, and hope the other two nodes come back where they were.</p>
       </div>
       <div class="demo-panel good">
         <span class="corner-tag native" data-i18n="demo.goodtag">NATIVE SHAPES</span>
-        <h3 data-i18n="demo.goodh">What this catalog sells</h3>
+        <h3 data-i18n="demo.goodh">This one</h3>
         <div class="demo-fig">
           <svg id="demoStage" viewBox="0 0 300 180" width="300" height="180" role="img" aria-label="The same diagram as native shapes. The green node is draggable; its connectors stay glued and follow it.">
             <defs>
               <marker id="ah1" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#2e6e55"/></marker>
               <marker id="ahHint" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#a3352b"/></marker>
             </defs>
-            <circle id="ghostC" class="inert" cx="207" cy="92" r="17" fill="none" stroke="#c9bda0" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <circle id="ghostC" class="inert" cx="207" cy="92" r="17" fill="none" stroke="#a3bdb4" stroke-width="1.5" stroke-dasharray="4 4"/>
             <line id="linAC" class="inert" x1="78" y1="52" x2="185" y2="85" stroke="#2e6e55" stroke-width="2" marker-end="url(#ah1)"/>
             <line id="linBC" class="inert" x1="78" y1="121" x2="185" y2="98" stroke="#2e6e55" stroke-width="2" marker-end="url(#ah1)"/>
             <line class="inert" x1="60" y1="64" x2="60" y2="105" stroke="#2e6e55" stroke-width="2" marker-end="url(#ah1)"/>
-            <circle class="inert" cx="60" cy="45" r="17" fill="#ede4cd" stroke="#1e3550" stroke-width="2"/>
-            <circle class="inert" cx="60" cy="128" r="17" fill="#ede4cd" stroke="#1e3550" stroke-width="2"/>
+            <circle class="inert" cx="60" cy="45" r="17" fill="#d2e2dd" stroke="#1e3550" stroke-width="2"/>
+            <circle class="inert" cx="60" cy="128" r="17" fill="#d2e2dd" stroke="#1e3550" stroke-width="2"/>
             <circle id="nodeC" cx="207" cy="92" r="17" fill="#3c8a6b" stroke="#1e3550" stroke-width="2"
               tabindex="0" role="button"
               aria-label="Draggable node. Drag with a pointer or nudge with the arrow keys; the connectors stay glued."/>
@@ -484,13 +575,13 @@ footer a{color:var(--patina)}
     <div class="sec-head"><span class="no" data-i18n="no2">DEPT. 02</span><h2 data-i18n="h2.inv">The shelves, pack by pack</h2></div>
     <p class="for-lead" data-i18n="inv.lead">The stock is arranged in capability packs, the way a good shop groups what belongs together. A session opens light and switches on the pack a job needs with one call. Every department below is on the floor today, fully stocked. v1.1 moved the small packs in with their neighbours, and the old pack names still ring up fine.</p>
     <div class="depts">
-      <div class="dept"><h3><span data-i18n="pk1.t">Lite Core</span> <span class="num" data-i18n="pk1.n">PACK 0 · ALWAYS ON</span></h3><p data-i18n="pk1.p">An anchored markdown view of the whole deck, text read and search-and-replace, slide CRUD done right (insert by layout, deep duplicate, delete with cleanup, reorder, hide), batch edits with one save per batch, snapshots and backups, diagnostics, and the enable_tools switchboard.</p><p class="ex" data-i18n="pk1.e">e.g. read the deck as markdown with stable anchors · duplicate the heaviest slide cleanly · apply twenty edits in one atomic batch</p><span class="count" data-i18n="pk1.c">24 TOOLS · ALWAYS ON</span></div>
-      <div class="dept"><h3><span data-i18n="pk2.t">Graphics</span> <span class="num" data-i18n="pk2.n">THE STATEMENT PIECE</span></h3><p data-i18n="pk2.p">SVG compiled to grouped native shapes, preset and freeform geometry with gradients and theme-color fills, connectors glued to the shapes they join, edit-in-place by shape identity, group and ungroup, align, distribute, z-order.</p><p class="ex" data-i18n="pk2.e">e.g. turn an SVG diagram into shapes you can drag · restyle one connector by id · align a row of boxes mechanically, not by eye</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
-      <div class="dept"><h3><span data-i18n="pk3.t">Tables plus Charts</span> <span class="num" data-i18n="pk3.n">STAGING THE ROOM</span></h3><p data-i18n="pk3.p">The first file-based structural table operations in any PowerPoint MCP server: merge cells, insert and delete rows AND columns, borders and shading, verified named table styles, CSV and JSON round trips. Chart building rides along.</p><p class="ex" data-i18n="pk3.e">e.g. merge a header row nobody else can touch · add a column without rebuilding the table · load a table straight from CSV</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
-      <div class="dept"><h3><span data-i18n="pk4.t">Design</span> <span class="num" data-i18n="pk4.n">WALLPAPER AND PAINT</span></h3><p data-i18n="pk4.p">Create presentations FROM your own template, list and apply layouts and masters, read the theme, and fill shapes with theme-color references so they follow the palette when the theme changes. Themes are the wallpaper and the paint; layouts are where the furniture goes.</p><p class="ex" data-i18n="pk4.e">e.g. start a deck from the house template · apply the right layout by name · fill a shape with accent 2, not a hex guess</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
-      <div class="dept"><h3><span data-i18n="pk5.t">Assembly plus Export</span> <span class="num" data-i18n="pk5.n">OUT THE DOOR</span></h3><p data-i18n="pk5.p">Speaker notes, sections, footers and slide numbers, hide slide, PDF export, per-slide PNG export as a render-to-verify primitive, opens-clean validation, and a text-overflow report. Slide transitions with millisecond timing, click and by-paragraph entrance builds, and the tested guarantee that edits never strip the animations a deck already has.</p><p class="ex" data-i18n="pk5.e">e.g. write the speaker notes · export slide 7 as a PNG to check the layout · confirm the deck opens with no repair prompt · build the lineage slide one panel per click</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
-      <div class="dept"><h3><span data-i18n="pk6.t">Review plus Sweeps</span> <span class="num" data-i18n="pk6.n">THE DEEP CLEAN</span></h3><p data-i18n="pk6.p">Modern threaded comments with REPLIES, which exist in no other PowerPoint MCP server, resolve and cascade delete, a whole-deck review report, structural deck compare, and anonymize-for-review. Deck-wide operations that reach where PowerPoint itself cannot: font inventory and replacement including charts and phantom declarations, color remapping with literal-to-theme unification, proofing language, whole-deck logo replacement preserving crops, and compress with an offender report.</p><p class="ex" data-i18n="pk6.e">e.g. reply to the reviewer in the thread · diff two versions of the deck · strip authorship before blind review · swap the old logo everywhere, crops intact</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
-      <div class="dept"><h3><span data-i18n="pk7.t">Live Editing</span> <span class="num" data-i18n="pk7.n">OPEN DECK? FINE.</span></h3><p data-i18n="pk7.p">Edit the deck while it is open in the user's PowerPoint: the same tools route automatically, edits stay unsaved until asked, the cursor is never touched, and the undo guarantee is reported honestly. Every call runs through one queue, so agents working the same open deck cannot interleave, and a dialog waiting on a human is caught at the window level. PowerPoint status and a zombie-process check come along.</p><p class="ex" data-i18n="pk7.e">e.g. fix a typo in the deck you are presenting from tomorrow · see unsaved edits the file on disk does not have · check whether a stray PowerPoint is still running</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
+      <div class="dept"><div class="chiprow"><span data-i18n="pk1.chip">PRIMER WHITE</span><span class="pot" data-i18n="state.pot">SAMPLE POT</span></div><h3><span data-i18n="pk1.t">Lite Core</span> <span class="num" data-i18n="pk1.n">PACK 0 · ALWAYS ON</span></h3><p data-i18n="pk1.p">An anchored markdown view of the whole deck, text read and search-and-replace, slide CRUD done right (insert by layout, deep duplicate, delete with cleanup, reorder, hide), batch edits with one save per batch, snapshots and backups, diagnostics, and the enable_tools switchboard.</p><p class="ex" data-i18n="pk1.e">e.g. read the deck as markdown with stable anchors · duplicate the heaviest slide cleanly · apply twenty edits in one atomic batch</p><span class="count" data-i18n="pk1.c">24 TOOLS · ALWAYS ON</span></div>
+      <div class="dept"><div class="chiprow"><span data-i18n="pk2.chip">GILT EDGE</span><span class="pot" data-i18n="state.pot">SAMPLE POT</span></div><h3><span data-i18n="pk2.t">Graphics</span> <span class="num" data-i18n="pk2.n">THE STATEMENT PIECE</span></h3><p data-i18n="pk2.p">SVG compiled to grouped native shapes, preset and freeform geometry with gradients and theme-color fills, connectors glued to the shapes they join, edit-in-place by shape identity, group and ungroup, align, distribute, z-order.</p><p class="ex" data-i18n="pk2.e">e.g. turn an SVG diagram into shapes you can drag · restyle one connector by id · align a row of boxes mechanically, not by eye</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
+      <div class="dept"><div class="chiprow"><span data-i18n="pk3.chip">DROP CLOTH</span><span class="pot" data-i18n="state.pot">SAMPLE POT</span></div><h3><span data-i18n="pk3.t">Tables plus Charts</span> <span class="num" data-i18n="pk3.n">STAGING THE ROOM</span></h3><p data-i18n="pk3.p">The first file-based structural table operations in any PowerPoint MCP server: merge cells, insert and delete rows AND columns, borders and shading, verified named table styles, CSV and JSON round trips. Chart building rides along.</p><p class="ex" data-i18n="pk3.e">e.g. merge a header row nobody else can touch · add a column without rebuilding the table · load a table straight from CSV</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
+      <div class="dept"><div class="chiprow"><span data-i18n="pk4.chip">VERDIGRIS</span><span class="pot" data-i18n="state.pot">SAMPLE POT</span></div><h3><span data-i18n="pk4.t">Design</span> <span class="num" data-i18n="pk4.n">WALLPAPER AND PAINT</span></h3><p data-i18n="pk4.p">Create presentations FROM your own template, list and apply layouts and masters, read the theme, and fill shapes with theme-color references so they follow the palette when the theme changes. Themes are the wallpaper and the paint; layouts are where the furniture goes.</p><p class="ex" data-i18n="pk4.e">e.g. start a deck from the house template · apply the right layout by name · fill a shape with accent 2, not a hex guess</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
+      <div class="dept"><div class="chiprow"><span data-i18n="pk5.chip">FRESH COAT</span><span class="pot" data-i18n="state.pot">SAMPLE POT</span></div><h3><span data-i18n="pk5.t">Assembly plus Export</span> <span class="num" data-i18n="pk5.n">OUT THE DOOR</span></h3><p data-i18n="pk5.p">Speaker notes, sections, footers and slide numbers, hide slide, PDF export, per-slide PNG export as a render-to-verify primitive, opens-clean validation, and a text-overflow report. Slide transitions with millisecond timing, click and by-paragraph entrance builds, and the tested guarantee that edits never strip the animations a deck already has.</p><p class="ex" data-i18n="pk5.e">e.g. write the speaker notes · export slide 7 as a PNG to check the layout · confirm the deck opens with no repair prompt · build the lineage slide one panel per click</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
+      <div class="dept"><div class="chiprow"><span data-i18n="pk6.chip">SECOND COAT</span><span class="pot" data-i18n="state.pot">SAMPLE POT</span></div><h3><span data-i18n="pk6.t">Review plus Sweeps</span> <span class="num" data-i18n="pk6.n">THE DEEP CLEAN</span></h3><p data-i18n="pk6.p">Modern threaded comments with REPLIES, which exist in no other PowerPoint MCP server, resolve and cascade delete, a whole-deck review report, structural deck compare, and anonymize-for-review. Deck-wide operations that reach where PowerPoint itself cannot: font inventory and replacement including charts and phantom declarations, color remapping with literal-to-theme unification, proofing language, whole-deck logo replacement preserving crops, and compress with an offender report.</p><p class="ex" data-i18n="pk6.e">e.g. reply to the reviewer in the thread · diff two versions of the deck · strip authorship before blind review · swap the old logo everywhere, crops intact</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
+      <div class="dept"><div class="chiprow"><span data-i18n="pk7.chip">WET EDGE</span><span class="pot" data-i18n="state.pot">SAMPLE POT</span></div><h3><span data-i18n="pk7.t">Live Editing</span> <span class="num" data-i18n="pk7.n">OPEN DECK? FINE.</span></h3><p data-i18n="pk7.p">Edit the deck while it is open in the user's PowerPoint: the same tools route automatically, edits stay unsaved until asked, the cursor is never touched, and the undo guarantee is reported honestly. Every call runs through one queue, so agents working the same open deck cannot interleave, and a dialog waiting on a human is caught at the window level. PowerPoint status and a zombie-process check come along.</p><p class="ex" data-i18n="pk7.e">e.g. fix a typo in the deck you are presenting from tomorrow · see unsaved edits the file on disk does not have · check whether a stray PowerPoint is still running</p><span class="count" data-i18n="pk.ships">SHIPS IN v1.1</span></div>
     </div>
   </div>
 </section>
@@ -530,7 +621,12 @@ footer a{color:var(--patina)}
          Run enable_tools(["tables-charts"]) to switch it on.
 <span class="p">&gt;</span> enable_tools(["tables-charts"])
 <span class="g">OK:</span> pack enabled, tools registered, token cost reported.</div></div>
-    <p class="foot-note" style="margin-top:18px" data-i18n="eff.note">Power users who want everything loaded from the start can pin it: <b>KS4P_MODE=full</b> in the server environment, or a comma-separated pack list. Administrators can lock the selection with KS4P_PACK_POLICY=locked.</p>
+    <div class="devnote">
+      <span class="devnote-label" data-i18n="dev.label">TRADE COUNTER</span>
+      <div class="devbody">
+      <p data-i18n="eff.note">Power users who want everything loaded from the start can pin it: <b>KS4P_MODE=full</b> in the server environment, or a comma-separated pack list. Administrators can lock the selection with KS4P_PACK_POLICY=locked.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -568,7 +664,7 @@ footer a{color:var(--patina)}
 
 <section id="service">
   <div class="wrap">
-    <div class="sec-head"><span class="no" data-i18n="no6">DEPT. 06</span><h2 data-i18n="h2.svc">Service department</h2></div>
+    <div class="sec-head"><span class="no" data-i18n="no6">DEPT. 06</span><h2 data-i18n="h2.svc">Customer service</h2></div>
     <span class="ticket" data-i18n="svc.ticket">NOW SERVING · TAKE A NUMBER · SAME DESK AS THE WORD SINK, ONE AISLE OVER</span>
     <div class="service-grid">
       <a class="counter" href="https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=bug_report.yml">
@@ -747,7 +843,18 @@ if (faucet && "IntersectionObserver" in window){
 var I18N = {
 en: {
 "pageTitle": "KitchenSink4PPT: Everything plus the kitchen sink for Microsoft PowerPoint",
-"m.left": "<b>DECOR DEPARTMENT</b> &middot; FINE INSTRUMENTS FOR THE WELL-DRESSED DECK",
+"m.left": "<b>PAINT DEPARTMENT</b> &middot; AISLE P",
+"pk1.chip": "PRIMER WHITE",
+"pk2.chip": "GILT EDGE",
+"pk3.chip": "DROP CLOTH",
+"pk4.chip": "VERDIGRIS",
+"pk5.chip": "FRESH COAT",
+"pk6.chip": "SECOND COAT",
+"pk7.chip": "WET EDGE",
+"state.wet": "WET PAINT",
+"state.pot": "SAMPLE POT",
+"dev.label": "TRADE COUNTER",
+"sec.mixed": "MIXED ON PREMISES",
 "m.catalog": "CATALOG № 138",
 "m.family": "FAMILY",
 "m.service": "SERVICE",
@@ -776,10 +883,10 @@ en: {
 "demo.lead": "Every AI pipeline can put a diagram on a slide. Almost all of them hand you a picture of one: flat pixels behind glass. The night before you present, one box needs to move half an inch, and a picture does not care how small the change is. This server draws the diagram out of real PowerPoint shapes, the same ones you would draw by hand, with the arrows genuinely attached to the boxes they join. Drag a node in PowerPoint and the arrows follow. Ask the agent to recolor one box by name and only that box changes. No starting over, no waiting on an image service, and nothing extra to install to build it.",
 "demo.badtag": "FLAT PNG",
 "demo.nope": "IT'S A PICTURE",
-"demo.badh": "What the rest of the shelf sells",
+"demo.badh": "Other tools on this shelf",
 "demo.badp": "One bitmap. Try to drag it: nothing. To move one node, you go back to the generator, describe the change, wait, and hope the other two nodes come back where they were.",
 "demo.goodtag": "NATIVE SHAPES",
-"demo.goodh": "What this catalog sells",
+"demo.goodh": "This one",
 "grab.1": "GRAB",
 "grab.2": "THIS",
 "demo.cap": "go ahead, drag the green node. the arrows follow.",
@@ -855,7 +962,7 @@ en: {
 "inst.s3": "③ ANY OTHER MCP CLIENT (stdio)",
 "inst.note": "File-based tools, which are the large majority, need no PowerPoint installation and run cross-platform. The export and validation tools borrow the PowerPoint already installed on the machine when one is there, to render, export, and double-check its own work. Full setup in the <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "inst.lead": "Three ways in, shortest first. Most people only need the first.",
-"h2.svc": "Service department",
+"h2.svc": "Customer service",
 "svc.ticket": "NOW SERVING · TAKE A NUMBER · SAME DESK AS THE WORD SINK, ONE AISLE OVER",
 "svc1.t": "Found a crooked frame?",
 "svc1.p": "Something glitched, refused, or misbehaved. File a report at the repair counter: the form asks exactly what a fix needs. Never attach a private deck; rebuild the structure with placeholder text.",
@@ -881,7 +988,18 @@ en: {
 },
 ko: {
 "pageTitle": "KitchenSink4PPT: Microsoft PowerPoint 도구라면 없는 게 없는 MCP 서버",
-"m.left": "<b>데코 부문</b> &middot; 잘 차려입은 덱을 위한 정밀 기구점",
+"m.left": "<b>페인트 부문</b> &middot; P 통로",
+"pk1.chip": "프라이머 화이트",
+"pk2.chip": "길트 에지",
+"pk3.chip": "드롭 클로스",
+"pk4.chip": "베르디그리",
+"pk5.chip": "새 도장",
+"pk6.chip": "두 번째 도장",
+"pk7.chip": "젖은 가장자리",
+"state.wet": "칠 주의",
+"state.pot": "샘플 팟",
+"dev.label": "전문가 카운터",
+"sec.mixed": "매장에서 직접 조색",
 "m.catalog": "카탈로그 № 138",
 "m.family": "제품군",
 "m.service": "서비스",
@@ -910,10 +1028,10 @@ ko: {
 "demo.lead": "슬라이드에 다이어그램을 넣을 수 있는 AI 파이프라인은 얼마든지 있습니다. 그런데 거의 전부가 다이어그램의 '그림'을 건네줍니다: 납작한 픽셀, 유리 안에 걸린 그림. 발표 전날 밤 상자 하나를 반 인치만 옮겨야 하는데, 그림은 그 변경이 아무리 작아도 상관하지 않습니다. 이 서버는 다이어그램을 진짜 PowerPoint 도형으로, 직접 손으로 그렸을 바로 그 도형으로 그려 냅니다. 화살표는 잇는 상자에 실제로 붙어 있습니다. PowerPoint에서 노드를 드래그하면 화살표가 따라오고, 에이전트에게 상자 하나를 이름으로 지정해 색을 바꾸라고 하면 그 상자만 바뀝니다. 처음부터 다시 만들 일도, 이미지 서비스를 기다릴 일도, 만들기 위해 따로 설치할 것도 없습니다.",
 "demo.badtag": "납작한 PNG",
 "demo.nope": "이건 그림입니다",
-"demo.badh": "다른 진열대가 파는 것",
+"demo.badh": "이 진열대의 다른 도구들",
 "demo.badp": "비트맵 한 장입니다. 드래그해 보세요: 아무 일도 없습니다. 노드 하나를 옮기려면 생성기로 돌아가 변경 사항을 설명하고, 기다리고, 나머지 두 노드가 제자리로 돌아오길 바라야 합니다.",
 "demo.goodtag": "네이티브 도형",
-"demo.goodh": "이 카탈로그가 파는 것",
+"demo.goodh": "이것",
 "grab.1": "이걸",
 "grab.2": "잡으세요",
 "demo.cap": "자, 초록 노드를 드래그해 보세요. 화살표가 따라옵니다.",
@@ -989,7 +1107,7 @@ ko: {
 "inst.s3": "③ 다른 모든 MCP 클라이언트 (stdio)",
 "inst.note": "대다수를 차지하는 파일 기반 도구는 PowerPoint 설치가 필요 없고 크로스 플랫폼으로 돌아갑니다. 내보내기와 검증 도구는 컴퓨터에 이미 설치된 PowerPoint가 있으면 그것을 빌려서, 자기 작업물을 렌더링하고 내보내고 다시 확인합니다. 전체 설정은 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>에 있습니다.",
 "inst.lead": "들어오는 길은 세 갈래, 짧은 것부터입니다. 대부분은 첫 번째면 충분합니다.",
-"h2.svc": "서비스 창구",
+"h2.svc": "고객 서비스",
 "svc.ticket": "지금 접수 중 · 번호표를 뽑으세요 · Word 싱크대와 같은 창구, 한 통로 옆",
 "svc1.t": "액자가 삐뚤어졌습니까?",
 "svc1.p": "무언가 오작동하거나, 거부하거나, 이상하게 굴었다면 수리 창구에 신고서를 내 주세요. 양식은 수리에 필요한 것만 정확히 묻습니다. 개인 프레젠테이션은 절대 첨부하지 말고, 자리표시 텍스트로 구조만 재현해 주세요.",
@@ -1015,7 +1133,18 @@ ko: {
 },
 ja: {
 "pageTitle": "KitchenSink4PPT: Microsoft PowerPoint のための、何でも揃う MCP サーバー",
-"m.left": "<b>装飾部門</b> &middot; 着こなしの整ったデッキのための精密器具",
+"m.left": "<b>塗料部門</b> &middot; P列",
+"pk1.chip": "プライマー・ホワイト",
+"pk2.chip": "ギルトエッジ",
+"pk3.chip": "ドロップクロス",
+"pk4.chip": "ヴェルディグリ",
+"pk5.chip": "塗り立て",
+"pk6.chip": "二度塗り",
+"pk7.chip": "ウェットエッジ",
+"state.wet": "ペンキ塗りたて",
+"state.pot": "見本缶",
+"dev.label": "業者用カウンター",
+"sec.mixed": "店内で調色",
 "m.catalog": "カタログ № 138",
 "m.family": "ファミリー",
 "m.service": "サービス",
@@ -1044,10 +1173,10 @@ ja: {
 "demo.lead": "スライドに図を載せられる AI パイプラインなら、いくらでもあります。しかしそのほとんどが渡してくるのは図の「画像」です:平らなピクセル、額の硝子の向こう。発表前夜、箱をひとつ半インチ動かしたいのに、画像は変更がどれほど小さかろうとお構いなしです。このサーバーは、図を本物の PowerPoint 図形で、あなたが手で描いたであろうその図形で描き起こします。矢印は、結ぶ箱に本当に付いています。PowerPoint でノードをドラッグすれば矢印がついてくる。エージェントに箱ひとつを名前で指定して色替えを頼めば、その箱だけが変わる。作り直しも、画像サービス待ちも、作るために別途インストールするものも要りません。",
 "demo.badtag": "ただの PNG",
 "demo.nope": "これは画像です",
-"demo.badh": "よその棚が売っているもの",
+"demo.badh": "この棚の他のツール",
 "demo.badp": "ビットマップ一枚です。ドラッグしてみてください:何も起きません。ノードをひとつ動かすには、生成器に戻って変更を説明し、待って、残り二つのノードが元の場所に戻ってくることを祈るしかありません。",
 "demo.goodtag": "ネイティブ図形",
-"demo.goodh": "このカタログが売っているもの",
+"demo.goodh": "こちら",
 "grab.1": "これを",
 "grab.2": "つかんで",
 "demo.cap": "どうぞ、緑のノードをドラッグしてみてください。矢印がついてきます。",
@@ -1123,7 +1252,7 @@ ja: {
 "inst.s3": "③ その他の MCP クライアント (stdio)",
 "inst.note": "大多数を占めるファイルベースのツールに PowerPoint のインストールは不要で、クロスプラットフォームで動きます。書き出しと検証のツールは、そのマシンにすでに入っている PowerPoint があればそれを借りて、自分の仕事を描画し、書き出し、確かめ直します。詳しい設定は <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a> へ。",
 "inst.lead": "入り口は三つ、短いものから並べています。たいていの方は最初のひとつで足ります。",
-"h2.svc": "サービス窓口",
+"h2.svc": "カスタマーサービス",
 "svc.ticket": "ただいま受付中 · 番号札をどうぞ · Word の流しと同じ窓口、一列隣",
 "svc1.t": "額が傾いていますか?",
 "svc1.p": "何かが誤動作した、拒否した、様子がおかしい。修理窓口に報告書をどうぞ。フォームは修理に必要なことだけを尋ねます。私的なスライド資料は決して添付せず、プレースホルダーのテキストで構造だけ再現してください。",
@@ -1149,7 +1278,18 @@ ja: {
 },
 zh: {
 "pageTitle": "KitchenSink4PPT: 为 Microsoft PowerPoint 而备,应有尽有的 MCP 服务器",
-"m.left": "<b>装饰部</b> &middot; 为体面的幻灯片而设的精密器具行",
+"m.left": "<b>油漆部</b> &middot; P 号过道",
+"pk1.chip": "底漆白",
+"pk2.chip": "描金边",
+"pk3.chip": "防尘布",
+"pk4.chip": "铜绿",
+"pk5.chip": "新漆一层",
+"pk6.chip": "第二遍漆",
+"pk7.chip": "湿边",
+"state.wet": "油漆未干",
+"state.pot": "样品罐",
+"dev.label": "专业柜台",
+"sec.mixed": "本店现调",
 "m.catalog": "目录 № 138",
 "m.family": "家族",
 "m.service": "服务",
@@ -1178,10 +1318,10 @@ zh: {
 "demo.lead": "能往幻灯片里放图表的 AI 流水线遍地都是,可几乎全都递给你一张图表的“图片”:扁平的像素,裱在玻璃后面。汇报前夜,一个框要挪半英寸,而图片不在乎改动有多小。这台服务器是用真正的 PowerPoint 图形把图画出来的,和你亲手会画的那些一模一样,箭头是真的连在它们所接的框上。在 PowerPoint 里拖动节点,箭头跟着走;让智能体按名字给某个框改色,就只有那个框会变。不用从头再来,不用等图片服务,构建时也不用额外装什么。",
 "demo.badtag": "扁平 PNG",
 "demo.nope": "这是一张图片",
-"demo.badh": "别家货架卖的东西",
+"demo.badh": "这个货架上的其他工具",
 "demo.badp": "一张位图。试着拖一下:毫无反应。想挪动一个节点,就得回到生成器,描述改动,等待,再祈祷另外两个节点还回到原位。",
 "demo.goodtag": "原生图形",
-"demo.goodh": "本目录卖的东西",
+"demo.goodh": "这一款",
 "grab.1": "抓住",
 "grab.2": "这里",
 "demo.cap": "来,拖一下绿色节点。箭头跟着走。",
@@ -1257,7 +1397,7 @@ zh: {
 "inst.s3": "③ 任何其他 MCP 客户端(stdio)",
 "inst.note": "占大多数的基于文件的工具无需安装 PowerPoint,并且跨平台运行。导出与校验工具在机器上已经装好 PowerPoint 时会借来一用,用来渲染、导出并复核自己的成果。完整设置见 <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>。",
 "inst.lead": "三条路进来,先短后长。多数人只需要第一条。",
-"h2.svc": "服务柜台",
+"h2.svc": "客户服务",
 "svc.ticket": "正在叫号 · 请取号 · 与 Word 水槽同一服务台,隔一条过道",
 "svc1.t": "画框挂歪了?",
 "svc1.p": "有东西出错、拒绝干活或行为异常?到维修柜台填一份报告,表单只问修复所需的信息。切勿附上私人演示文稿;请用占位文字重建结构。",
@@ -1283,7 +1423,18 @@ zh: {
 },
 de: {
 "pageTitle": "KitchenSink4PPT: Microsoft PowerPoint mit allem Drum und Dran",
-"m.left": "<b>ABTEILUNG DEKO</b> &middot; FEINE INSTRUMENTE FÜR GUT GEKLEIDETE FOLIEN",
+"m.left": "<b>ABTEILUNG FARBEN</b> &middot; GANG P",
+"pk1.chip": "PRIMERWEISS",
+"pk2.chip": "GOLDRAND",
+"pk3.chip": "ABDECKTUCH",
+"pk4.chip": "GRÜNSPAN",
+"pk5.chip": "FRISCHER ANSTRICH",
+"pk6.chip": "ZWEITE SCHICHT",
+"pk7.chip": "NASSE KANTE",
+"state.wet": "FRISCH GESTRICHEN",
+"state.pot": "PROBEDOSE",
+"dev.label": "PROFI-THEKE",
+"sec.mixed": "IM HAUS ANGEMISCHT",
 "m.catalog": "KATALOG № 138",
 "m.family": "FAMILIE",
 "m.service": "SERVICE",
@@ -1312,10 +1463,10 @@ de: {
 "demo.lead": "Jede KI-Pipeline kann ein Diagramm auf eine Folie setzen. Fast alle liefern dabei nur ein Bild davon: flache Pixel hinter Glas. Am Abend vor der Präsentation muss ein Kasten einen Zentimeter wandern, und einem Bild ist egal, wie klein die Änderung ist. Dieser Server zeichnet das Diagramm aus echten PowerPoint-Formen, denselben, die Sie von Hand zeichnen würden, und die Pfeile hängen wirklich an den Kästen, die sie verbinden. Ziehen Sie einen Knoten in PowerPoint, und die Pfeile folgen. Bitten Sie den Agenten, einen Kasten per Name umzufärben, und nur dieser Kasten ändert sich. Kein Von-vorn-Anfangen, kein Warten auf einen Bilddienst und nichts zusätzlich zu installieren, um es zu bauen.",
 "demo.badtag": "FLACHES PNG",
 "demo.nope": "ES IST EIN BILD",
-"demo.badh": "Was der Rest des Regals verkauft",
+"demo.badh": "Andere Werkzeuge in diesem Regal",
 "demo.badp": "Eine Bitmap. Versuchen Sie zu ziehen: nichts. Um einen Knoten zu bewegen, gehen Sie zurück zum Generator, beschreiben die Änderung, warten und hoffen, dass die anderen beiden Knoten dort landen, wo sie waren.",
 "demo.goodtag": "NATIVE FORMEN",
-"demo.goodh": "Was dieser Katalog verkauft",
+"demo.goodh": "Dieses hier",
 "grab.1": "HIER",
 "grab.2": "ANFASSEN",
 "demo.cap": "nur zu, ziehen Sie den grünen Knoten. die Pfeile folgen.",
@@ -1391,7 +1542,7 @@ de: {
 "inst.s3": "③ JEDER ANDERE MCP-CLIENT (stdio)",
 "inst.note": "Dateibasierte Werkzeuge, die große Mehrheit, brauchen kein installiertes PowerPoint und laufen plattformübergreifend. Die Export- und Prüfwerkzeuge leihen sich das PowerPoint, das auf dem Rechner schon installiert ist, wenn eines da ist, um ihre eigene Arbeit zu rendern, zu exportieren und noch einmal zu prüfen. Vollständige Einrichtung im <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "inst.lead": "Drei Wege hinein, der kürzeste zuerst. Die meisten brauchen nur den ersten.",
-"h2.svc": "Serviceabteilung",
+"h2.svc": "Kundendienst",
 "svc.ticket": "JETZT BEDIENUNG · NUMMER ZIEHEN · GLEICHER SCHALTER WIE DIE WORD-SPÜLE, EINEN GANG WEITER",
 "svc1.t": "Ein schiefer Bilderrahmen?",
 "svc1.p": "Etwas hat gehakt, verweigert oder sich danebenbenommen. Geben Sie am Reparaturschalter einen Bericht ab; das Formular fragt genau das ab, was eine Reparatur braucht. Hängen Sie nie einen privaten Foliensatz an; bauen Sie die Struktur mit Platzhaltertext nach.",
@@ -1417,7 +1568,18 @@ de: {
 },
 fr: {
 "pageTitle": "KitchenSink4PPT : absolument tout pour Microsoft PowerPoint, jusqu'au moindre détail",
-"m.left": "<b>RAYON DÉCORATION</b> &middot; INSTRUMENTS DE PRÉCISION POUR DIAPOSITIVES BIEN HABILLÉES",
+"m.left": "<b>RAYON PEINTURE</b> &middot; ALLÉE P",
+"pk1.chip": "BLANC D'APPRÊT",
+"pk2.chip": "TRANCHE DORÉE",
+"pk3.chip": "BÂCHE DE PEINTRE",
+"pk4.chip": "VERT-DE-GRIS",
+"pk5.chip": "COUCHE FRAÎCHE",
+"pk6.chip": "SECONDE COUCHE",
+"pk7.chip": "BORD FRAIS",
+"state.wet": "PEINTURE FRAÎCHE",
+"state.pot": "POT D'ESSAI",
+"dev.label": "COMPTOIR PRO",
+"sec.mixed": "MÉLANGÉ SUR PLACE",
 "m.catalog": "CATALOGUE № 138",
 "m.family": "FAMILLE",
 "m.service": "SERVICE",
@@ -1446,10 +1608,10 @@ fr: {
 "demo.lead": "Toutes les chaînes IA savent poser un diagramme sur une diapositive. Presque toutes vous en remettent une image : des pixels plats, sous verre. La veille de la présentation, une boîte doit bouger d'un demi-centimètre, et une image se moque de la taille du changement. Ce serveur dessine le diagramme à partir de vraies formes PowerPoint, celles-là mêmes que vous traceriez à la main, avec des flèches réellement accrochées aux boîtes qu'elles relient. Faites glisser un nœud dans PowerPoint et les flèches suivent. Demandez à l'agent de recolorer une boîte par son nom et seule cette boîte change. Pas de reprise à zéro, pas d'attente d'un service d'images, et rien de plus à installer pour la construire.",
 "demo.badtag": "PNG PLAT",
 "demo.nope": "C'EST UNE IMAGE",
-"demo.badh": "Ce que vend le reste du rayon",
+"demo.badh": "Les autres outils de ce rayon",
 "demo.badp": "Un bitmap. Essayez de le faire glisser : rien. Pour déplacer un nœud, on retourne au générateur, on décrit le changement, on attend, et on espère que les deux autres nœuds reviendront là où ils étaient.",
 "demo.goodtag": "FORMES NATIVES",
-"demo.goodh": "Ce que vend ce catalogue",
+"demo.goodh": "Celui-ci",
 "grab.1": "ATTRAPEZ",
 "grab.2": "ÇA",
 "demo.cap": "allez-y, faites glisser le nœud vert. les flèches suivent.",
@@ -1525,7 +1687,7 @@ fr: {
 "inst.s3": "③ TOUT AUTRE CLIENT MCP (stdio)",
 "inst.note": "Les outils sur fichier, la grande majorité, ne demandent aucune installation de PowerPoint et tournent sur toutes les plateformes. Les outils d'export et de validation empruntent le PowerPoint déjà installé sur la machine quand il y en a un, pour rendre, exporter et revérifier leur propre travail. Configuration complète dans le <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "inst.lead": "Trois façons d'entrer, la plus courte d'abord. La plupart des gens n'ont besoin que de la première.",
-"h2.svc": "Service après-vente",
+"h2.svc": "Service client",
 "svc.ticket": "ON VOUS SERT · PRENEZ UN NUMÉRO · MÊME COMPTOIR QUE L'ÉVIER WORD, UNE ALLÉE PLUS LOIN",
 "svc1.t": "Un cadre de travers ?",
 "svc1.p": "Quelque chose a buggé, refusé ou déraillé. Déposez un signalement au comptoir des réparations : le formulaire demande exactement ce qu'il faut pour réparer. Ne joignez jamais une présentation privée ; reconstruisez la structure avec du texte de substitution.",
@@ -1551,7 +1713,18 @@ fr: {
 },
 es: {
 "pageTitle": "KitchenSink4PPT: de todo para Microsoft PowerPoint, hasta lo que no imaginas",
-"m.left": "<b>DEPARTAMENTO DE DECORACIÓN</b> &middot; INSTRUMENTOS FINOS PARA DIAPOSITIVAS BIEN VESTIDAS",
+"m.left": "<b>DEPARTAMENTO DE PINTURA</b> &middot; PASILLO P",
+"pk1.chip": "BLANCO DE IMPRIMACIÓN",
+"pk2.chip": "CANTO DORADO",
+"pk3.chip": "LONA PROTECTORA",
+"pk4.chip": "CARDENILLO",
+"pk5.chip": "CAPA FRESCA",
+"pk6.chip": "SEGUNDA CAPA",
+"pk7.chip": "BORDE HÚMEDO",
+"state.wet": "PINTURA FRESCA",
+"state.pot": "BOTE DE MUESTRA",
+"dev.label": "MOSTRADOR PROFESIONAL",
+"sec.mixed": "MEZCLADO EN LA TIENDA",
 "m.catalog": "CATÁLOGO № 138",
 "m.family": "FAMILIA",
 "m.service": "SERVICIO",
@@ -1580,10 +1753,10 @@ es: {
 "demo.lead": "Cualquier canalización de IA puede poner un diagrama en una diapositiva. Casi todas le entregan una imagen del diagrama: píxeles planos tras el cristal. La noche antes de presentar, una caja tiene que moverse medio centímetro, y a una imagen no le importa lo pequeño que sea el cambio. Este servidor dibuja el diagrama con formas reales de PowerPoint, las mismas que usted trazaría a mano, con las flechas de verdad pegadas a las cajas que unen. Arrastre un nodo en PowerPoint y las flechas lo siguen. Pida al agente recolorear una caja por su nombre y solo esa caja cambia. Sin empezar de cero, sin esperar a un servicio de imágenes y sin nada extra que instalar para construirlo.",
 "demo.badtag": "PNG PLANO",
 "demo.nope": "ES UNA IMAGEN",
-"demo.badh": "Lo que vende el resto del estante",
+"demo.badh": "Otras herramientas de este estante",
 "demo.badp": "Un mapa de bits. Intente arrastrarlo: nada. Para mover un nodo hay que volver al generador, describir el cambio, esperar y confiar en que los otros dos nodos vuelvan a donde estaban.",
 "demo.goodtag": "FORMAS NATIVAS",
-"demo.goodh": "Lo que vende este catálogo",
+"demo.goodh": "Esta",
 "grab.1": "AGARRE",
 "grab.2": "ESTO",
 "demo.cap": "adelante, arrastre el nodo verde. las flechas lo siguen.",
@@ -1659,7 +1832,7 @@ es: {
 "inst.s3": "③ CUALQUIER OTRO CLIENTE MCP (stdio)",
 "inst.note": "Las herramientas basadas en archivo, la gran mayoría, no necesitan PowerPoint instalado y corren en cualquier plataforma. Las herramientas de exportación y validación toman prestado el PowerPoint ya instalado en la máquina cuando lo hay, para renderizar, exportar y comprobar de nuevo su propio trabajo. Configuración completa en el <a href='https://github.com/nometalalchemist/KitchenSink4PPT#install'>README</a>.",
 "inst.lead": "Tres formas de entrar, la más corta primero. La mayoría solo necesita la primera.",
-"h2.svc": "Departamento de servicio",
+"h2.svc": "Atención al cliente",
 "svc.ticket": "AHORA ATENDIENDO · TOME UN NÚMERO · EL MISMO MOSTRADOR QUE EL FREGADERO DE WORD, UN PASILLO MÁS ALLÁ",
 "svc1.t": "¿Un cuadro torcido?",
 "svc1.p": "Algo falló, se negó o se portó mal. Presente un parte en el mostrador de reparaciones: el formulario pregunta exactamente lo que un arreglo necesita. Nunca adjunte una presentación privada; reconstruya la estructura con texto de relleno.",
