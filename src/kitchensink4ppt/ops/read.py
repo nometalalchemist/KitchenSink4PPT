@@ -68,6 +68,7 @@ _LIST_KINDS = (
     "tables",
     "charts",
     "images",
+    "diagrams",
     "notes",
     "sections",
     "layouts",
@@ -602,8 +603,8 @@ def get_slide_info(pkg: PptxPackage, slide) -> dict:
 
 def list_elements(pkg: PptxPackage, kind: str, scope=None) -> dict:
     """THE multiplex enumerator. kind is one of: slides, shapes,
-    placeholders, tables, charts, images, notes, sections, layouts,
-    masters. Returns a flat item list; slide-scoped kinds honor `scope`
+    placeholders, tables, charts, images, diagrams, notes, sections,
+    layouts, masters. Returns a flat item list; slide-scoped kinds honor `scope`
     (None = all slides, a selector, or a list of selectors)."""
     if kind not in _LIST_KINDS:
         raise PptMcpError(
@@ -729,6 +730,32 @@ def list_elements(pkg: PptxPackage, kind: str, scope=None) -> dict:
                         if px is not None:
                             item["px"] = {"w": px[0], "h": px[1]}
                     items.append(item)
+                elif kind == "diagrams" and k == "diagram":
+                    # SmartArt frames with their editable nodes: the
+                    # addressing set_diagram_text takes (index or
+                    # model_id) has to be discoverable somewhere.
+                    from .diagrams import drawing_part_of
+
+                    shape = _shape_record(elem, k, z, parent)
+                    data_part = _diagram_data_part(pkg, part, elem)
+                    nodes = (
+                        _diagram_points(pkg, data_part) if data_part else []
+                    )
+                    items.append(
+                        {
+                            **base,
+                            **shape,
+                            "data_part": data_part,
+                            "drawing_part": (
+                                drawing_part_of(pkg, data_part)
+                                if data_part
+                                else None
+                            ),
+                            "nodes": [
+                                {"index": i, **n} for i, n in enumerate(nodes)
+                            ],
+                        }
+                    )
 
     return {"kind": kind, "count": len(items), "items": items}
 

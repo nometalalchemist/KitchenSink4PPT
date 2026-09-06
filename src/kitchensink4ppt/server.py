@@ -59,6 +59,7 @@ from .ops import (
     design as _dsn,
     design_check as _dck,
     diagnostics as _dg,
+    diagrams as _dgm,
     diff as _dif,
     equations as _eqn,
     export as _ex,
@@ -514,11 +515,11 @@ def search_and_replace(
     live: str = "auto",
 ) -> dict:
     """Deck-wide find and replace, safe across fragmented runs (each
-    replacement keeps the first run's formatting). regex=True enables
-    capture groups (refused live); matches overlapping slide-number/date
-    fields are skipped. Bulk cell rewrites: set_table_cells (tables-charts
-    pack). Saves atomically with two-slot backup; backup=False skips
-    rotation. live='auto' edits the open PowerPoint copy of a locked file;
+    replacement keeps the first run's formatting), SmartArt node text
+    included. regex=True enables capture groups (refused live); matches
+    overlapping slide-number/date fields are skipped. Bulk cell rewrites:
+    set_table_cells (tables-charts pack). Saves atomically with two-slot
+    backup. live='auto' edits the open PowerPoint copy of a locked file;
     'force' targets the open session; 'off' refuses locked files.
     Batches: apply_edits."""
     return _route_live(
@@ -734,8 +735,9 @@ def get_presentation_info(file_path: str) -> dict:
 @_tool()
 def list_elements(file_path: str, kind: str, scope: Any = None) -> dict:
     """THE multiplex enumerator, one kind per call: slides, shapes,
-    placeholders, tables, charts, images, notes, sections, layouts,
-    masters. Returns a flat item list with ids and locations; slide-scoped
+    placeholders, tables, charts, images, diagrams (SmartArt frames with
+    their editable nodes), notes, sections, layouts, masters. Returns a
+    flat item list with ids and locations; slide-scoped
     kinds honor scope (None = all slides, a selector, or a list). Use it to
     find layout names for insert_slide and shape ids for editing. The packs
     (enable_tools) hold the tools that edit what this lists. For one slide
@@ -1493,6 +1495,28 @@ def set_image(
 
 
 @_tool("graphics")
+def set_diagram_text(
+    file_path: str,
+    slide: Any,
+    shape: int,
+    nodes: list,
+    backup: bool = True,
+) -> dict:
+    """Replace the TEXT of nodes in an existing SmartArt diagram, leaving
+    layout, geometry, connections, styles, and colors alone. nodes:
+    [{"index": N or "model_id": "{...}", "text": "..."}], addressed from
+    list_elements kind='diagrams'. Writes both places a diagram keeps text,
+    the data model and the cached drawing, so the new words show in viewers
+    that never regenerate it. Substitution only: no node is created or
+    removed. Saves atomically with two-slot backup."""
+    return _edit(
+        file_path,
+        lambda pkg: _dgm.set_diagram_text(pkg, slide, shape, nodes),
+        backup=backup,
+    )
+
+
+@_tool("graphics")
 def generate_diagram(
     file_path: str,
     slide: Any,
@@ -1548,18 +1572,25 @@ def insert_video(
     h: float,
     poster: str | None = None,
     name: str | None = None,
+    start: str | None = None,
+    loop: bool | None = None,
+    mute: bool | None = None,
+    volume: float | None = None,
+    full_screen: bool | None = None,
     backup: bool = True,
 ) -> dict:
     """Embed a video on a slide at an inch box. video: file path or base64
-    of mp4 bytes; other containers refuse by name (formats are sniffed
-    from the bytes, never trusted from the extension). poster: optional
-    image for the pre-playback frame, else a generated placeholder stands
-    in. Playback starts on click via PowerPoint's media controls. Saves
-    atomically with two-slot backup; backup=False skips rotation."""
+    of mp4 bytes; other containers refuse by name (sniffed from the bytes,
+    never from the extension). poster: optional image for the pre-playback
+    frame, else a placeholder. Without playback options it plays from
+    PowerPoint's on-hover controls; start ('click' or 'auto'), loop, mute,
+    volume (0..1), and full_screen go through set_media_playback, which
+    also has rewind. Saves atomically with two-slot backup."""
     return _edit(
         file_path,
         lambda pkg: _av.insert_video(
-            pkg, slide, video, x, y, w, h, poster, name=name
+            pkg, slide, video, x, y, w, h, poster, name=name, start=start,
+            loop=loop, mute=mute, volume=volume, full_screen=full_screen,
         ),
         backup=backup,
     )
@@ -1576,21 +1607,74 @@ def insert_audio(
     h: float = 0.694,
     poster: str | None = None,
     name: str | None = None,
+    start: str | None = None,
+    loop: bool | None = None,
+    mute: bool | None = None,
+    volume: float | None = None,
+    show_when_stopped: bool | None = None,
     backup: bool = True,
 ) -> dict:
     """Embed audio on a slide at x, y inches. audio: file path or base64
     of mp3, m4a, or wav bytes; other containers refuse by name after
     sniffing. The frame defaults to PowerPoint's speaker-icon size (0.694
-    in square); poster supplies an icon image, else a generated
-    placeholder. Playback starts on click via PowerPoint's media controls.
-    Saves atomically with two-slot backup; backup=False skips rotation."""
+    in square); poster supplies an icon image, else a placeholder. Without
+    playback options it plays from the on-hover controls; start ('click' or
+    'auto'), loop, mute, volume (0..1), and show_when_stopped go through
+    set_media_playback. Saves atomically with two-slot backup."""
     return _edit(
         file_path,
         lambda pkg: _av.insert_audio(
-            pkg, slide, audio, x, y, w, h, poster, name=name
+            pkg, slide, audio, x, y, w, h, poster, name=name, start=start,
+            loop=loop, mute=mute, volume=volume,
+            show_when_stopped=show_when_stopped,
         ),
         backup=backup,
     )
+
+
+@_tool("graphics")
+def set_media_playback(
+    file_path: str,
+    slide: Any,
+    shape: int,
+    start: str | None = None,
+    loop: bool | None = None,
+    rewind: bool | None = None,
+    mute: bool | None = None,
+    volume: float | None = None,
+    show_when_stopped: bool | None = None,
+    play_across_slides: int | None = None,
+    full_screen: bool | None = None,
+    backup: bool = True,
+) -> dict:
+    """How an embedded video or audio frame plays: start 'click' or 'auto',
+    loop until stopped, rewind to the first frame when done, mute, volume
+    as a fraction 0..1, show_when_stopped (False hides the frame while
+    idle), play_across_slides, and full_screen for video. Only the options
+    given change. The playback node is created on first use, matching
+    PowerPoint's own output, and reused after. The result carries the
+    resulting state. Saves atomically with two-slot backup."""
+    return _edit(
+        file_path,
+        lambda pkg: _av.set_media_playback(
+            pkg, slide, shape, start=start, loop=loop, rewind=rewind,
+            mute=mute, volume=volume, show_when_stopped=show_when_stopped,
+            play_across_slides=play_across_slides, full_screen=full_screen,
+        ),
+        backup=backup,
+    )
+
+
+@_tool("graphics")
+def get_media_playback(file_path: str, slide: Any, shape: int) -> dict:
+    """Read how one embedded video or audio frame plays: start trigger,
+    loop, rewind, mute, volume, whether the frame shows while stopped, how
+    many slides it plays across, and full screen for video.
+    has_media_node=False means the media carries no playback node yet and
+    plays from PowerPoint's on-hover controls, which is what insert_video
+    and insert_audio produce on their own. Read-only, and the companion
+    read for set_media_playback."""
+    return _av.get_media_playback(_load(file_path), slide, shape)
 
 
 @_tool("graphics")
@@ -3400,7 +3484,8 @@ def compare_decks(file_path_a: str, file_path_b: str) -> dict:
 @_tool("review-sweeps")
 def font_inventory(file_path: str, scope: str = "all") -> dict:
     """READ-ONLY deck-wide typeface census: every font in use with counts
-    and per-bucket placement (slides, layouts, masters, notes, charts),
+    and per-bucket placement (slides, layouts, masters, notes, charts,
+    SmartArt),
     theme font slots and theme-reference usage, and PHANTOM fonts:
     typefaces declared where no visible text uses them (empty runs,
     paragraph ends, unused list-style levels), invisible to native
@@ -3419,8 +3504,8 @@ def replace_fonts(
     backup: bool = True,
 ) -> dict:
     """Replace typefaces deck-wide: every latin/ea/cs/symbol slot and
-    bullet font across slides, layouts, masters, notes, chart text, table
-    cells, groups, AND the phantom declarations native Replace Fonts
+    bullet font across slides, layouts, masters, notes, charts, SmartArt,
+    table cells, groups, AND the phantom declarations Replace Fonts
     misses. mapping: {old_typeface: new_typeface}, exact and
     case-sensitive. include_theme=True also rewrites matches inside the
     theme font scheme, moving every theme-referenced run in one step
@@ -3471,7 +3556,7 @@ def set_language(
     """Set the proofing language on EVERY run property the deck-wide walk
     reaches (runs, breaks, fields, paragraph ends, and style defaults;
     created where a run has none) across slides, layouts, masters, notes,
-    and chart text: the presentation-wide pass PowerPoint's UI genuinely
+    charts, and SmartArt: the presentation-wide pass PowerPoint cannot
     cannot do. lang: a BCP-47 tag (en-US, ko-KR; format validated).
     alt_lang additionally sets the East Asian language for mixed
     CJK+Latin runs, PowerPoint's own pairing convention. Saves atomically
