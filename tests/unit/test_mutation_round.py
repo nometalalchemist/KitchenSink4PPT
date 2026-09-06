@@ -506,6 +506,23 @@ def test_xproc_lock_dir_falls_back_to_tempdir(monkeypatch):
     assert state["cross_process"] is True
 
 
+def test_holder_info_reports_our_own_hold_and_clears(lock_dir):
+    """holder_info ran _is_stale on our own lock; its pid == os.getpid()
+    leg (recycled-number detection, valid only AFTER ownership is ruled
+    out) then reported the process's own live hold as no-holder, so the
+    'ours' field could never be True. Pinned against the fix."""
+    assert xproc.holder_info() is None
+    with xproc.cross_process_lock("test-op") as owns:
+        assert owns is True
+        hi = xproc.holder_info()
+        assert hi is not None
+        assert hi["ours"] is True
+        assert hi["holder"] == "test-op"
+        assert hi["pid"] == os.getpid()
+        assert hi["held_for_s"] >= 0
+    assert xproc.holder_info() is None
+
+
 def test_holder_info_hides_stale_locks(lock_dir, dead_pid):
     import json
 
