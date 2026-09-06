@@ -54,6 +54,8 @@ NSMAP = {
     "p14": "http://schemas.microsoft.com/office/powerpoint/2010/main",
     "p15": "http://schemas.microsoft.com/office/powerpoint/2012/main",
     "a16": "http://schemas.microsoft.com/office/drawing/2014/main",
+    # The SVG layer of a dual blip (PowerPoint 2016+ SVG pictures).
+    "asvg": "http://schemas.microsoft.com/office/drawing/2016/SVG/main",
 }
 
 PRESENTATION_PART = "ppt/presentation.xml"

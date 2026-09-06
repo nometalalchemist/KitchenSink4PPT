@@ -411,12 +411,80 @@ def _unique_section_name(pkg: PptxPackage, name: str) -> str:
     return f"{name} {n}"
 
 
+def _label_decision(
+    pkg: PptxPackage,
+    src: PptxPackage,
+    src_name: str,
+    state: dict,
+    labels: str,
+    warnings: list[str],
+) -> None:
+    """Decide what happens to the sensitivity label BEFORE this source's
+    slides are copied, so a refusal costs nothing.
+
+    A merge moves classified content between packages, and the label is the
+    only thing in the file that says the content is classified. Three cases:
+    an unlabeled destination adopts a labeled source's label (labels='carry',
+    the default); two different labels refuse, because no file-tier tool can
+    know which classification wins; unlabeled content joining a labeled deck
+    is allowed and reported, since the destination's label now covers content
+    that was never classified. Nothing here is ever silent."""
+    from . import labels as lb
+
+    src_label = lb.read_label(src)
+    state["sources"].append(
+        {"source": src_name, "id": src_label["id"] if src_label else None}
+    )
+    current = state["current"]
+    if src_label is None:
+        if current is not None:
+            warnings.append(
+                f"{src_name} carries no sensitivity label; its slides now sit "
+                f"under the destination's {lb.describe(current)}, which means "
+                "content that was never classified is now marked classified"
+            )
+        return
+    if current is None:
+        if labels == "carry":
+            lb.copy_label(src, pkg)
+            state["current"] = src_label
+            state["decision"] = "carried"
+            warnings.append(
+                f"{src_name} carried its {lb.describe(src_label)} onto the "
+                "merged deck, which had none; verify it against your tenant's "
+                "policy before sharing"
+            )
+        else:
+            state["decision"] = "dropped_source"
+            warnings.append(
+                f"{src_name} carries a {lb.describe(src_label)} and "
+                "labels='keep' was requested, so the merged deck stays "
+                "UNLABELED: classified content is now in an unmarked file"
+            )
+        return
+    if src_label["id"] != current["id"]:
+        if labels == "carry":
+            raise PptMcpError(
+                f"sensitivity label conflict: the destination carries "
+                f"{current['id']} and {src_name} carries {src_label['id']}. "
+                "No file-tier tool can know which classification should win. "
+                "Resolve it in PowerPoint, or pass labels='keep' to merge "
+                "under the destination's label and accept that the source's "
+                "marking is dropped."
+            )
+        warnings.append(
+            f"{src_name}'s {lb.describe(src_label)} was DROPPED; the merged "
+            f"deck keeps the destination's {lb.describe(current)}"
+        )
+
+
 def merge_decks(
     pkg: PptxPackage,
     sources: list,
     design: str = "link",
     section_per_source: bool = True,
     section_names: list[str] | None = None,
+    labels: str = "carry",
 ) -> dict:
     """Append entire decks onto the destination, in order. `sources` is a
     non-empty list of presentation paths, each opened read-only ONCE and
@@ -430,9 +498,19 @@ def merge_decks(
     section (from `section_names` or the source filename); the destination's
     pre-existing slides land in a "Default Section" when the deck had no
     sections yet. Cross-slide jump hyperlinks inside a source are RETARGETED
-    to the copied slides. The chapter-merge analog for decks."""
+    to the copied slides. `labels` governs sensitivity labels (Microsoft
+    Purview): "carry" (default) gives an unlabeled destination a labeled
+    source's label and REFUSES when two different labels meet; "keep" always
+    keeps the destination's own label (or its absence) and warns about what
+    was dropped. Either way the decision is reported in
+    result["sensitivity_label"], never left silent. The chapter-merge analog
+    for decks."""
     if design not in ("link", "import"):
         raise PptMcpError(f"design must be 'link' or 'import', got {design!r}")
+    if labels not in ("carry", "keep"):
+        raise PptMcpError(
+            f"labels must be 'carry' or 'keep', got {labels!r}"
+        )
     if not isinstance(sources, list) or not sources:
         raise PptMcpError("sources must be a non-empty list of .pptx paths")
     if section_names is not None:
@@ -445,11 +523,19 @@ def merge_decks(
                 f"({len(sources)} entries)"
             )
 
+    from . import labels as lb
+
     dst_sz = _sld_sz(pkg)
     per_source: list[dict] = []
     rolled_warnings: list[str] = []
     sections_created: list[str] = []
     total_added = 0
+    dst_label = lb.read_label(pkg)
+    label_state = {
+        "current": dst_label,
+        "decision": "none" if dst_label is None else "kept_destination",
+        "sources": [],
+    }
 
     for i, spath in enumerate(sources):
         src_file = Path(spath)
@@ -469,6 +555,8 @@ def merge_decks(
         src = PptxPackage(src_file)  # opened ONCE per source, read-only
         src_part_count = len(src.part_names())
         warnings: list[str] = []
+        # Decided before any slide is copied, so a refusal costs nothing.
+        _label_decision(pkg, src, src_file.name, label_state, labels, warnings)
 
         src_sz = _sld_sz(src)
         if src_sz and dst_sz and src_sz != dst_sz:
@@ -551,12 +639,20 @@ def merge_decks(
             }
         )
 
+    final_label = label_state["current"]
     return {
         "design": design,
         "sources": per_source,
         "slides_added": total_added,
         "deck_slides": len(_slide_entries(pkg)),
         "sections_created": sections_created,
+        "sensitivity_label": {
+            "policy": labels,
+            "destination_before": dst_label["id"] if dst_label else None,
+            "sources": label_state["sources"],
+            "decision": label_state["decision"],
+            "id": final_label["id"] if final_label else None,
+        },
         "warnings": rolled_warnings,
     }
 

@@ -19,13 +19,28 @@ get_notes/delete_notes never create anything. delete_notes removes the part,
 its rels, the override, and the slide-side rel; the notesMaster stays (other
 slides may use it, and PowerPoint keeps it too).
 
-Rich notes formatting is out of scope: set_notes writes plain single-style
-paragraphs into the body placeholder and REPLACES what was there. Reading
-returns the body placeholder's text exactly as ops/read.py renders it.
+Notes formatting is REAL data and this module refuses to lose it silently.
+get_notes returns the flat string AND the paragraph/run structure that
+produced it (levels, bullets, bold/italic/underline/size/font/color,
+hyperlink presence). set_notes takes either:
+
+- plain `text`, which writes single-style paragraphs. When the existing
+  notes carry formatting that a plain write would flatten, it REFUSES and
+  names the loss; flatten=True accepts it and reports what went. Writing back
+  a string identical to what is already there writes NOTHING, so the
+  zero-change round trip is byte-preserving.
+- `paragraphs`, the structure get_notes returns. When the shape matches what
+  is in the file (same paragraph count, same run counts), only the differences
+  land: run text and the properties that actually changed, leaving every other
+  attribute of the XML untouched. When the shape differs the body is rebuilt,
+  carrying each surviving paragraph's pPr and each surviving run's rPr, so
+  bullets and character formatting travel across an edit that adds or removes
+  paragraphs.
 """
 
 from __future__ import annotations
 
+import copy
 import posixpath
 
 from lxml import etree
@@ -94,6 +109,253 @@ def _plain_txbody(text: str) -> etree._Element:
             endpr = etree.SubElement(p, qn("a:endParaRPr"))
             endpr.set("lang", "en-US")
     return body
+
+
+def _notes_body_txbody(pkg: PptxPackage, notes_part: str) -> etree._Element | None:
+    """The body placeholder's a:txBody, or None when the part is malformed."""
+    body_sp = _notes_body_sp(pkg.root(notes_part))
+    return body_sp.find(qn("p:txBody")) if body_sp is not None else None
+
+
+# --------------------------------------------------- reading the structure
+
+
+def _run_props(r: etree._Element) -> dict:
+    """Character properties EXPLICITLY set on one run. Absent keys mean
+    'inherited', not 'off', which is what makes a round trip comparable: a
+    property nobody set is a property nobody writes back."""
+    out: dict = {}
+    rpr = r.find(qn("a:rPr"))
+    if rpr is None:
+        return out
+    if rpr.get("b") is not None:
+        out["bold"] = rpr.get("b") in ("1", "true")
+    if rpr.get("i") is not None:
+        out["italic"] = rpr.get("i") in ("1", "true")
+    if rpr.get("u") is not None:
+        u = rpr.get("u")
+        out["underline"] = True if u == "sng" else (False if u == "none" else u)
+    if rpr.get("sz") is not None:
+        try:
+            out["size_pt"] = int(rpr.get("sz")) / 100
+        except ValueError:
+            pass
+    latin = rpr.find(qn("a:latin"))
+    if latin is not None and latin.get("typeface"):
+        out["font"] = latin.get("typeface")
+    srgb = rpr.find(qn("a:solidFill") + "/" + qn("a:srgbClr"))
+    scheme = rpr.find(qn("a:solidFill") + "/" + qn("a:schemeClr"))
+    if srgb is not None and srgb.get("val"):
+        out["color"] = srgb.get("val")
+    elif scheme is not None and scheme.get("val"):
+        out["color"] = scheme.get("val")
+    if rpr.find(qn("a:hlinkClick")) is not None:
+        out["hyperlink"] = True
+    return out
+
+
+def _read_paragraph(p: etree._Element) -> dict:
+    ppr = p.find(qn("a:pPr"))
+    runs = []
+    for r in p.findall(qn("a:r")):
+        t = r.find(qn("a:t"))
+        runs.append({"text": t.text or "" if t is not None else "", **_run_props(r)})
+    level = 0
+    bullet = False
+    if ppr is not None:
+        try:
+            level = int(ppr.get("lvl", "0"))
+        except ValueError:
+            level = 0
+        bullet = (
+            ppr.find(qn("a:buChar")) is not None
+            or ppr.find(qn("a:buAutoNum")) is not None
+        )
+    return {
+        "text": "".join(r["text"] for r in runs),
+        "level": level,
+        "bullet": bullet,
+        "runs": runs,
+    }
+
+
+def read_paragraphs(pkg: PptxPackage, notes_part: str) -> list[dict]:
+    body = _notes_body_txbody(pkg, notes_part)
+    if body is None:
+        return []
+    return [_read_paragraph(p) for p in body.findall(qn("a:p"))]
+
+
+def _inventory(paragraphs: list[dict]) -> dict:
+    runs = [r for p in paragraphs for r in p["runs"]]
+    return {
+        "paragraphs": len(paragraphs),
+        "runs": len(runs),
+        "multi_run_paragraphs": sum(1 for p in paragraphs if len(p["runs"]) > 1),
+        "bold": sum(1 for r in runs if r.get("bold")),
+        "italic": sum(1 for r in runs if r.get("italic")),
+        "underline": sum(1 for r in runs if r.get("underline")),
+        "bullets": sum(1 for p in paragraphs if p["bullet"] or p["level"]),
+        "hyperlinks": sum(1 for r in runs if r.get("hyperlink")),
+        "styled_runs": sum(
+            1
+            for r in runs
+            if any(k != "text" and k != "hyperlink" for k in r)
+        ),
+    }
+
+
+def _would_flatten(inv: dict) -> list[str]:
+    """What a plain-text write would destroy, in words a user can check."""
+    losses = []
+    for key, noun in (
+        ("bold", "bold run"),
+        ("italic", "italic run"),
+        ("underline", "underlined run"),
+        ("bullets", "bulleted paragraph"),
+        ("hyperlinks", "hyperlink"),
+    ):
+        n = inv.get(key, 0)
+        if n:
+            losses.append(f"{n} {noun}{'s' if n != 1 else ''}")
+    styled = inv.get("styled_runs", 0) - inv.get("bold", 0)
+    if not losses and (inv.get("multi_run_paragraphs") or styled > 0):
+        losses.append(
+            f"{inv['runs']} runs of mixed character formatting"
+        )
+    return losses
+
+
+# --------------------------------------------------- writing the structure
+
+
+_RUN_KEYS = ("bold", "italic", "underline", "size_pt", "font", "color")
+
+
+def _normalize_paragraphs(paragraphs) -> list[dict]:
+    if not isinstance(paragraphs, list):
+        raise PptMcpError(
+            "paragraphs must be a list of {'runs': [...], 'level': 0..8} "
+            "dicts (the shape get_notes returns)"
+        )
+    out = []
+    for i, item in enumerate(paragraphs):
+        if not isinstance(item, dict):
+            raise PptMcpError(
+                f"paragraphs[{i}] must be a dict with 'runs' or 'text'; got "
+                f"{item!r}"
+            )
+        runs = item.get("runs")
+        if runs is None:
+            if "text" not in item:
+                raise PptMcpError(
+                    f"paragraphs[{i}] has neither 'runs' nor 'text'"
+                )
+            runs = [{"text": str(item["text"])}] if str(item["text"]) else []
+        if not isinstance(runs, list):
+            raise PptMcpError(f"paragraphs[{i}]['runs'] must be a list")
+        clean_runs = []
+        for j, run in enumerate(runs):
+            if not isinstance(run, dict) or "text" not in run:
+                raise PptMcpError(
+                    f"paragraphs[{i}]['runs'][{j}] must be a dict with 'text'"
+                )
+            spec = {"text": str(run["text"])}
+            for key in _RUN_KEYS:
+                if run.get(key) is not None:
+                    spec[key] = run[key]
+            clean_runs.append(spec)
+        level = item.get("level", 0)
+        if not isinstance(level, int) or not 0 <= level <= 8:
+            raise PptMcpError(
+                f"paragraphs[{i}]['level'] must be an int 0..8, got {level!r}"
+            )
+        out.append({"runs": clean_runs, "level": level, "level_given": "level" in item})
+    return out
+
+
+def _apply_run_diff(r: etree._Element, spec: dict, current: dict) -> bool:
+    """Write only the run properties that actually differ. Returns True when
+    anything changed; an unchanged run leaves its XML byte-identical."""
+    from .text import _apply_run_props  # local: text imports read, not notes
+
+    changed = False
+    t = r.find(qn("a:t"))
+    if t is None:
+        t = etree.SubElement(r, qn("a:t"))
+        changed = True
+    if (t.text or "") != spec["text"]:
+        t.text = spec["text"]
+        changed = True
+    diff = {k: spec[k] for k in _RUN_KEYS if k in spec and spec[k] != current.get(k)}
+    if diff:
+        rpr = r.find(qn("a:rPr"))
+        if rpr is None:
+            rpr = etree.Element(qn("a:rPr"))
+            rpr.set("lang", "en-US")
+            r.insert(0, rpr)
+        _apply_run_props(rpr, **diff)
+        changed = True
+    return changed
+
+
+def _build_run(spec: dict, template: etree._Element | None) -> etree._Element:
+    """One a:r. `template` is the run this one replaces positionally; its rPr
+    is carried verbatim (hyperlinks, languages, spacing included) before the
+    spec's own properties land on top."""
+    from .text import _apply_run_props
+
+    r = etree.Element(qn("a:r"))
+    rpr = None
+    if template is not None:
+        old = template.find(qn("a:rPr"))
+        if old is not None:
+            rpr = copy.deepcopy(old)
+    props = {k: spec[k] for k in _RUN_KEYS if k in spec}
+    if rpr is None and props:
+        rpr = etree.Element(qn("a:rPr"))
+        rpr.set("lang", "en-US")
+    if rpr is not None:
+        r.append(rpr)
+        if props:
+            _apply_run_props(rpr, **props)
+    t = etree.SubElement(r, qn("a:t"))
+    t.text = spec["text"]
+    return r
+
+
+def _rebuild_body(
+    body: etree._Element, specs: list[dict], old_paras: list[etree._Element]
+) -> None:
+    """Replace the body's paragraphs from `specs`, carrying the pPr of each
+    positionally surviving old paragraph and the rPr of each surviving run."""
+    for p in body.findall(qn("a:p")):
+        body.remove(p)
+    for i, spec in enumerate(specs):
+        old = old_paras[i] if i < len(old_paras) else None
+        p = etree.SubElement(body, qn("a:p"))
+        old_ppr = old.find(qn("a:pPr")) if old is not None else None
+        if old_ppr is not None:
+            p.append(copy.deepcopy(old_ppr))
+        if spec["level_given"] or (old_ppr is None and spec["level"]):
+            if spec["level"]:
+                ppr = p.find(qn("a:pPr"))
+                if ppr is None:
+                    ppr = etree.Element(qn("a:pPr"))
+                    p.insert(0, ppr)
+                ppr.set("lvl", str(spec["level"]))
+            else:
+                ppr = p.find(qn("a:pPr"))
+                if ppr is not None:
+                    ppr.attrib.pop("lvl", None)
+        old_runs = old.findall(qn("a:r")) if old is not None else []
+        for j, run_spec in enumerate(spec["runs"]):
+            p.append(
+                _build_run(run_spec, old_runs[j] if j < len(old_runs) else None)
+            )
+        if not spec["runs"]:
+            endpr = etree.SubElement(p, qn("a:endParaRPr"))
+            endpr.set("lang", "en-US")
 
 
 def _rel_target(src: str, dest: str) -> str:
@@ -306,53 +568,212 @@ def _build_notes_slide_xml(text: str) -> bytes:
 # =============================================================== public API
 
 
-def get_notes(pkg: PptxPackage, slide) -> dict:
-    """Speaker notes of one slide as plain text (paragraphs by newline).
-    has_notes=False with text=None when the slide has no notesSlide part."""
+def _write_existing(
+    pkg: PptxPackage,
+    rec: dict,
+    existing: str,
+    text: str | None,
+    specs: list[dict] | None,
+    flatten: bool,
+) -> dict:
+    """The write path for a slide that already has a notes part: the only
+    place formatting can be lost, and therefore the only place that decides
+    whether losing it is allowed."""
+    body_sp = _notes_body_sp(pkg.root(existing))
+    if body_sp is None:
+        raise UnsupportedStructure(
+            f"{existing} has no notes body placeholder; the notes part "
+            "is malformed, refusing to guess where the text goes"
+        )
+    body = body_sp.find(qn("p:txBody"))
+    old_paras = body.findall(qn("a:p")) if body is not None else []
+    current = [_read_paragraph(p) for p in old_paras]
+    inv = _inventory(current)
+    base = {
+        "slide_index": rec["index"],
+        "slide_id": rec["slide_id"],
+        "notes_part": existing,
+        "created": False,
+    }
+
+    if specs is None:
+        current_text = "\n".join(p["text"] for p in current)
+        if text == current_text:
+            return {
+                **base,
+                "changed": False,
+                "mode": "plain",
+                "paragraphs": len(current),
+                "note": (
+                    "the notes already read exactly this; nothing was "
+                    "written, so their formatting is untouched"
+                ),
+            }
+        losses = _would_flatten(inv)
+        if losses and not flatten:
+            raise UnsupportedStructure(
+                "a plain-text write would flatten these existing notes: "
+                + ", ".join(losses)
+                + ". Pass paragraphs= (the structure get_notes returns) to "
+                "edit the words and keep the formatting, or flatten=True to "
+                "accept the loss."
+            )
+        new_body = _plain_txbody(text)
+        if body is not None:
+            body_sp.replace(body, new_body)
+        else:
+            body_sp.append(new_body)
+        pkg.mark_dirty(existing)
+        out = {
+            **base,
+            "changed": True,
+            "mode": "plain",
+            "paragraphs": len(text.split("\n")),
+        }
+        if losses:
+            out["flattened"] = {
+                "bold_runs": inv["bold"],
+                "italic_runs": inv["italic"],
+                "underlined_runs": inv["underline"],
+                "bullets": inv["bullets"],
+                "hyperlinks": inv["hyperlinks"],
+                "described": losses,
+            }
+        return out
+
+    if body is None:
+        body = _plain_txbody("")
+        body_sp.append(body)
+        old_paras = []
+        current = []
+
+    shape_matches = len(specs) == len(current) and all(
+        len(spec["runs"]) == len(cur["runs"])
+        for spec, cur in zip(specs, current)
+    )
+    changed = False
+    if shape_matches:
+        for spec, cur, p in zip(specs, current, old_paras):
+            for run_spec, run_cur, r in zip(
+                spec["runs"], cur["runs"], p.findall(qn("a:r"))
+            ):
+                if _apply_run_diff(r, run_spec, run_cur):
+                    changed = True
+            if spec["level_given"] and spec["level"] != cur["level"]:
+                ppr = p.find(qn("a:pPr"))
+                if ppr is None:
+                    ppr = etree.Element(qn("a:pPr"))
+                    p.insert(0, ppr)
+                if spec["level"]:
+                    ppr.set("lvl", str(spec["level"]))
+                else:
+                    ppr.attrib.pop("lvl", None)
+                changed = True
+        mode = "in_place"
+    else:
+        _rebuild_body(body, specs, list(old_paras))
+        changed = True
+        mode = "rebuilt"
+
+    if changed:
+        pkg.mark_dirty(existing)
+    after = _inventory(read_paragraphs(pkg, existing))
+    out = {
+        **base,
+        "changed": changed,
+        "mode": mode,
+        "paragraphs": len(specs),
+        "formatting": after,
+    }
+    if not changed:
+        out["note"] = (
+            "the structure written back matches the file exactly; nothing "
+            "was written"
+        )
+    if mode == "rebuilt":
+        dropped = [
+            key
+            for key, noun in (("hyperlinks", "hyperlink"),)
+            if inv[key] > after[key]
+        ]
+        if dropped:
+            out["warnings"] = [
+                "the paragraph count changed, so the body was rebuilt; "
+                f"{inv['hyperlinks'] - after['hyperlinks']} hyperlink(s) in "
+                "paragraphs that did not survive positionally are gone"
+            ]
+    return out
+
+
+def get_notes(pkg: PptxPackage, slide, rich: bool = True) -> dict:
+    """Speaker notes of one slide: the plain text (paragraphs by newline)
+    and, with rich=True, the paragraph/run structure behind it plus a
+    formatting inventory. Feed `paragraphs` straight back to set_notes to
+    edit words without touching anything else. has_notes=False with
+    text=None when the slide has no notesSlide part."""
     rec = resolve_slide(pkg, slide)
     text = notes_text(pkg, rec["part"])
-    return {
+    out = {
         "slide_index": rec["index"],
         "slide_id": rec["slide_id"],
         "has_notes": text is not None,
         "text": text,
     }
+    if not rich:
+        return out
+    notes_part = notes_part_for(pkg, rec["part"])
+    paragraphs = (
+        read_paragraphs(pkg, notes_part)
+        if notes_part is not None and pkg.has_part(notes_part)
+        else []
+    )
+    out["paragraphs"] = paragraphs
+    out["formatting"] = _inventory(paragraphs)
+    return out
 
 
-def set_notes(pkg: PptxPackage, slide, text: str) -> dict:
-    """Set (REPLACE) a slide's speaker notes to plain text; paragraphs split
-    on newline. Creates the notesSlide part, its rels, and, on decks that
-    never had notes, the notesMaster and its theme, all registered
-    atomically in package terms. Existing notes formatting is replaced by
-    plain single-style paragraphs."""
-    if not isinstance(text, str):
+def set_notes(
+    pkg: PptxPackage,
+    slide,
+    text: str | None = None,
+    *,
+    paragraphs: list | None = None,
+    flatten: bool = False,
+) -> dict:
+    """Write a slide's speaker notes. Two input modes, exactly one at a time:
+
+    `text` writes plain single-style paragraphs split on newline. Text
+    identical to what is already there writes NOTHING (changed=False), so a
+    read-modify-write that changed nothing costs nothing. Text that differs
+    while the existing notes carry bold, italics, underlines, bullets, or
+    hyperlinks REFUSES and names what would be lost; flatten=True accepts the
+    loss and reports it.
+
+    `paragraphs` (the structure get_notes returns) preserves formatting: when
+    the shape matches the file, only changed run text and changed properties
+    are written; otherwise the body is rebuilt, carrying the pPr and rPr of
+    everything that positionally survives.
+
+    Missing notes machinery is created atomically in package terms, including
+    the notesMaster and its theme on decks that never had notes."""
+    if (text is None) == (paragraphs is None):
+        raise PptMcpError(
+            "set_notes takes exactly one of text= (plain) or paragraphs= "
+            "(the structure get_notes returns)"
+        )
+    if text is not None and not isinstance(text, str):
         raise PptMcpError(f"text must be a string, got {type(text).__name__}")
+    specs = _normalize_paragraphs(paragraphs) if paragraphs is not None else None
     rec = resolve_slide(pkg, slide)
     part = rec["part"]
     existing = notes_part_for(pkg, part)
     if existing is not None and pkg.has_part(existing):
-        root = pkg.root(existing)
-        body_sp = _notes_body_sp(root)
-        if body_sp is None:
-            raise UnsupportedStructure(
-                f"{existing} has no notes body placeholder; the notes part "
-                "is malformed, refusing to guess where the text goes"
-            )
-        old = body_sp.find(qn("p:txBody"))
-        new_body = _plain_txbody(text)
-        if old is not None:
-            body_sp.replace(old, new_body)
-        else:
-            body_sp.append(new_body)
-        pkg.mark_dirty(existing)
-        return {
-            "slide_index": rec["index"],
-            "slide_id": rec["slide_id"],
-            "notes_part": existing,
-            "created": False,
-            "paragraphs": len(text.split("\n")),
-        }
+        return _write_existing(pkg, rec, existing, text, specs, flatten)
 
+    if specs is not None:  # creation path: render the structure to a body
+        text = "\n".join(
+            "".join(r["text"] for r in spec["runs"]) for spec in specs
+        )
     nm_part, master_created = _ensure_notes_master(pkg)
     notes_part = pkg.next_partname("ppt/notesSlides/notesSlide{}.xml")
     pkg.add_part_with_content_type(
@@ -368,13 +789,19 @@ def set_notes(pkg: PptxPackage, slide, text: str) -> dict:
     pkg.add_relationship(
         part, _RT_NOTES_SLIDE, _rel_target(part, notes_part)
     )
+    if specs is not None:  # write the structure into the fresh body
+        body = _notes_body_txbody(pkg, notes_part)
+        _rebuild_body(body, specs, [])
+        pkg.mark_dirty(notes_part)
     return {
         "slide_index": rec["index"],
         "slide_id": rec["slide_id"],
         "notes_part": notes_part,
         "created": True,
+        "changed": True,
+        "mode": "structured" if specs is not None else "plain",
         "notes_master_created": master_created,
-        "paragraphs": len(text.split("\n")),
+        "paragraphs": len(specs) if specs is not None else len(text.split("\n")),
     }
 
 

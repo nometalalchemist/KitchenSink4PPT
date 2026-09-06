@@ -538,6 +538,8 @@ def get_presentation_info(pkg: PptxPackage) -> dict:
             if node is not None and node.text:
                 props[key] = node.text
 
+    from .labels import read_label
+
     return {
         "file": pkg.path.name,
         "slide_count": len(table),
@@ -545,6 +547,10 @@ def get_presentation_info(pkg: PptxPackage) -> dict:
         "masters": masters,
         "core_properties": props,
         "sections": [s["name"] for s in _sections(pkg)],
+        # Purview/MIP classification, or None. Reported because a merge or a
+        # split that changes it must be visible, and because "make this safe
+        # to share" starts with knowing whether it is marked at all.
+        "sensitivity_label": read_label(pkg),
     }
 
 

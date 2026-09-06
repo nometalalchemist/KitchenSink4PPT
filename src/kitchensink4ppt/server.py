@@ -887,16 +887,19 @@ def manage_backups(
 
 
 @_tool()
-def diagnose(file_path: str | None = None) -> dict:
+def diagnose(file_path: str | None = None, verbose: bool = False) -> dict:
     """Self-check for this environment and, optionally, one file. Reports
     export engine availability (PowerPoint COM vs LibreOffice), sandbox
     state, KS4P mode/policy env, and the current pack surface with token
     costs. With file_path: existence, size, PowerPoint lock state, whether
-    the package opens, and slide count, WITHOUT mutating anything. Run it
-    first when any tool refuses unexpectedly or an export engine seems
-    missing. The validate tool (assembly-export pack) does the real
-    opens-clean check in PowerPoint."""
-    out = _dg.diagnose(file_path)
+    the package opens, and slide count, WITHOUT mutating anything. Output
+    is PASTE-SAFE by default: no absolute paths, so it can go straight into
+    a bug report; verbose=True adds the sandbox roots, engine locations,
+    and full file path for local troubleshooting. Run it first when any
+    tool refuses unexpectedly or an export engine seems missing. The
+    validate tool (assembly-export pack) does the real opens-clean check in
+    PowerPoint."""
+    out = _dg.diagnose(file_path, verbose=verbose)
     out["surface"] = _packs.surface_report()
     # The server's one and only update surface: a cached line, added when a
     # newer stable release exists. Reads no network and never raises.
@@ -2667,37 +2670,56 @@ def set_reading_order(
 
 @_tool("assembly-export")
 def set_notes(
-    file_path: str, slide: Any, text: str, backup: bool = True,
-    live: str = "auto",
+    file_path: str, slide: Any, text: str | None = None,
+    paragraphs: list | None = None, flatten: bool = False,
+    backup: bool = True, live: str = "auto",
 ) -> dict:
-    """Write a slide's speaker notes (plain text; paragraphs split on
-    newline), REPLACING what was there; missing notes machinery is built
-    atomically, including the notes master. The talk track lives here, not
-    on the slide. slide: 0-based index or {"slide_id": N}. Saves
-    atomically with two-slot backup; backup=False skips rotation.
-    live='auto' edits the open PowerPoint copy when the file is locked by
-    it (edits stay UNSAVED until live_save); 'force' targets the open
-    session; 'off' refuses locked files."""
+    """Write a slide's speaker notes, REPLACING what was there. Pass `text`
+    (plain, split on newline) or `paragraphs` (what get_notes returns: runs
+    with bold/italic/underline/size_pt/font/color), never both. A plain
+    write matching what is there writes nothing; one that would flatten
+    bold, bullets, or hyperlinks refuses until flatten=True. A paragraphs
+    write edits in place, keeping formatting it does not touch. Saves
+    atomically with two-slot backup; live='auto' takes plain text only."""
     return _route_live(
         live,
         lambda: _edit(
-            file_path, lambda pkg: _nt.set_notes(pkg, slide, text),
+            file_path,
+            lambda pkg: _nt.set_notes(
+                pkg, slide, text, paragraphs=paragraphs, flatten=flatten
+            ),
             backup=backup,
         ),
         lambda: _live_envelope(
-            file_path, _lo.live_set_notes(file_path, slide, text)
+            file_path, _lo.live_set_notes(file_path, slide, _plain_or_refuse(
+                text, paragraphs
+            ))
         ),
     )
 
 
+def _plain_or_refuse(text: str | None, paragraphs: list | None) -> str:
+    """The live route writes through PowerPoint's own text range, which
+    takes plain text only. Structured notes are a file-tier write."""
+    if paragraphs is not None:
+        raise _err.PptMcpError(
+            "set_notes with paragraphs= is a file-tier write and the file is "
+            "open in PowerPoint; close the deck, or pass plain text"
+        )
+    return text
+
+
 @_tool("assembly-export")
-def get_notes(file_path: str, slide: Any) -> dict:
-    """Read one slide's speaker notes as plain text (empty when the slide
-    has none; never creates anything). Deck-wide notes come cheaper via
-    get_text with include_notes=True or the notes blocks in
-    get_presentation_view; this is the single-slide precision read to
-    check before overwriting with set_notes."""
-    return _nt.get_notes(_load(file_path), slide)
+def get_notes(file_path: str, slide: Any, rich: bool = True) -> dict:
+    """Read one slide's speaker notes: the plain text plus (rich=True, the
+    default) the paragraph and run structure behind it and a formatting
+    inventory. Feed `paragraphs` back to set_notes to change words without
+    losing bold, bullets, or hyperlinks. rich=False returns the text alone.
+    Never creates anything. Deck-wide notes come cheaper via get_text with
+    include_notes=True or the notes blocks in get_presentation_view; this
+    is the single-slide precision read to check before overwriting with
+    set_notes."""
+    return _nt.get_notes(_load(file_path), slide, rich=rich)
 
 
 @_tool("assembly-export")
@@ -2913,22 +2935,24 @@ def merge_decks(
     design: str = "link",
     section_per_source: bool = True,
     section_names: list[str] | None = None,
+    labels: str = "carry",
     backup: bool = True,
 ) -> dict:
     """Append entire decks onto file_path (the destination), in order.
     sources: .pptx/.potx paths, each opened read-only. design='link'
     adopts destination layouts with appearance carried inline; 'import'
-    brings each source's design family in. section_per_source wraps each
-    source's slides in a named section (section_names or the filename).
-    Jump links inside a source are retargeted to the copied slides. The
-    chapter-merge for decks; split_deck inverts it. Saves atomically
-    with two-slot backup; backup=False skips rotation."""
+    brings each source design family in. section_per_source wraps each
+    source in a named section. Jump links are retargeted. labels='carry'
+    adopts a source sensitivity label onto an unlabeled deck and refuses on
+    a conflict; 'keep' keeps the destination one. Saves atomically with
+    two-slot backup."""
     return _edit(
         file_path,
         lambda pkg: _asm.merge_decks(
             pkg, sources, design=design,
             section_per_source=section_per_source,
             section_names=section_names,
+            labels=labels,
         ),
         backup=backup,
     )
