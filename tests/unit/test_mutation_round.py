@@ -581,7 +581,9 @@ def test_forward_slash_extended_unc_spelling_refused(tmp_path, monkeypatch):
     monkeypatch.setenv(sandbox.ENV_VAR, str(inside))
     with pytest.raises(SandboxViolation) as exc:
         check_path("//?/UNC/some-server/share/deck.pptx", "test")
-    assert "UNC" in str(exc.value)
+    # The UNC-specific refusal, not the generic containment one (whose text
+    # would contain "UNC" anyway because the offending path is echoed).
+    assert "UNC network path" in str(exc.value)
 
 
 @pytest.mark.skipif(not WIN, reason="drive letters are Windows-only")

@@ -397,5 +397,8 @@ def test_manage_backups_argument_validation(tmp_path):
         bk.manage_backups("restore", source="prev")
     with pytest.raises(PptMcpError, match="source"):
         bk.manage_backups("restore", file_path=str(tmp_path / "a.pptx"))
-    with pytest.raises(PptMcpError, match="scope"):
+    # Match the dispatch's own message: the downstream unknown-scope refusal
+    # also says "scope", and a loose match let the dispatch raise be deleted
+    # unnoticed (mutverify round 1, P-B4b).
+    with pytest.raises(PptMcpError, match="purge needs scope"):
         bk.manage_backups("purge", file_path=str(tmp_path / "a.pptx"))
