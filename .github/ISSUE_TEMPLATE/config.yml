@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/nometalalchemist/KitchenSink4PPT#readme
+    about: The README covers installation, the packs, and the safety model.
+  - name: 🤖 llms.txt (for agents)
+    url: https://nometalalchemist.github.io/KitchenSink4PPT/llms.txt
+    about: The machine-readable capability manifest.
