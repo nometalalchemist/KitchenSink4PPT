@@ -149,6 +149,27 @@ _CODE_MAP: tuple[tuple[type[BaseException], str], ...] = (
 )
 _CATCHABLE = tuple(t for t, _ in _CODE_MAP)
 
+#: The complete refusal-code vocabulary this server may emit. _refusal()
+#: clamps declared ``exc.code`` values against this set at RUNTIME: a typo at
+#: a raise site, or a third-party exception that happens to carry a ``.code``
+#: attribute, falls back to _classify() instead of reaching the wire as an
+#: unknown code. (2026-09-06 mutation round, structural finding: the
+#: vocabulary existed only as a convention with nothing enforcing it.)
+CLOSED_CODES = frozenset({
+    "AMBIGUOUS_LOCATION",
+    "APP_BLOCKED",
+    "APP_BUSY",
+    "APP_NOT_RUNNING",
+    "BAD_PARAMS",
+    "CONFLICT",
+    "DOCUMENT_LOCKED",
+    "NOT_FOUND",
+    "PROTECTED_VIEW",
+    "STALE_ANCHOR",
+    "UNSUPPORTED_CONTENT",
+    "VALIDATION_FAILED",
+})
+
 _HINTS: dict[str, str] = {
     "AMBIGUOUS_LOCATION": (
         "several targets matched; use the unambiguous address from the "
@@ -216,8 +237,15 @@ def _pack_hint(exc: BaseException) -> str | None:
     )
 
 
+def _declared_code(exc: BaseException) -> str | None:
+    """The exception's own ``.code`` when (and only when) it speaks the
+    closed vocabulary; anything else defers to _classify()."""
+    code = getattr(exc, "code", None)
+    return code if isinstance(code, str) and code in CLOSED_CODES else None
+
+
 def _refusal(exc: BaseException) -> dict:
-    code = getattr(exc, "code", None) or _classify(exc)
+    code = _declared_code(exc) or _classify(exc)
     message = str(exc)
     if isinstance(exc, LookupError) and len(message) < 40:
         # A bare KeyError/IndexError repr ("0") is useless on its own;
