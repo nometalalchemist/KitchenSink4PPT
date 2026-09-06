@@ -9,6 +9,9 @@ body:
         Thanks for the report! One important note before you start:
         **never attach a private deck.** If the bug needs a deck to
         reproduce, rebuild the structure with placeholder text.
+
+        Before filing: ask your AI to run `diagnose` and paste the
+        output here; it is designed to be safe to share.
   - type: input
     id: tool
     attributes:
