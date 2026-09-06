@@ -54,10 +54,39 @@ _FORMATS = {
 #: formats whose intrinsic pixel size the hand parser can read.
 _PARSABLE = ("png", "jpeg", "gif")
 
+#: a:ext uri under a:blip that carries the SVG artwork of a dual blip.
+SVG_EXT_URI = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
+
 _DPI = 96  # PowerPoint's native-size insert assumption
 
 
 # ------------------------------------------------------------- byte sniffing
+
+
+def _looks_like_svg(data: bytes) -> bool:
+    head = data[:400].lstrip()
+    return head.startswith(b"<svg") or (
+        head.startswith(b"<?xml") and b"<svg" in data[:2000]
+    )
+
+
+def _refuse_svg_source(data: bytes, where: str) -> None:
+    """SVG and EMF/WMF sources are named in the refusal instead of falling
+    into the generic 'not a supported image' message, because the format is
+    the whole reason the call failed and the caller needs to know that."""
+    if _looks_like_svg(data):
+        raise PptMcpError(
+            f"{where} is an SVG. SVG sources are not supported yet: a "
+            "PowerPoint SVG picture needs a dual blip (a rasterized PNG "
+            "fallback plus the SVG artwork) and this server writes the "
+            "raster side only. Convert to PNG at the size you need and pass "
+            "that."
+        )
+    if data[:4] in (b"\x01\x00\x00\x00", b"\xd7\xcd\xc6\x9a") or data[:4] == b" EMF":
+        raise PptMcpError(
+            f"{where} is an EMF/WMF metafile; supported formats are "
+            f"{', '.join(sorted(_FORMATS))}. Convert to PNG and pass that."
+        )
 
 
 def sniff_format(data: bytes) -> str | None:
@@ -127,6 +156,7 @@ def _load_image(image: str) -> tuple[bytes, str]:
         data = Path(path).read_bytes()
         fmt = sniff_format(data)
         if fmt is None:
+            _refuse_svg_source(data, Path(path).name)
             raise PptMcpError(
                 f"{Path(path).name} is not a supported image; supported "
                 f"formats: {', '.join(sorted(_FORMATS))} (sniffed by magic "
@@ -146,6 +176,7 @@ def _load_image(image: str) -> tuple[bytes, str]:
         ) from None
     fmt = sniff_format(data)
     if fmt is None:
+        _refuse_svg_source(data, "the base64 payload")
         raise PptMcpError(
             "base64 data decoded but is not a supported image; supported "
             f"formats: {', '.join(sorted(_FORMATS))}"
@@ -266,6 +297,76 @@ def _blip_of(elem: etree._Element) -> tuple[etree._Element, etree._Element]:
     return blip_fill, blip
 
 
+def svg_ext_of(blip: etree._Element) -> etree._Element | None:
+    """The a:ext holding an asvg:svgBlip, or None.
+
+    PowerPoint stores an SVG picture as a DUAL blip: a rasterized PNG
+    fallback on a:blip/@r:embed and the real artwork on
+    a:blip/a:extLst/a:ext[@uri=SVG_EXT_URI]/asvg:svgBlip/@r:embed. It renders
+    the svgBlip. Retargeting the fallback alone therefore changes nothing a
+    viewer can see, which is the bug this exists to close."""
+    ext_lst = blip.find(qn("a:extLst"))
+    if ext_lst is None:
+        return None
+    for ext in ext_lst.findall(qn("a:ext")):
+        if (ext.get("uri") or "").upper() == SVG_EXT_URI:
+            return ext
+    return None
+
+
+def _drop_svg_layer(
+    pkg: PptxPackage, part: str, blip: etree._Element
+) -> str | None:
+    """Remove the SVG artwork layer from a dual blip and return the rId it
+    pointed at, or None when there was no SVG layer.
+
+    A raster replacement cannot produce SVG artwork, so leaving the svgBlip
+    behind would leave the OLD picture on screen. Dropping the ext makes the
+    picture an ordinary raster picture, which is exactly what it now is; the
+    extLst goes with it when nothing else lives there."""
+    ext = svg_ext_of(blip)
+    if ext is None:
+        return None
+    svg_blip = ext.find(qn("asvg:svgBlip"))
+    rid = svg_blip.get(qn("r:embed")) if svg_blip is not None else None
+    ext_lst = ext.getparent()
+    ext_lst.remove(ext)
+    if len(ext_lst) == 0:
+        ext_lst.getparent().remove(ext_lst)
+    return rid
+
+
+def _release_rid(pkg: PptxPackage, part: str, rid: str | None) -> str | None:
+    """Drop a relationship no element in `part` still uses, and garbage
+    collect its media part when the whole package stopped pointing at it.
+    Returns the media part removed, or None."""
+    if not rid:
+        return None
+    root = pkg.root(part)
+    rid_attrs = (qn("r:embed"), qn("r:link"), qn("r:id"))
+    if any(
+        el.get(attr) == rid
+        for el in root.iter()
+        for attr in rid_attrs
+        if el.get(attr) is not None
+    ):
+        return None
+    try:
+        target = pkg.relationship_target(part, rid)
+    except (KeyError, PptMcpError):
+        return None
+    rels = pkg.rels_for(part)
+    for rel in list(rels.getroot()):
+        if rel.get("Id") == rid:
+            rels.getroot().remove(rel)
+            pkg.mark_dirty(rels_name(part))
+    if pkg.has_part(target) and not _is_referenced(pkg, target):
+        pkg.remove_part(target)
+        pkg.remove_content_type_override(target)
+        return target
+    return None
+
+
 def _pic_cnvpr(elem: etree._Element) -> etree._Element:
     cnvpr = elem.find(f"{qn('p:nvPicPr')}/{qn('p:cNvPr')}")
     if cnvpr is None:
@@ -371,7 +472,11 @@ def replace_image(pkg: PptxPackage, slide, shape: int, image: str) -> dict:
     """Swap the pixels of an existing picture, preserving geometry, crop,
     rotation, effects, and every other property: only the blip target
     changes. The old media part is garbage-collected when nothing else in
-    the package references it."""
+    the package references it. On an SVG picture (a dual blip: PNG fallback
+    plus asvg:svgBlip artwork, which is what PowerPoint actually renders)
+    the SVG layer is REMOVED, since a raster replacement cannot supply SVG
+    artwork and leaving it would leave the old picture on screen; the result
+    says so with svg_layer='removed'."""
     rec = resolve_slide(pkg, slide)
     part = rec["part"]
     elem, _chain = _require_pic(pkg, part, shape)
@@ -386,7 +491,8 @@ def replace_image(pkg: PptxPackage, slide, shape: int, image: str) -> dict:
 
     data, fmt = _load_image(image)
     new_media, reused = _add_media(pkg, data, fmt)
-    if new_media == old_media:
+    has_svg = svg_ext_of(blip) is not None
+    if new_media == old_media and not has_svg:
         return {
             "shape_id": shape,
             "replaced": False,
@@ -397,6 +503,7 @@ def replace_image(pkg: PptxPackage, slide, shape: int, image: str) -> dict:
         }
     new_rid = _image_rel(pkg, part, new_media)
     blip.set(qn("r:embed"), new_rid)
+    svg_rid = _drop_svg_layer(pkg, part, blip) if has_svg else None
     pkg.mark_dirty(part)
 
     # Drop the old rel when no other element on this slide still uses it.
@@ -423,7 +530,7 @@ def replace_image(pkg: PptxPackage, slide, shape: int, image: str) -> dict:
         pkg.remove_content_type_override(old_media)  # Defaults stay
         gc_removed = True
 
-    return {
+    result = {
         "shape_id": shape,
         "replaced": True,
         "media_part": new_media,
@@ -434,6 +541,16 @@ def replace_image(pkg: PptxPackage, slide, shape: int, image: str) -> dict:
         "slide_index": rec["index"],
         "slide_id": rec["slide_id"],
     }
+    if has_svg:
+        svg_media = _release_rid(pkg, part, svg_rid)
+        result["svg_layer"] = "removed"
+        result["old_svg_part"] = svg_media
+        result["note"] = (
+            "this picture was an SVG (dual blip); PowerPoint renders the SVG "
+            "layer, so it was removed and the picture is now the raster you "
+            "supplied. Re-insert an SVG to get vector artwork back."
+        )
+    return result
 
 
 def set_image(

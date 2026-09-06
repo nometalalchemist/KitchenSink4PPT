@@ -475,8 +475,18 @@ def replace_image_everywhere(
     media lands in the package ONCE (byte-identical dedup); old media
     parts are garbage-collected when nothing references them anymore.
     Images used only as shape/background FILLS (a:blipFill on non-pic
-    shapes) are not retargeted; they are counted and reported instead."""
-    from .media import _add_media, _image_rel, _load_image
+    shapes) are not retargeted; they are counted and reported instead.
+    Instances that were SVG pictures (dual blip, which is what PowerPoint
+    renders) lose their SVG layer so the swap is actually visible; each one
+    is flagged had_svg_layer and counted in svg_layers_removed."""
+    from .media import (
+        _add_media,
+        _drop_svg_layer,
+        _image_rel,
+        _load_image,
+        _release_rid,
+        svg_ext_of,
+    )
 
     old_data, _old_fmt = _load_image(old_image)
     new_data, new_fmt = _load_image(new_image)
@@ -497,12 +507,18 @@ def replace_image_everywhere(
     r_embed = qn("r:embed")
     instances: list[dict] = []
     swapped_rids: dict[str, set[str]] = {}  # part -> old rids seen there
+    svg_rids: list[tuple[str, str]] = []  # (part, rid of the dropped artwork)
     for ctx in tv.iter_pics(pkg, scope):
         if ctx.media_part not in old_parts or ctx.blip is None:
             continue
         new_rid = _image_rel(pkg, ctx.part, new_media)
         old_rid = ctx.rid
         ctx.blip.set(r_embed, new_rid)
+        had_svg = svg_ext_of(ctx.blip) is not None
+        if had_svg:
+            svg_rid = _drop_svg_layer(pkg, ctx.part, ctx.blip)
+            if svg_rid:
+                svg_rids.append((ctx.part, svg_rid))
         pkg.mark_dirty(ctx.part)
         swapped_rids.setdefault(ctx.part, set()).add(old_rid)
         cnvpr = ctx.element.find(f"{qn('p:nvPicPr')}/{qn('p:cNvPr')}")
@@ -514,6 +530,7 @@ def replace_image_everywhere(
                 "shape_id": int(cnvpr.get("id")) if cnvpr is not None else None,
                 "name": cnvpr.get("name", "") if cnvpr is not None else "",
                 "had_crop": src_rect is not None,
+                "had_svg_layer": had_svg,
                 "where": ctx.where,
             }
         )
@@ -561,6 +578,15 @@ def replace_image_everywhere(
             pkg.remove_content_type_override(old_part)
             gc_removed.append(old_part)
 
+    # The SVG artwork parts the dropped layers pointed at, once their rels
+    # are gone and nothing else in the package wants them.
+    svg_media_removed: list[str] = []
+    for part, rid in svg_rids:
+        got = _release_rid(pkg, part, rid)
+        if got:
+            svg_media_removed.append(got)
+
+    svg_count = sum(1 for i in instances if i["had_svg_layer"])
     result = {
         "replaced_count": len(instances),
         "instances": instances,
@@ -569,7 +595,16 @@ def replace_image_everywhere(
         "new_media_part": new_media,
         "media_reused": reused,
         "crops_preserved": sum(1 for i in instances if i["had_crop"]),
+        "svg_layers_removed": svg_count,
     }
+    if svg_count:
+        result["old_svg_parts"] = svg_media_removed
+        result["svg_note"] = (
+            f"{svg_count} instance(s) were SVG pictures; PowerPoint renders "
+            "the SVG layer, so it was removed and those pictures are now the "
+            "raster you supplied. Without this the swap would have reported "
+            "success and changed nothing on screen."
+        )
     if fill_only:
         result["still_referenced"] = fill_only
         result["note"] = (
