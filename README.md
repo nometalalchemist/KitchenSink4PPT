@@ -153,6 +153,9 @@ process-wide lock with dialog detection at the window layer and bounded
 timeouts, and ships with its own COM gate scripts (`tests/com_gates/`).
 It has not yet had a long field life; treat important decks with the
 respect the backup tools make easy, and expect fast point releases.
+[Before filing](https://github.com/nometalalchemist/KitchenSink4PPT/issues/new?template=bug_report.yml):
+ask your AI to run `diagnose` and paste the output here; it is designed
+to be safe to share.
 
 ## License
 
