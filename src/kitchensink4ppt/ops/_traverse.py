@@ -30,7 +30,10 @@ Coverage notes (binding, so sweeps can document honestly):
   and defRPr blocks, and series spPr fills, are all reached. Chart STYLE
   parts (ppt/charts/style*.xml, colors*.xml - MS extensions) are NOT
   traversed; they restyle via the theme and rewriting them is out of scope.
-- SmartArt (dgm) data parts are not traversed here (separate audit item).
+- SmartArt (dgm) parts ARE traversed: the "diagrams" bucket covers both
+  ppt/diagrams/dataN.xml (the model) and ppt/diagrams/drawingN.xml (the
+  cached rendering), whose runs are ordinary a:r/a:rPr, so font, language,
+  and color sweeps reach diagram text like any other text.
 """
 
 from __future__ import annotations
@@ -62,6 +65,11 @@ _BUCKET_PATTERNS: dict[str, re.Pattern] = {
     "notesMasters": re.compile(r"ppt/notesMasters/notesMaster\d+\.xml\Z"),
     "handoutMasters": re.compile(r"ppt/handoutMasters/handoutMaster\d+\.xml\Z"),
     "charts": re.compile(r"ppt/charts/chart\d+\.xml\Z"),
+    # SmartArt keeps its text twice: dataN.xml is the model PowerPoint
+    # re-reads, drawingN.xml is the cached rendering everything else draws.
+    # Both are in the bucket, because a font or language sweep that fixes
+    # one and not the other leaves the deck inconsistent.
+    "diagrams": re.compile(r"ppt/diagrams/(?:data|drawing)\d+\.xml\Z"),
     "presentation": re.compile(re.escape(PRESENTATION_PART) + r"\Z"),
 }
 

@@ -94,7 +94,8 @@ def _theme_parts(pkg: PptxPackage) -> list[str]:
 def font_inventory(pkg: PptxPackage, scope="all") -> dict:
     """READ-ONLY deck-wide typeface census: every font in use with counts
     and per-bucket placement (slides / layouts / masters / notes /
-    notesMasters / handoutMasters / charts / presentation), the theme font
+    notesMasters / handoutMasters / charts / diagrams / presentation),
+    the theme font
     slots, theme-reference usage (+mj-lt family), and PHANTOM fonts -
     typefaces declared in run properties that govern no visible run text
     (empty runs, endParaRPr, unused lstStyle levels): the declarations
