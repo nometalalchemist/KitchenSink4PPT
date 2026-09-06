@@ -1,0 +1,24 @@
+name: "💼 Commercial license inquiry"
+description: "You want to build KitchenSink4PPT into a product of your own"
+title: "[commercial] "
+labels: ["commercial-license"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Free for individuals and personal use, and it stays that way. If your
+        company wants to build it into a product of its own, that needs a
+        commercial license, with terms worked out case by case. This counter
+        is where you start that conversation.
+  - type: textarea
+    id: use
+    attributes:
+      label: Intended commercial use
+      description: Rough description is fine (product, internal tooling, service...).
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: How to reach you
+      placeholder: "email, or 'reply here'"

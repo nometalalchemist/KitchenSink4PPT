@@ -1,0 +1,64 @@
+name: "🔧 Bug report"
+description: "Something glitched, refused, or misbehaved"
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! One important note before you start:
+        **never attach a private deck.** If the bug needs a deck to
+        reproduce, rebuild the structure with placeholder text.
+  - type: input
+    id: tool
+    attributes:
+      label: Which tool?
+      placeholder: "e.g. insert_slide, apply_layout, export_pdf"
+    validations:
+      required: true
+  - type: textarea
+    id: call
+    attributes:
+      label: The exact tool call
+      description: The arguments you passed (redact any private paths/text).
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: The response or error you got, verbatim if possible.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: deckshape
+    attributes:
+      label: Deck characteristics
+      description: >
+        What's in the deck near the failure? (masters and layouts,
+        placeholders, grouped shapes, tables, charts, embedded media,
+        transitions, animations, which app created it...)
+  - type: input
+    id: version
+    attributes:
+      label: KitchenSink4PPT version
+      placeholder: "pip show kitchensink4ppt"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "Windows 11, Python 3.12, PowerPoint 365 (com pack only)"
+  - type: input
+    id: packs
+    attributes:
+      label: Which packs were enabled?
+      placeholder: "lite only / lite + graphics / KS4P_MODE=full"

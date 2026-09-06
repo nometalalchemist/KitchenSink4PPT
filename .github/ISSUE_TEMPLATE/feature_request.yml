@@ -1,0 +1,17 @@
+name: "🔌 Feature request"
+description: "A PowerPoint capability the sink should also have"
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What should it do?
+      description: Describe the PowerPoint capability or workflow you're missing.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What's the real-world task behind it?
+      description: The deck you were working on and what you were trying to achieve.
