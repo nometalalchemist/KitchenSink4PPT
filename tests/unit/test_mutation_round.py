@@ -534,6 +534,35 @@ def test_holder_info_hides_stale_locks(lock_dir, dead_pid):
     assert xproc.holder_info() is None
 
 
+# --------------------------------------------- envelope: closed refusal codes
+
+
+def test_refusal_codes_are_a_closed_vocabulary():
+    """Structural finding of the round: nothing enforced the code
+    vocabulary at runtime. The map and hints must speak only CLOSED_CODES,
+    and every code raised via ``.code`` in src/ is a member by the clamp."""
+    import kitchensink4ppt.server as srv
+
+    assert {code for _t, code in srv._CODE_MAP} <= srv.CLOSED_CODES
+    assert set(srv._HINTS) <= srv.CLOSED_CODES
+
+
+def test_declared_code_outside_the_vocabulary_is_clamped():
+    import kitchensink4ppt.server as srv
+
+    exc = PptMcpError("boom")
+    exc.code = "MADE_UP_CODE"
+    assert srv._refusal(exc)["error"]["code"] == "BAD_PARAMS"
+
+    weird = PptMcpError("weird")
+    weird.code = 404  # non-string .code from any third-party exception
+    assert srv._refusal(weird)["error"]["code"] == "BAD_PARAMS"
+
+    declared = PptMcpError("stale view")
+    declared.code = "STALE_ANCHOR"
+    assert srv._refusal(declared)["error"]["code"] == "STALE_ANCHOR"
+
+
 # ------------------------------------------- sandbox: canonicalizer routes
 
 
